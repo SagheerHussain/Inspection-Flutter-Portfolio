@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.2
 
   ## -- STATE MANAGEMENT
   get: ^4.7.2
@@ -27,13 +27,13 @@ dependencies:
   flutter_otp_text_field: ^1.1.1
 
   ## -- FIREBASE PACKAGES
-  firebase_auth: ^5.5.3
-  firebase_core: ^3.13.0
+  firebase_auth: ^6.1.2
+  firebase_core: ^4.2.1
   google_sign_in: ^6.3.0
-  cloud_firestore: ^5.6.7
-  firebase_storage: ^12.4.5
-  firebase_messaging: ^15.2.6
-  firebase_crashlytics: ^4.3.6
+  cloud_firestore: ^6.1.0
+  firebase_storage: ^13.0.4
+  firebase_messaging: ^16.0.4
+  firebase_crashlytics: ^5.0.5
 
 
   ## -- ICON PACKAGES
@@ -43,16 +43,16 @@ dependencies:
 
   ## -- Utility PACKAGES
   intl: ^0.20.2
-  logger: ^2.5.0
+  logger: ^2.6.2
   lottie: ^3.3.1
   badges: ^3.1.2
   shimmer: ^3.0.0
   readmore: ^3.0.0
-  image_picker: ^1.1.2
-  url_launcher: ^6.3.1
-  carousel_slider: ^5.0.0
-  connectivity_plus: ^6.1.1
-  country_code_picker: ^3.3.0
+  image_picker: ^1.2.1
+  url_launcher: ^6.3.2
+  carousel_slider: ^5.1.1
+  connectivity_plus: ^7.0.0
+  country_code_picker: ^3.4.1
   flutter_native_splash: ^2.4.6
 
   # Notification
