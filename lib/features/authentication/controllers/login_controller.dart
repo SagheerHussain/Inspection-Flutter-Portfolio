@@ -9,6 +9,7 @@ import '../../../data/services/notifications/notification_service.dart';
 import '../../../personalization/controllers/user_controller.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/network_manager.dart';
+import '../../dashboard/course/screens/dashboard/coursesDashboard.dart';
 
 class LoginController extends GetxController {
   static LoginController get instance => Get.find();
@@ -27,8 +28,8 @@ class LoginController extends GetxController {
 
   @override
   void onInit() {
-    email.text = localStorage.read('REMEMBER_ME_EMAIL') ?? '';
-    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? '';
+    email.text = localStorage.read('REMEMBER_ME_EMAIL') ?? 'sagheer@gmail.com';
+    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? '123';
     super.onInit();
   }
 
@@ -36,7 +37,10 @@ class LoginController extends GetxController {
   Future<void> emailAndPasswordLogin() async {
     try {
       // Start Loading
-      TFullScreenLoader.openLoadingDialog('Logging you in...', TImages.docerAnimation);
+      TFullScreenLoader.openLoadingDialog(
+        'Logging you in...',
+        TImages.docerAnimation,
+      );
 
       // Check Internet Connectivity
       final isConnected = await NetworkManager.instance.isConnected();
@@ -52,12 +56,21 @@ class LoginController extends GetxController {
         return;
       }
 
+      // --- Bypass Firebase for dummy credentials ---
+      if (email.text.trim() == 'sagheer@gmail.com' &&
+          password.text.trim() == '123') {
+        TFullScreenLoader.stopLoading();
+        Get.offAll(() => const CoursesDashboard());
+        return;
+      }
+
       // Login user using EMail & Password Authentication
-      final userCredentials = await AuthenticationRepository.instance.loginWithEmailAndPassword(email.text.trim(), password.text.trim());
+      final userCredentials = await AuthenticationRepository.instance
+          .loginWithEmailAndPassword(email.text.trim(), password.text.trim());
 
       final token = await TNotificationService.getToken();
       final userController = Get.put(UserController());
-      await  userController.updateUserRecordWithToken(token);
+      await userController.updateUserRecordWithToken(token);
       // Assign user data to RxUser of UserController to use in app
       await userController.fetchUserRecord();
 
@@ -65,7 +78,9 @@ class LoginController extends GetxController {
       TFullScreenLoader.stopLoading();
 
       // Redirect
-      await AuthenticationRepository.instance.screenRedirect(userCredentials.user);
+      await AuthenticationRepository.instance.screenRedirect(
+        userCredentials.user,
+      );
     } catch (e) {
       TFullScreenLoader.stopLoading();
       TLoaders.errorSnackBar(title: 'Oh Snap', message: e.toString());
@@ -76,7 +91,10 @@ class LoginController extends GetxController {
   Future<void> googleSignIn() async {
     try {
       // Start Loading
-      TFullScreenLoader.openLoadingDialog('Logging you in...', TImages.docerAnimation);
+      TFullScreenLoader.openLoadingDialog(
+        'Logging you in...',
+        TImages.docerAnimation,
+      );
 
       // Check Internet Connectivity
       final isConnected = await NetworkManager.instance.isConnected();
@@ -86,7 +104,8 @@ class LoginController extends GetxController {
       }
 
       // Sign In with Google
-      final userCredentials = await AuthenticationRepository.instance.signInWithGoogle();
+      final userCredentials =
+          await AuthenticationRepository.instance.signInWithGoogle();
 
       final userController = Get.put(UserController());
       // Save Authenticated user data in the Firebase Firestore
@@ -99,7 +118,9 @@ class LoginController extends GetxController {
       TFullScreenLoader.stopLoading();
 
       // Redirect
-      await AuthenticationRepository.instance.screenRedirect(userCredentials?.user);
+      await AuthenticationRepository.instance.screenRedirect(
+        userCredentials?.user,
+      );
     } catch (e) {
       TFullScreenLoader.stopLoading();
       TLoaders.errorSnackBar(title: 'Oh Snap', message: e.toString());

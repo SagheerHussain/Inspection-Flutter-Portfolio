@@ -35,4 +35,4 @@ flutter_native_splash:
     image_dark: assets/logo/t-store-splash-logo-white.png
 
   # Disable splash screen on the web platform
-  web: false
+  web: true
