@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../../utils/constants/colors.dart';
+import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../models/dashboard/categories_model.dart';
 
 class DashboardCategories extends StatelessWidget {
@@ -11,8 +12,10 @@ class DashboardCategories extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final list = DashboardCategoriesModel.list;
+    final dark = THelperFunctions.isDarkMode(context);
+
     return SizedBox(
-      height: 45,
+      height: 50,
       child: ListView.builder(
         itemCount: list.length,
         shrinkWrap: true,
@@ -20,27 +23,49 @@ class DashboardCategories extends StatelessWidget {
         itemBuilder:
             (context, index) => GestureDetector(
               onTap: list[index].onPress,
-              child: SizedBox(
-                width: 170,
-                height: 45,
+              child: Container(
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: dark ? TColors.secondary : TColors.cardBackgroundColor,
+                  border: Border.all(
+                    color:
+                        dark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.04),
+                  ),
+                ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 45,
-                      height: 45,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: TColors.dark),
-                      child: Center(child: Text(list[index].title, style: txtTheme.titleLarge?.apply(color: Colors.white))),
+                    Text(
+                      list[index].title,
+                      style: const TextStyle(fontSize: 20),
                     ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(list[index].heading, style: txtTheme.titleLarge, overflow: TextOverflow.ellipsis),
-                          Text(list[index].subHeading, style: txtTheme.bodyMedium, overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          list[index].heading,
+                          style: txtTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          list[index].subHeading,
+                          style: txtTheme.bodySmall?.copyWith(
+                            color: Colors.grey,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ],
                 ),

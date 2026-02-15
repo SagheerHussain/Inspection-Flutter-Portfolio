@@ -9,7 +9,8 @@ class TRoutes {
   static const logIn = '/log-in';
   static const phoneSignIn = '/phone-sign-in';
   static const otpVerification = '/otp-verification';
-  static const reAuthenticateOtpVerification = '/re-authenticate-otp-verification';
+  static const reAuthenticateOtpVerification =
+      '/re-authenticate-otp-verification';
   static const profileScreen = '/profile-screen';
   static const cartScreen = '/cart-screen';
   static const checkoutScreen = '/checkout-screen';
@@ -18,4 +19,7 @@ class TRoutes {
   //Notification
   static const notification = '/notification';
   static const notificationDetails = '/notification-details';
+
+  // Schedules
+  static const schedules = '/schedules';
 }

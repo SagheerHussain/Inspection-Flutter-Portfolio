@@ -1,12 +1,10 @@
-import 'package:cwt_starter_template/personalization/controllers/create_notification_controller.dart';
 import 'package:cwt_starter_template/utils/popups/exports.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-import '../../../data/repository/authentication_repository/authentication_repository.dart';
-import '../../../data/services/notifications/notification_service.dart';
-import '../../../personalization/controllers/user_controller.dart';
+import '../../../data/services/api/api_service.dart';
+import '../../../utils/constants/api_constants.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/network_manager.dart';
 import '../../dashboard/course/screens/dashboard/coursesDashboard.dart';
@@ -14,10 +12,11 @@ import '../../dashboard/course/screens/dashboard/coursesDashboard.dart';
 class LoginController extends GetxController {
   static LoginController get instance => Get.find();
 
-  /// TextField Controllers to get data from TextFields
+  /// TextField Controllers
   final hidePassword = true.obs;
   final localStorage = GetStorage();
-  final email = TextEditingController();
+  final userName = TextEditingController();
+  final phoneNumber = TextEditingController();
   final password = TextEditingController();
   GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
@@ -28,13 +27,15 @@ class LoginController extends GetxController {
 
   @override
   void onInit() {
-    email.text = localStorage.read('REMEMBER_ME_EMAIL') ?? 'sagheer@gmail.com';
-    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? '123';
+    // Pre-fill with saved credentials or default
+    userName.text = localStorage.read('REMEMBER_ME_USERNAME') ?? 'Amit_P';
+    phoneNumber.text = localStorage.read('REMEMBER_ME_PHONE') ?? '9830300300';
+    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? 'Amit_P1974*';
     super.onInit();
   }
 
-  /// [EmailAndPasswordLogin]
-  Future<void> emailAndPasswordLogin() async {
+  /// Login using Otobix Backend API
+  Future<void> login() async {
     try {
       // Start Loading
       TFullScreenLoader.openLoadingDialog(
@@ -56,74 +57,34 @@ class LoginController extends GetxController {
         return;
       }
 
-      // --- Bypass Firebase for dummy credentials ---
-      if (email.text.trim() == 'sagheer@gmail.com' &&
-          password.text.trim() == '123') {
-        TFullScreenLoader.stopLoading();
-        Get.offAll(() => const CoursesDashboard());
-        return;
+      // Call Backend API
+      final response = await ApiService.post(ApiConstants.loginUrl, {
+        'userName': userName.text.trim(),
+        'phoneNumber': phoneNumber.text.trim(),
+        'password': password.text.trim(),
+      });
+
+      // Save auth token if present
+      if (response['token'] != null) {
+        await ApiService.saveToken(response['token']);
       }
 
-      // Login user using EMail & Password Authentication
-      final userCredentials = await AuthenticationRepository.instance
-          .loginWithEmailAndPassword(email.text.trim(), password.text.trim());
-
-      final token = await TNotificationService.getToken();
-      final userController = Get.put(UserController());
-      await userController.updateUserRecordWithToken(token);
-      // Assign user data to RxUser of UserController to use in app
-      await userController.fetchUserRecord();
+      // Save credentials for remember me
+      localStorage.write('REMEMBER_ME_USERNAME', userName.text.trim());
+      localStorage.write('REMEMBER_ME_PHONE', phoneNumber.text.trim());
+      localStorage.write('REMEMBER_ME_PASSWORD', password.text.trim());
 
       // Remove Loader
       TFullScreenLoader.stopLoading();
 
-      // Redirect
-      await AuthenticationRepository.instance.screenRedirect(
-        userCredentials.user,
-      );
+      // Show Success
+      TLoaders.successSnackBar(title: 'Welcome!', message: 'Login successful');
+
+      // Navigate to Dashboard
+      Get.offAll(() => const CoursesDashboard());
     } catch (e) {
       TFullScreenLoader.stopLoading();
-      TLoaders.errorSnackBar(title: 'Oh Snap', message: e.toString());
-    }
-  }
-
-  /// [GoogleSignInAuthentication]
-  Future<void> googleSignIn() async {
-    try {
-      // Start Loading
-      TFullScreenLoader.openLoadingDialog(
-        'Logging you in...',
-        TImages.docerAnimation,
-      );
-
-      // Check Internet Connectivity
-      final isConnected = await NetworkManager.instance.isConnected();
-      if (!isConnected) {
-        TFullScreenLoader.stopLoading();
-        return;
-      }
-
-      // Sign In with Google
-      final userCredentials =
-          await AuthenticationRepository.instance.signInWithGoogle();
-
-      final userController = Get.put(UserController());
-      // Save Authenticated user data in the Firebase Firestore
-      await userController.saveUserRecord(userCredentials: userCredentials);
-
-      Get.put(CreateNotificationController());
-      await CreateNotificationController.instance.createNotification();
-
-      // Remove Loader
-      TFullScreenLoader.stopLoading();
-
-      // Redirect
-      await AuthenticationRepository.instance.screenRedirect(
-        userCredentials?.user,
-      );
-    } catch (e) {
-      TFullScreenLoader.stopLoading();
-      TLoaders.errorSnackBar(title: 'Oh Snap', message: e.toString());
+      TLoaders.errorSnackBar(title: 'Login Failed', message: e.toString());
     }
   }
 }

@@ -1,15 +1,14 @@
-import 'package:cwt_starter_template/features/authentication/screens/on_boarding/on_boarding_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../features/authentication/screens/login/login_screen.dart';
 import '../../../features/authentication/screens/signup/verify_email.dart';
-import '../../../features/authentication/screens/welcome/welcome_screen.dart';
 import '../../../features/dashboard/course/screens/dashboard/coursesDashboard.dart';
 import '../../../personalization/controllers/user_controller.dart';
 import '../../../utils/exceptions/firebase_auth_exceptions.dart';
@@ -25,7 +24,8 @@ class AuthenticationRepository extends GetxController {
   static AuthenticationRepository get instance => Get.find();
 
   /// Variables
-  final deviceStorage = GetStorage(); // Use this to store data locally (e.g. OnBoarding)
+  final deviceStorage =
+      GetStorage(); // Use this to store data locally (e.g. OnBoarding)
   late final Rx<User?> _firebaseUser;
   var phoneNo = ''.obs;
   var phoneNoVerificationId = ''.obs;
@@ -49,7 +49,6 @@ class AuthenticationRepository extends GetxController {
   void onReady() {
     _firebaseUser = Rx<User?>(_auth.currentUser);
     _firebaseUser.bindStream(_auth.userChanges());
-    FlutterNativeSplash.remove();
     screenRedirect(_firebaseUser.value);
     // ever(_firebaseUser, _setInitialScreen);
   }
@@ -64,36 +63,32 @@ class AuthenticationRepository extends GetxController {
       final idTokenResult = await _auth.currentUser!.getIdTokenResult();
 
       // If email verified let the user go to Home Screen else to the Email Verification Screen
-      if (user.emailVerified || user.phoneNumber != null || idTokenResult.claims?['admin'] == true) {
+      if (user.emailVerified ||
+          user.phoneNumber != null ||
+          idTokenResult.claims?['admin'] == true) {
         // Initialize User Specific Storage
         await TLocalStorage.init(user.uid);
         Get.offAll(() => const CoursesDashboard());
       } else {
         Get.offAll(() => VerifyEmailScreen(email: getUserEmail));
       }
-    }
-    else {
-      deviceStorage.writeIfNull('isFirstTime', true);
-      final bool isFirstTime = deviceStorage.read('isFirstTime') as bool;
-
-      if (isFirstTime) {
-        // First launch: go to OnBoarding
-        await Get.offAll(() => const OnBoardingScreen());
-        // After showing onboarding, mark it done:
-        deviceStorage.write('isFirstTime', false);
-      } else {
-        // Not first launch: go to Welcome or Login
-        Get.offAll(() => const WelcomeScreen());
-      }
+    } else {
+      Get.offAll(() => const LoginScreen());
     }
   }
 
   /* ---------------------------- Email & Password sign-in ---------------------------------*/
 
   /// [EmailAuthentication] - SignIn
-  Future<UserCredential> loginWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> loginWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
+      return await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException(e.code).message;
     } on FirebaseException catch (e) {
@@ -108,9 +103,15 @@ class AuthenticationRepository extends GetxController {
   }
 
   /// [EmailAuthentication] - REGISTER
-  Future<UserCredential> registerWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> registerWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      return await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException(e.code).message;
     } on FirebaseException catch (e) {
@@ -125,10 +126,16 @@ class AuthenticationRepository extends GetxController {
   }
 
   /// [ReAuthenticate] - ReAuthenticate User
-  Future<void> reAuthenticateWithEmailAndPassword(String email, String password) async {
+  Future<void> reAuthenticateWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
       // Create a credential
-      AuthCredential credential = EmailAuthProvider.credential(email: email, password: password);
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
 
       // ReAuthenticate
       await _auth.currentUser!.reauthenticateWithCredential(credential);
@@ -188,10 +195,14 @@ class AuthenticationRepository extends GetxController {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
 
       // Create a new credential
-      final credential = GoogleAuthProvider.credential(accessToken: googleAuth?.accessToken, idToken: googleAuth?.idToken);
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
 
       // Once signed in, return the UserCredential
       return await FirebaseAuth.instance.signInWithCredential(credential);
@@ -224,12 +235,19 @@ class AuthenticationRepository extends GetxController {
 
           if (e.code == 'too-many-requests') {
             // Get.offAllNamed(TRoutes.welcome);
-            Get.offAll(() => const WelcomeScreen());
-            TLoaders.warningSnackBar(title: 'Too many attempts', message: 'Oops! Too many tries. Take a short break and try again soon!');
+            Get.offAll(() => const LoginScreen());
+            TLoaders.warningSnackBar(
+              title: 'Too many attempts',
+              message:
+                  'Oops! Too many tries. Take a short break and try again soon!',
+            );
             return;
           } else if (e.code == 'unknown') {
             Get.back(result: false);
-            TLoaders.warningSnackBar(title: 'SMS not Sent', message: 'An internal error has occurred, We are working on it!');
+            TLoaders.warningSnackBar(
+              title: 'SMS not Sent',
+              message: 'An internal error has occurred, We are working on it!',
+            );
             return;
           }
           TLoaders.warningSnackBar(title: 'Oh Snap', message: e.message ?? '');
@@ -255,7 +273,9 @@ class AuthenticationRepository extends GetxController {
         },
         codeAutoRetrievalTimeout: (verificationId) {
           // phoneNoVerificationId.value = verificationId;
-          debugPrint('--------------- codeAutoRetrievalTimeout: $verificationId');
+          debugPrint(
+            '--------------- codeAutoRetrievalTimeout: $verificationId',
+          );
         },
       );
       phoneNo.value = phoneNumber;
@@ -275,7 +295,10 @@ class AuthenticationRepository extends GetxController {
   /// [PhoneAuthentication] - VERIFY PHONE NO BY OTP
   Future<bool> verifyOTP(String otp) async {
     try {
-      final phoneCredentials = PhoneAuthProvider.credential(verificationId: phoneNoVerificationId.value, smsCode: otp);
+      final phoneCredentials = PhoneAuthProvider.credential(
+        verificationId: phoneNoVerificationId.value,
+        smsCode: otp,
+      );
       var credentials = await _auth.signInWithCredential(phoneCredentials);
       return credentials.user != null ? true : false;
     } on FirebaseAuthException catch (e) {
@@ -329,7 +352,7 @@ class AuthenticationRepository extends GetxController {
       await GoogleSignIn().signOut();
       // await FacebookAuth.instance.logOut();
       // await FirebaseAuth.instance.signOut();
-      Get.offAll(() => const WelcomeScreen());
+      Get.offAll(() => const LoginScreen());
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException(e.code).message;
     } on FirebaseException catch (e) {

@@ -7,7 +7,7 @@ import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/text_strings.dart';
 import '../models/model_on_boarding.dart';
 import '../screens/on_boarding/on_boarding_page_widget.dart';
-import '../screens/welcome/welcome_screen.dart';
+import '../screens/login/login_screen.dart';
 
 class OnBoardingController extends GetxController {
   //Variables
@@ -18,18 +18,20 @@ class OnBoardingController extends GetxController {
   //Functions to trigger Skip, Next and onPageChange Events
   skip() => controller.jumpToPage(page: 2);
 
-  animateToNextSlide() => controller.animateToPage(page: controller.currentPage + 1);
+  animateToNextSlide() =>
+      controller.animateToPage(page: controller.currentPage + 1);
 
   animateToNextSlideWithLocalStorage() {
     if (controller.currentPage == 2) {
       userStorage.write('isFirstTime', false);
-      Get.offAll(() => const WelcomeScreen());
+      Get.offAll(() => const LoginScreen());
     } else {
       controller.animateToPage(page: controller.currentPage + 1);
     }
   }
 
-  onPageChangedCallback(int activePageIndex) => currentPage.value = activePageIndex;
+  onPageChangedCallback(int activePageIndex) =>
+      currentPage.value = activePageIndex;
 
   //Three Onboarding Pages
   final pages = [

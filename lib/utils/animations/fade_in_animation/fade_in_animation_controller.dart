@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../../features/authentication/screens/welcome/welcome_screen.dart';
+import '../../../features/authentication/screens/login/login_screen.dart';
 
 class FadeInAnimationController extends GetxController {
   static FadeInAnimationController get find => Get.find();
@@ -16,7 +16,7 @@ class FadeInAnimationController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 2000));
     Get.off(
       // Get.off Instead of Get.offAll()
-      () => const WelcomeScreen(),
+      () => const LoginScreen(),
       duration: const Duration(milliseconds: 1000), //Transition Time
       transition: Transition.fadeIn, //Screen Switch Transition
     );

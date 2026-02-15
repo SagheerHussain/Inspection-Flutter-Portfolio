@@ -8,7 +8,7 @@ import '../../common/widgets/loaders/circular_loader.dart';
 import '../../data/repository/authentication_repository/authentication_repository.dart';
 import '../../data/repository/user_repository/user_repository.dart';
 import '../../data/services/notifications/notification_service.dart';
-import '../../features/authentication/screens/welcome/welcome_screen.dart';
+import '../../features/authentication/screens/login/login_screen.dart';
 import '../../utils/constants/text_strings.dart';
 import '../models/user_model.dart';
 import '../../routes/routes.dart';
@@ -45,7 +45,6 @@ class UserController extends GetxController {
     super.onInit();
   }
 
-
   /// Fetch user record
   Future<void> fetchUserRecord({bool fetchLatestRecord = false}) async {
     try {
@@ -67,14 +66,19 @@ class UserController extends GetxController {
         }
       }
     } catch (e) {
-      TLoaders.warningSnackBar(title: 'Warning', message: 'Unable to fetch your information. Try again.');
+      // Silently handle — user info may not exist in Firebase
+      // when using Otobix backend login
+      debugPrint('ℹ️ User fetch skipped: $e');
     } finally {
       profileLoading.value = false;
     }
   }
 
   /// Save user Record from any Registration provider
-  Future<void> saveUserRecord({UserModel? user, UserCredential? userCredentials}) async {
+  Future<void> saveUserRecord({
+    UserModel? user,
+    UserCredential? userCredentials,
+  }) async {
     try {
       // First UPDATE Rx User and then check if user data is already stored. If not store new data
       await fetchUserRecord();
@@ -114,7 +118,8 @@ class UserController extends GetxController {
     } catch (e) {
       TLoaders.warningSnackBar(
         title: 'Data not saved',
-        message: 'Something went wrong while saving your information. You can re-save your data in your Profile.',
+        message:
+            'Something went wrong while saving your information. You can re-save your data in your Profile.',
       );
     }
   }
@@ -122,7 +127,10 @@ class UserController extends GetxController {
   Future<void> updateUserProfile() async {
     try {
       // Start Loading
-      TFullScreenLoader.openLoadingDialog('We are updating your information...', TImages.docerAnimation);
+      TFullScreenLoader.openLoadingDialog(
+        'We are updating your information...',
+        TImages.docerAnimation,
+      );
 
       // Check Internet Connectivity
       final isConnected = await NetworkManager.instance.isConnected();
@@ -138,7 +146,10 @@ class UserController extends GetxController {
       }
 
       // Update user's first & last name in the Firebase Firestore
-      Map<String, dynamic> json = {'fullName': fullName.text.trim(), 'email': email.text.trim()};
+      Map<String, dynamic> json = {
+        'fullName': fullName.text.trim(),
+        'email': email.text.trim(),
+      };
       await userRepository.updateSingleField(json);
 
       // Update the Rx User value
@@ -150,7 +161,10 @@ class UserController extends GetxController {
       TFullScreenLoader.stopLoading();
 
       // Show Success Message
-      TLoaders.successSnackBar(title: 'Congratulations', message: 'Your Name has been updated.');
+      TLoaders.successSnackBar(
+        title: 'Congratulations',
+        message: 'Your Name has been updated.',
+      );
 
       // Move to previous screen.
       Get.offNamed(TRoutes.profileScreen);
@@ -163,10 +177,18 @@ class UserController extends GetxController {
   /// Upload Profile Picture
   uploadUserProfilePicture() async {
     try {
-      final image = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70, maxHeight: 512, maxWidth: 512);
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+        maxHeight: 512,
+        maxWidth: 512,
+      );
       if (image != null) {
         imageUploading.value = true;
-        final uploadedImage = await userRepository.uploadImage('Users/Images/Profile/', image);
+        final uploadedImage = await userRepository.uploadImage(
+          'Users/Images/Profile/',
+          image,
+        );
         profileImageUrl.value = uploadedImage;
         Map<String, dynamic> newImage = {'profilePicture': uploadedImage};
         await userRepository.updateSingleField(newImage);
@@ -174,11 +196,17 @@ class UserController extends GetxController {
         user.refresh();
 
         imageUploading.value = false;
-        TLoaders.successSnackBar(title: 'Congratulations', message: 'Your Profile Image has been updated!');
+        TLoaders.successSnackBar(
+          title: 'Congratulations',
+          message: 'Your Profile Image has been updated!',
+        );
       }
     } catch (e) {
       imageUploading.value = false;
-      TLoaders.errorSnackBar(title: 'OhSnap', message: 'Something went wrong: $e');
+      TLoaders.errorSnackBar(
+        title: 'OhSnap',
+        message: 'Something went wrong: $e',
+      );
     }
   }
 
@@ -210,11 +238,17 @@ class UserController extends GetxController {
       contentPadding: const EdgeInsets.all(TSizes.md),
       title: 'Delete Account',
       middleText:
-      'Are you sure you want to delete your account permanently? This action is not reversible and all of your data will be removed permanently.',
+          'Are you sure you want to delete your account permanently? This action is not reversible and all of your data will be removed permanently.',
       confirm: ElevatedButton(
         onPressed: () async => deleteUserAccount(),
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-        child: const Padding(padding: EdgeInsets.symmetric(horizontal: TSizes.lg), child: Text('Delete')),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          side: const BorderSide(color: Colors.red),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: TSizes.lg),
+          child: Text('Delete'),
+        ),
       ),
       cancel: OutlinedButton(
         child: const Text('Cancel'),
@@ -230,7 +264,8 @@ class UserController extends GetxController {
 
       /// First re-authenticate user
       final auth = AuthenticationRepository.instance;
-      final provider = auth.firebaseUser!.providerData.map((e) => e.providerId).first;
+      final provider =
+          auth.firebaseUser!.providerData.map((e) => e.providerId).first;
       if (provider.isNotEmpty) {
         // Re Verify Auth Email
         if (provider == 'google.com') {
@@ -244,14 +279,22 @@ class UserController extends GetxController {
         } else if (provider == 'password') {
           TFullScreenLoader.stopLoading();
           Get.to(() => const ReAuthLoginForm());
-        }else if (provider == 'phone') {
+        } else if (provider == 'phone') {
           TFullScreenLoader.stopLoading();
-          await AuthenticationRepository.instance.loginWithPhoneNo(user.value.phoneNumber);
-          bool otpVerified = await Get.toNamed(TRoutes.reAuthenticateOtpVerification, parameters: {'phoneNumberWithCountryCode': user.value.phoneNumber});
+          await AuthenticationRepository.instance.loginWithPhoneNo(
+            user.value.phoneNumber,
+          );
+          bool otpVerified = await Get.toNamed(
+            TRoutes.reAuthenticateOtpVerification,
+            parameters: {'phoneNumberWithCountryCode': user.value.phoneNumber},
+          );
           if (otpVerified) {
-            TLoaders.successSnackBar(title: TTexts.phoneVerifiedTitle, message: TTexts.phoneVerifiedMessage);
+            TLoaders.successSnackBar(
+              title: TTexts.phoneVerifiedTitle,
+              message: TTexts.phoneVerifiedMessage,
+            );
             await auth.deleteAccount();
-            Get.offAll(() => const WelcomeScreen());
+            Get.offAll(() => const LoginScreen());
           }
         }
       }
@@ -279,7 +322,10 @@ class UserController extends GetxController {
       }
 
       await AuthenticationRepository.instance
-          .reAuthenticateWithEmailAndPassword(verifyEmail.text.trim(), verifyPassword.text.trim());
+          .reAuthenticateWithEmailAndPassword(
+            verifyEmail.text.trim(),
+            verifyPassword.text.trim(),
+          );
       await AuthenticationRepository.instance.deleteAccount();
       TFullScreenLoader.stopLoading();
       Get.offAllNamed(TRoutes.logIn);
@@ -324,7 +370,7 @@ class UserController extends GetxController {
     }
   }
 
-  void assignDataToProfile(){
+  void assignDataToProfile() {
     fullName.text = user.value.fullName;
     email.text = user.value.email;
     phoneNo.text = user.value.phoneNumber;
