@@ -60,4 +60,10 @@ class ApiConstants {
   // ──────────────────────────────────────────
   static String carDetailsUrl(String appointmentId) =>
       '${baseUrl}car/details/carId?appointmentId=$appointmentId';
+
+  // ──────────────────────────────────────────
+  // INSPECTION SUBMISSION ENDPOINT (Dev)
+  // ──────────────────────────────────────────
+  static String get inspectionSubmitUrl =>
+      '${_devBaseUrl}inspection/car/add-car-through-inspection';
 }

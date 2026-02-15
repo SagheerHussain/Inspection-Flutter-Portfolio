@@ -474,13 +474,25 @@ class _ScheduleCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            Text(
-                              schedule.fullCarName,
-                              style: txtTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.phone_rounded,
+                                  size: 13,
+                                  color: Colors.grey.shade500,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  schedule.customerContactNumber.isNotEmpty
+                                      ? schedule.customerContactNumber
+                                      : 'No phone number',
+                                  style: txtTheme.bodySmall?.copyWith(
+                                    color: Colors.grey,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ],
                         ),

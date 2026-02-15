@@ -1,10 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../utils/constants/colors.dart';
-import '../../../utils/helpers/helper_functions.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../schedules/models/schedule_model.dart';
 import '../controllers/inspection_form_controller.dart';
-import '../models/inspection_form_model.dart';
+import '../models/inspection_field_defs.dart';
+
+// ─── Custom accent color (replaces TColors.primary yellow) ───
+const Color _accent = Color(0xFF0D6EFD); // Vibrant royal blue
+const Color _headerGradientStart = Color(0xFF1A237E); // Deep indigo
+const Color _headerGradientEnd = Color(0xFF0D6EFD); // Royal blue
 
 class InspectionFormScreen extends StatelessWidget {
   final String appointmentId;
@@ -18,7 +23,6 @@ class InspectionFormScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Unique tag to allow multiple forms if needed
     final controller = Get.put(
       InspectionFormController(
         appointmentId: appointmentId,
@@ -26,71 +30,114 @@ class InspectionFormScreen extends StatelessWidget {
       ),
       tag: 'form_$appointmentId',
     );
-    final dark = THelperFunctions.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF0A0E21) : const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Header ───
-            _buildAppBar(context, controller),
-
-            // ─── Progress Indicator ───
-            _buildProgressIndicator(controller),
-
-            // ─── Main Form Area ───
+            _AppBar(schedule: schedule),
+            _ProgressBar(controller: controller),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation(_accent),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading inspection data...',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
-
                 if (controller.inspectionData.value == null) {
-                  return const Center(child: Text('No data available'));
+                  return Center(
+                    child: Text(
+                      'No data available',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  );
                 }
-
                 return PageView.builder(
                   controller: controller.pageController,
-                  physics:
-                      const NeverScrollableScrollPhysics(), // Disable swipe to enforce buttons
-                  itemCount: controller.sections.length,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: controller.sectionCount,
                   itemBuilder: (context, index) {
-                    return _buildSection(context, index, controller);
+                    return _SectionPage(
+                      section: InspectionFieldDefs.sections[index],
+                      controller: controller,
+                      sectionIndex: index,
+                    );
                   },
                 );
               }),
             ),
-
-            // ─── Footer Buttons ───
-            _buildFooter(context, controller, dark),
+            _Footer(controller: controller),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildAppBar(
-    BuildContext context,
-    InspectionFormController controller,
-  ) {
+// ═══════════════════════════════════════════════
+// ─── APP BAR ───
+// ═══════════════════════════════════════════════
+class _AppBar extends StatelessWidget {
+  final ScheduleModel schedule;
+  const _AppBar({required this.schedule});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: TColors.primary,
-        boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black26)],
+        gradient: const LinearGradient(
+          colors: [_headerGradientStart, _headerGradientEnd],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _headerGradientStart.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => Get.back(),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Colors.white,
-              size: 20,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,12 +147,41 @@ class InspectionFormScreen extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 17,
+                    letterSpacing: 0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  schedule.appointmentId,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.circle, size: 6, color: Colors.greenAccent),
+                SizedBox(width: 6),
                 Text(
-                  'ID: ${schedule.appointmentId}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  'Inspecting',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -114,15 +190,33 @@ class InspectionFormScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildProgressIndicator(InspectionFormController controller) {
+// ═══════════════════════════════════════════════
+// ─── PROGRESS BAR ───
+// ═══════════════════════════════════════════════
+class _ProgressBar extends StatelessWidget {
+  final InspectionFormController controller;
+  const _ProgressBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      height: 60,
-      color: Colors.white,
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: controller.sections.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: controller.sectionCount,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         itemBuilder: (context, index) {
           return Obx(() {
             final isSelected = controller.currentSectionIndex.value == index;
@@ -134,33 +228,51 @@ class InspectionFormScreen extends StatelessWidget {
             return GestureDetector(
               onTap: isEnabled ? () => controller.jumpToSection(index) : null,
               child: Container(
-                margin: const EdgeInsets.only(right: 24),
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? _accent.withValues(alpha: 0.1)
+                          : (isCompleted
+                              ? Colors.green.withValues(alpha: 0.08)
+                              : Colors.transparent),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? _accent
+                            : (isCompleted
+                                ? Colors.green.shade300
+                                : Colors.grey.shade300),
+                    width: isSelected ? 1.5 : 0.8,
+                  ),
+                ),
                 alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: isSelected ? 24 : 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? TColors.primary
-                                : (isCompleted
-                                    ? Colors.green
-                                    : Colors.grey[300]),
-                        borderRadius: BorderRadius.circular(12),
+                    if (isCompleted)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: Colors.green.shade600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
                     Text(
-                      controller.sections[index],
+                      '${index + 1}. ${controller.sectionTitles[index]}',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? TColors.primary : Colors.grey,
+                        color:
+                            isSelected
+                                ? _accent
+                                : (isCompleted
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade600),
                       ),
                     ),
                   ],
@@ -172,583 +284,152 @@ class InspectionFormScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildSection(
-    BuildContext context,
-    int index,
-    InspectionFormController controller,
-  ) {
-    // Safety check just in case
-    if (controller.inspectionData.value == null) return const SizedBox();
+// ═══════════════════════════════════════════════
+// ─── SECTION PAGE ───
+// ═══════════════════════════════════════════════
+class _SectionPage extends StatelessWidget {
+  final FormSectionDef section;
+  final InspectionFormController controller;
+  final int sectionIndex;
 
-    final data = controller.inspectionData.value!;
+  const _SectionPage({
+    required this.section,
+    required this.controller,
+    required this.sectionIndex,
+  });
 
-    // Switch for different sections
-    switch (index) {
-      case 0:
-        return _VehicleInfoSection(data: data);
-      case 1:
-        return _DocumentsSection(data: data);
-      case 2:
-        return _ExteriorSection(data: data);
-      case 3:
-        return _EngineSection(data: data);
-      case 4:
-        return _InteriorSection(data: data);
-      default:
-        return Center(child: Text('Section: ${controller.sections[index]}'));
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        children: [
+          _SectionHeader(
+            title: section.title,
+            icon: section.icon,
+            sectionNumber: sectionIndex + 1,
+            totalSections: controller.sectionCount,
+          ),
+          const SizedBox(height: 20),
+          ...section.fields.map((field) => _buildField(field)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField(F field) {
+    switch (field.type) {
+      case FType.text:
+        return _BoundTextField(controller: controller, field: field);
+      case FType.dropdown:
+        return _BoundDropdown(controller: controller, field: field);
+      case FType.image:
+        return _BoundImagePicker(controller: controller, field: field);
+      case FType.number:
+        return _BoundNumberField(controller: controller, field: field);
     }
   }
-
-  Widget _buildFooter(
-    BuildContext context,
-    InspectionFormController controller,
-    bool dark,
-  ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        24,
-      ), // Extra padding at bottom
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF1E2746) : Colors.white,
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 10,
-            offset: Offset(0, -4),
-            color: Colors.black12,
-          ),
-        ],
-      ),
-      child: Obx(() {
-        final isEnabled =
-            !controller.isLoading.value &&
-            controller.inspectionData.value != null;
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Previous Button
-            IconButton.filledTonal(
-              onPressed:
-                  isEnabled
-                      ? () {
-                        if (controller.currentSectionIndex.value > 0) {
-                          controller.previousSection();
-                        } else {
-                          Get.back();
-                        }
-                      }
-                      : null,
-              icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: 'Previous',
-            ),
-
-            // Action Buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton.filled(
-                  onPressed: isEnabled ? controller.saveInspection : null,
-                  style: IconButton.styleFrom(backgroundColor: Colors.orange),
-                  icon: const Icon(Icons.save_rounded, color: Colors.white),
-                  tooltip: 'Save Draft',
-                ),
-                const SizedBox(width: 16),
-                IconButton.filled(
-                  onPressed: isEnabled ? controller.markAsInspected : null,
-                  style: IconButton.styleFrom(backgroundColor: Colors.green),
-                  icon: const Icon(
-                    Icons.check_circle_rounded,
-                    color: Colors.white,
-                  ),
-                  tooltip: 'Mark as Inspected',
-                ),
-              ],
-            ),
-
-            // Next Button
-            IconButton.filledTonal(
-              onPressed: isEnabled ? controller.nextSection : null,
-              icon: const Icon(Icons.arrow_forward_rounded),
-              tooltip: 'Next',
-            ),
-          ],
-        );
-      }),
-    );
-  }
 }
 
-// ─── SECTIONS ───
-
-// ─── HELPERS FOR PHOTO PLACEHOLDERS ───
-
-class _PhotoPlaceholder extends StatelessWidget {
-  final String label;
-  const _PhotoPlaceholder({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          style: BorderStyle.solid,
-        ), // dashed border requires external pkg or custom painter
-      ),
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_a_photo_rounded, color: Colors.grey[500]),
-            const SizedBox(width: 8),
-            Text(
-              'Add $label Photos',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VehicleInfoSection extends StatelessWidget {
-  final InspectionFormModel data;
-  const _VehicleInfoSection({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _AnimatedHeader(
-            title: 'Vehicle Information',
-            icon: Icons.directions_car,
-          ),
-          const SizedBox(height: 16),
-          _PhotoPlaceholder(label: 'Vehicle'),
-          const SizedBox(height: 8),
-          _FormTextField(
-            label: 'Registration Number',
-            initialValue: data.data['registrationNumber'],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _FormTextField(label: 'Make', initialValue: data.make),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _FormTextField(label: 'Model', initialValue: data.model),
-              ),
-            ],
-          ),
-          _FormTextField(label: 'Variant', initialValue: data.variant),
-          _FormTextField(
-            label: 'Mfg Year (MM/YYYY)',
-            initialValue: data.data['yearMonthOfManufacture'],
-          ),
-          _FormTextField(
-            label: 'Odometer (km)',
-            initialValue: data.data['odometerReadingInKms']?.toString(),
-          ),
-          _FormDropdown(
-            label: 'Fuel Type',
-            value: data.data['fuelType'],
-            items: const ['Petrol', 'Diesel', 'CNG', 'Electric', 'Hybrid'],
-          ),
-          _FormDropdown(
-            label: 'Transmission',
-            value: data.data['transmissionTypeDropdownList']?.toString(),
-            items: const ['Manual', 'Automatic', 'AMT', 'CVT'],
-          ),
-          _FormDropdown(
-            label: 'Owner Serial',
-            value: data.data['ownerSerialNumber']?.toString(),
-            items: const ['1', '2', '3', '4+'],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentsSection extends StatelessWidget {
-  final InspectionFormModel data;
-  const _DocumentsSection({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _AnimatedHeader(title: 'Documents', icon: Icons.description),
-          const SizedBox(height: 16),
-          _PhotoPlaceholder(label: 'Document'),
-          const SizedBox(height: 8),
-          _FormDropdown(
-            label: 'RC Availability',
-            value: data.data['rcBookAvailability'],
-            items: const [
-              'Original',
-              'Photocopy',
-              'Duplicate',
-              'Not Available',
-            ],
-          ),
-          _FormDropdown(
-            label: 'RC Condition',
-            value: data.data['rcCondition'],
-            items: const ['Okay', 'Damaged', 'Faded'],
-          ),
-          const Divider(height: 32),
-          _FormDropdown(
-            label: 'Insurance Type',
-            value: data.data['insurance'],
-            items: const [
-              'Comprehensive',
-              'Third Party',
-              'Expired',
-              'Not Available',
-            ],
-          ),
-          _FormTextField(
-            label: 'Insurance Validity',
-            initialValue: data.data['insuranceValidity'],
-          ),
-          const Divider(height: 32),
-          _FormDropdown(
-            label: 'RTO NOC',
-            value: data.data['rtoNoc'],
-            items: const ['Issued', 'Not Issued', 'Not Applicable'],
-          ),
-          _FormDropdown(
-            label: 'Road Tax',
-            value: data.data['roadTaxValidity'],
-            items: const ['Lifetime', 'Valid', 'Expired'],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExteriorSection extends StatelessWidget {
-  final InspectionFormModel data;
-  const _ExteriorSection({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    const options = [
-      'Original',
-      'Repainted',
-      'Dented',
-      'Scratched',
-      'Rusted',
-      'Replaced',
-    ];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _AnimatedHeader(title: 'Exterior & Body', icon: Icons.car_repair),
-          const SizedBox(height: 16),
-          _PhotoPlaceholder(label: 'Exterior'),
-          const SizedBox(height: 8),
-          // Front
-          _FormDropdown(
-            label: 'Bonnet',
-            value: data.data['bonnet'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'Front Bumper',
-            value: data.data['frontBumper'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'Headlamps',
-            value: data.data['lhsHeadlamp'],
-            items: const ['Okay', 'Faded', 'Cracked', 'Broken'],
-          ),
-          _FormDropdown(
-            label: 'Windshield (Front)',
-            value: data.data['frontWindshield'],
-            items: const ['Original', 'Replaced', 'Cracked', 'Chipped'],
-          ),
-          const Divider(),
-          // Sides
-          _FormDropdown(
-            label: 'LHS Fender',
-            value: data.data['lhsFender'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'LHS Front Door',
-            value: data.data['lhsFrontDoor'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'LHS Rear Door',
-            value: data.data['lhsRearDoor'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'RHS Fender',
-            value: data.data['rhsFender'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'RHS Front Door',
-            value: data.data['rhsFrontDoor'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'RHS Rear Door',
-            value: data.data['rhsRearDoor'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'Roof',
-            value: data.data['roof'],
-            items: options,
-          ),
-          const Divider(),
-          // Rear
-          _FormDropdown(
-            label: 'Boot Door',
-            value: data.data['bootDoor'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'Rear Bumper',
-            value: data.data['rearBumper'],
-            items: options,
-          ),
-          _FormDropdown(
-            label: 'Tail Lamps',
-            value: data.data['lhsTailLamp'],
-            items: const ['Okay', 'Faded', 'Cracked'],
-          ),
-
-          const SizedBox(height: 16),
-          _FormTextField(
-            label: 'Exterior Comments',
-            initialValue: data.data['comments'],
-            maxLines: 3,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EngineSection extends StatelessWidget {
-  final InspectionFormModel data;
-  const _EngineSection({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _AnimatedHeader(
-            title: 'Engine & Mechanical',
-            icon: Icons.engineering,
-          ),
-          const SizedBox(height: 16),
-          _PhotoPlaceholder(label: 'Engine'),
-          const SizedBox(height: 8),
-          _FormDropdown(
-            label: 'Engine Condition',
-            value: data.data['engine'],
-            items: const ['Okay', 'Noise', 'Blowby', 'Seized', 'Misfiring'],
-          ),
-          _FormDropdown(
-            label: 'Engine Oil',
-            value: data.data['engineOil'],
-            items: const ['Clean', 'Dirty', 'Low Level', 'Sludge', 'Leakage'],
-          ),
-          _FormDropdown(
-            label: 'Coolant',
-            value: data.data['coolant'],
-            items: const ['Okay', 'Dirty', 'Leakage', 'Empty'],
-          ),
-          _FormDropdown(
-            label: 'Battery',
-            value: data.data['battery'],
-            items: const ['Okay', 'Weak', 'Dead'],
-          ),
-          _FormDropdown(
-            label: 'Exhaust Smoke',
-            value: data.data['exhaustSmoke'],
-            items: const ['Clear', 'Black', 'White', 'Blue'],
-          ),
-          const Divider(),
-          _FormDropdown(
-            label: 'Clutch',
-            value: data.data['clutch'],
-            items: const ['Hard', 'Slipping', 'Okay', 'Deep'],
-          ),
-          _FormDropdown(
-            label: 'Gear Shift',
-            value: data.data['gearShift'],
-            items: const ['Smooth', 'Hard', 'Noise'],
-          ),
-          _FormDropdown(
-            label: 'Steering',
-            value: data.data['steering'],
-            items: const ['Okay', 'Hard', 'Noise', 'Vibration'],
-          ),
-          _FormDropdown(
-            label: 'Suspension',
-            value: data.data['suspension'],
-            items: const ['Okay', 'Noise', 'Weak'],
-          ),
-          _FormDropdown(
-            label: 'Brakes',
-            value: data.data['brakes'],
-            items: const ['Okay', 'Noise', 'Weak', 'Spongy'],
-          ),
-          const SizedBox(height: 16),
-          _FormTextField(
-            label: 'Mechanical Comments',
-            initialValue: data.data['commentsOnEngine'],
-            maxLines: 2,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InteriorSection extends StatelessWidget {
-  final InspectionFormModel data;
-  const _InteriorSection({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _AnimatedHeader(
-            title: 'Interior & Electricals',
-            icon: Icons.airline_seat_recline_extra,
-          ),
-          const SizedBox(height: 16),
-          _PhotoPlaceholder(label: 'Interior'),
-          const SizedBox(height: 8),
-          _FormDropdown(
-            label: 'AC Cooling',
-            value: data.data['airConditioningClimateControl'] ?? 'Okay',
-            items: const [
-              'Chilled',
-              'Ineffective',
-              'Not Working',
-              'Heater Only',
-            ],
-          ),
-          _FormDropdown(
-            label: 'Music System',
-            value: data.data['musicSystem'],
-            items: const ['Working', 'Not Working', 'Missing', 'Aftermarket'],
-          ),
-          _FormDropdown(
-            label: 'Power Windows',
-            value: data.data['noOfPowerWindows'],
-            items: const [
-              'All Working',
-              'Driver Not Working',
-              'Some Not Working',
-              'None',
-            ],
-          ),
-          const Divider(),
-          _FormDropdown(
-            label: 'Seats Condition',
-            value: data.data['seatsUpholstery'],
-            items: const ['Okay', 'Torn', 'Dirty', 'Worn Out'],
-          ),
-          _FormDropdown(
-            label: 'Dashboard',
-            value: data.data['dashboardCondition'],
-            items: const ['Okay', 'Scratched', 'Cracked'],
-          ),
-          _FormDropdown(
-            label: 'Warning Lights',
-            value: data.data['warningLights'],
-            items: const ['None', 'Check Engine', 'ABS', 'Airbag'],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── HELPERS ───
-
-class _AnimatedHeader extends StatelessWidget {
+// ═══════════════════════════════════════════════
+// ─── SECTION HEADER ───
+// ═══════════════════════════════════════════════
+class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
+  final int sectionNumber;
+  final int totalSections;
 
-  const _AnimatedHeader({required this.title, required this.icon});
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.sectionNumber,
+    required this.totalSections,
+  });
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutBack,
       builder: (context, value, child) {
         return Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
+          offset: Offset(0, 30 * (1 - value)),
           child: Opacity(
-            opacity: value,
+            opacity: value.clamp(0.0, 1.0),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    TColors.primary,
-                    TColors.primary.withValues(alpha: 0.7),
-                  ],
+                gradient: const LinearGradient(
+                  colors: [_headerGradientStart, _headerGradientEnd],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: TColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    color: _accent.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  Icon(icon, color: Colors.white, size: 28),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Section $sectionNumber of $totalSections',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$sectionNumber/$totalSections',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -761,32 +442,178 @@ class _AnimatedHeader extends StatelessWidget {
   }
 }
 
-class _FormTextField extends StatelessWidget {
-  final String label;
-  final String? initialValue;
-  final int maxLines;
+// ═══════════════════════════════════════════════
+// ─── TEXT FIELD ───
+// ═══════════════════════════════════════════════
+class _BoundTextField extends StatefulWidget {
+  final InspectionFormController controller;
+  final F field;
+  const _BoundTextField({required this.controller, required this.field});
 
-  const _FormTextField({
-    required this.label,
-    this.initialValue,
-    this.maxLines = 1,
-  });
+  @override
+  State<_BoundTextField> createState() => _BoundTextFieldState();
+}
+
+class _BoundTextFieldState extends State<_BoundTextField> {
+  late TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.getFieldValue(widget.field.key),
+    );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    final isOptional = widget.field.optional;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: TextFormField(
-        initialValue: initialValue ?? '',
-        maxLines: maxLines,
+        controller: _textController,
+        maxLines: widget.field.maxLines,
+        readOnly: widget.field.readonly,
+        onChanged: (v) => widget.controller.updateField(widget.field.key, v),
+        style: const TextStyle(
+          color: Color(0xFF1E293B),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          labelText:
+              isOptional
+                  ? '${widget.field.label} (Optional)'
+                  : widget.field.label,
+          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           filled: true,
           fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _accent, width: 1.5),
+          ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
+          ),
+          suffixIcon:
+              widget.field.readonly
+                  ? Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: Colors.grey.shade400,
+                  )
+                  : null,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ─── NUMBER FIELD ───
+// ═══════════════════════════════════════════════
+class _BoundNumberField extends StatefulWidget {
+  final InspectionFormController controller;
+  final F field;
+  const _BoundNumberField({required this.controller, required this.field});
+
+  @override
+  State<_BoundNumberField> createState() => _BoundNumberFieldState();
+}
+
+class _BoundNumberFieldState extends State<_BoundNumberField> {
+  late TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    final val = widget.controller.getFieldValue(widget.field.key);
+    _textController = TextEditingController(text: val == '0' ? '' : val);
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _textController,
+        keyboardType: TextInputType.number,
+        onChanged: (v) {
+          final parsed = int.tryParse(v) ?? 0;
+          widget.controller.updateField(widget.field.key, parsed);
+        },
+        style: const TextStyle(
+          color: Color(0xFF1E293B),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: widget.field.label,
+          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.numbers_rounded,
+            size: 18,
+            color: _accent.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -794,36 +621,623 @@ class _FormTextField extends StatelessWidget {
   }
 }
 
-class _FormDropdown extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> items;
+// ═══════════════════════════════════════════════
+// ─── DROPDOWN ───
+// ═══════════════════════════════════════════════
+class _BoundDropdown extends StatefulWidget {
+  final InspectionFormController controller;
+  final F field;
+  const _BoundDropdown({required this.controller, required this.field});
 
-  const _FormDropdown({required this.label, this.value, required this.items});
+  @override
+  State<_BoundDropdown> createState() => _BoundDropdownState();
+}
+
+class _BoundDropdownState extends State<_BoundDropdown> {
+  String? _selectedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    final rawValue = widget.controller.getFieldValue(widget.field.key);
+    _selectedValue =
+        (rawValue.isNotEmpty && widget.field.options.contains(rawValue))
+            ? rawValue
+            : null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Ensure value is in items, or null if empty
-    final effectiveValue =
-        (value != null && value!.isNotEmpty && items.contains(value))
-            ? value
-            : null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: DropdownButtonFormField<String>(
-        value: effectiveValue,
+        initialValue: _selectedValue,
+        isExpanded: true,
         decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          labelText: widget.field.label,
+          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           filled: true,
           fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+        dropdownColor: Colors.white,
+        style: const TextStyle(
+          color: Color(0xFF1E293B),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: _accent.withValues(alpha: 0.7),
         ),
         items:
-            items
+            widget.field.options
                 .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),
-        onChanged: (v) {}, // TODO: Bind to controller
+        onChanged: (v) {
+          if (v != null) {
+            setState(() => _selectedValue = v);
+            widget.controller.updateField(widget.field.key, v);
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ─── IMAGE PICKER ───
+// ═══════════════════════════════════════════════
+class _BoundImagePicker extends StatelessWidget {
+  final InspectionFormController controller;
+  final F field;
+  const _BoundImagePicker({required this.controller, required this.field});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOptional = field.optional;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, left: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.camera_alt_rounded, size: 16, color: _accent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    isOptional ? '${field.label} (Optional)' : field.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Image preview grid
+          Obx(() {
+            controller.imageFiles.length; // trigger reactivity
+            final images = controller.getImages(field.key);
+
+            return Column(
+              children: [
+                if (images.isNotEmpty) ...[
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: images.length,
+                      itemBuilder: (context, index) {
+                        return _ImageThumbnail(
+                          path: images[index],
+                          onRemove:
+                              () => controller.removeImage(field.key, index),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _ImageUploadButton(
+                  hasImages: images.isNotEmpty,
+                  onTap: () => _showPickerSheet(context),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showPickerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Add Photo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  field.label,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PickerOption(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Camera',
+                        color: _accent,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          controller.pickImage(field.key, ImageSource.camera);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _PickerOption(
+                        icon: Icons.photo_library_rounded,
+                        label: 'Gallery',
+                        color: const Color(0xFF7C3AED),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          controller.pickImage(field.key, ImageSource.gallery);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _PickerOption(
+                        icon: Icons.photo_album_rounded,
+                        label: 'Multiple',
+                        color: const Color(0xFF059669),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          controller.pickMultipleImages(field.key);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PickerOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _PickerOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color, color.withValues(alpha: 0.7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: Colors.white, size: 24),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageThumbnail extends StatelessWidget {
+  final String path;
+  final VoidCallback onRemove;
+  const _ImageThumbnail({required this.path, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(
+              File(path),
+              fit: BoxFit.cover,
+              errorBuilder:
+                  (c, e, s) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+            ),
+            // Gradient overlay
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 30,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.4),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Remove button
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageUploadButton extends StatelessWidget {
+  final bool hasImages;
+  final VoidCallback onTap;
+  const _ImageUploadButton({required this.hasImages, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: hasImages ? 48 : 80,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _accent.withValues(alpha: 0.3), width: 1.5),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasImages
+                    ? Icons.add_photo_alternate_rounded
+                    : Icons.add_a_photo_rounded,
+                color: _accent.withValues(alpha: 0.7),
+                size: hasImages ? 20 : 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                hasImages ? 'Add More Photos' : 'Tap to Add Photos',
+                style: TextStyle(
+                  color: _accent.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w600,
+                  fontSize: hasImages ? 13 : 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ─── FOOTER ───
+// ═══════════════════════════════════════════════
+class _Footer extends StatelessWidget {
+  final InspectionFormController controller;
+  const _Footer({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Obx(() {
+        final isEnabled =
+            !controller.isLoading.value &&
+            !controller.isSubmitting.value &&
+            !controller.isSaving.value &&
+            controller.inspectionData.value != null;
+        final isFirst = controller.currentSectionIndex.value == 0;
+        final isLast =
+            controller.currentSectionIndex.value == controller.sectionCount - 1;
+
+        return Row(
+          children: [
+            // Previous / Back
+            _FooterButton(
+              icon: Icons.arrow_back_rounded,
+              label: isFirst ? 'Back' : 'Prev',
+              color: Colors.grey.shade600,
+              compact: true,
+              onTap:
+                  isEnabled
+                      ? () {
+                        if (isFirst) {
+                          Get.back();
+                        } else {
+                          controller.previousSection();
+                        }
+                      }
+                      : null,
+            ),
+
+            const Spacer(),
+
+            // Save Draft
+            controller.isSaving.value
+                ? Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.orange.shade700),
+                  ),
+                )
+                : _FooterButton(
+                  icon: Icons.save_rounded,
+                  label: 'Save',
+                  color: Colors.orange.shade700,
+                  onTap: isEnabled ? () => controller.saveInspection() : null,
+                ),
+
+            const SizedBox(width: 12),
+
+            // Submit
+            controller.isSubmitting.value
+                ? Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.green.shade700),
+                  ),
+                )
+                : _FooterButton(
+                  icon: Icons.check_circle_rounded,
+                  label: 'Submit',
+                  color: Colors.green.shade700,
+                  onTap: isEnabled ? () => controller.submitInspection() : null,
+                ),
+
+            const Spacer(),
+
+            // Next
+            _FooterButton(
+              icon: Icons.arrow_forward_rounded,
+              label: isLast ? 'End' : 'Next',
+              color: isLast ? Colors.grey.shade400 : _accent,
+              compact: true,
+              onTap: (isEnabled && !isLast) ? controller.nextSection : null,
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class _FooterButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool compact;
+  final VoidCallback? onTap;
+
+  const _FooterButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.compact = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = onTap == null;
+    final effectiveColor = isDisabled ? Colors.grey.shade400 : color;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color:
+                isDisabled
+                    ? Colors.grey.shade100
+                    : effectiveColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isDisabled
+                      ? Colors.transparent
+                      : effectiveColor.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: effectiveColor, size: 20),
+              if (!compact) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: effectiveColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
