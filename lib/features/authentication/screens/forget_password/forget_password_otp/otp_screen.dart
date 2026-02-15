@@ -11,17 +11,29 @@ class OTPScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String otp = '';
+    final controller = OTPController.instance;
     return Scaffold(
       body: Container(
         padding: const EdgeInsets.all(TSizes.defaultSpace),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(TTexts.tOtpTitle, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 80.0)),
-            Text(TTexts.tOtpSubTitle.toUpperCase(), style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              TTexts.tOtpTitle,
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                fontSize: 80.0,
+              ),
+            ),
+            Text(
+              TTexts.tOtpSubTitle.toUpperCase(),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 40.0),
-            const Text("${TTexts.tOtpMessage} support@codingwitht.com", textAlign: TextAlign.center),
+            const Text(
+              "${TTexts.tOtpMessage} support@codingwitht.com",
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20.0),
             OtpTextField(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -29,8 +41,8 @@ class OTPScreen extends StatelessWidget {
               fillColor: Colors.black.withValues(alpha: 0.1),
               filled: true,
               onSubmit: (code) {
-                otp = code;
-                OTPController.instance.verifyOTP();
+                controller.otp = code;
+                controller.verifyOTP();
               },
             ),
             const SizedBox(height: 20.0),
@@ -38,7 +50,7 @@ class OTPScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  OTPController.instance.verifyOTP();
+                  controller.verifyOTP();
                 },
                 child: const Text(TTexts.tNext),
               ),

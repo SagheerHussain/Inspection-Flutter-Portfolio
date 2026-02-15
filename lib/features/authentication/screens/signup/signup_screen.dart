@@ -23,10 +23,19 @@ class SignupScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const FormHeaderWidget(image: TImages.tWelcomeScreenImage, title: TTexts.tSignUpTitle, subTitle: TTexts.tSignUpSubTitle, imageHeight: 0.1),
+                const FormHeaderWidget(
+                  image: TImages.tLogoImage,
+                  title: TTexts.tSignUpTitle,
+                  subTitle: TTexts.tSignUpSubTitle,
+                  imageHeight: 0.1,
+                ),
                 const SignUpFormWidget(),
                 const TFormDividerWidget(),
-                SocialFooter(text1: TTexts.tAlreadyHaveAnAccount, text2: TTexts.tLogin, onPressed: () => Get.off(() => const LoginScreen())),
+                SocialFooter(
+                  text1: TTexts.tAlreadyHaveAnAccount,
+                  text2: TTexts.tLogin,
+                  onPressed: () => Get.off(() => const LoginScreen()),
+                ),
               ],
             ),
           ),

@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cwt_starter_template"
+    namespace = "com.example.otobix_inspection_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "28.0.12674087"
 
@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.cwt_starter_template"
+        applicationId = "com.example.otobix_inspection_app"
         minSdk = flutter.minSdkVersion.toInt()
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

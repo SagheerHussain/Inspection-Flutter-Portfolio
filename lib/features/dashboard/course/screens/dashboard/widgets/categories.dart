@@ -15,7 +15,7 @@ class DashboardCategories extends StatelessWidget {
     final dark = THelperFunctions.isDarkMode(context);
 
     return SizedBox(
-      height: 50,
+      height: 80,
       child: ListView.builder(
         itemCount: list.length,
         shrinkWrap: true,
@@ -27,7 +27,7 @@ class DashboardCategories extends StatelessWidget {
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 8,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),

@@ -23,32 +23,59 @@ class SplashScreen extends StatelessWidget {
           children: [
             TFadeInAnimation(
               durationInMs: 1200,
-              animate: TAnimatePosition(topAfter: 0, topBefore: -30, leftBefore: -30, leftAfter: 0),
-              child: const Image(image: AssetImage(TImages.tSplashTopIcon)),
+              animate: TAnimatePosition(
+                topAfter: 0,
+                topBefore: -30,
+                leftBefore: -30,
+                leftAfter: 0,
+              ),
+              child: const Image(
+                image: AssetImage(TImages.tLogoImage),
+                height: 100,
+              ),
             ),
             TFadeInAnimation(
               durationInMs: 1600,
-              animate: TAnimatePosition(topBefore: 100, topAfter: 100, leftAfter: TSizes.defaultSpace, leftBefore: -100),
+              animate: TAnimatePosition(
+                topBefore: 100,
+                topAfter: 100,
+                leftAfter: TSizes.defaultSpace,
+                leftBefore: -100,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(TTexts.tAppName, style: Theme.of(context).textTheme.headlineSmall),
-                  Text(TTexts.tAppTagLine, style: Theme.of(context).textTheme.displayMedium),
+                  Text(
+                    TTexts.tAppName,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  Text(
+                    TTexts.tAppTagLine,
+                    style: Theme.of(context).textTheme.displayMedium,
+                  ),
                 ],
               ),
             ),
             TFadeInAnimation(
               durationInMs: 2000,
               animate: TAnimatePosition(bottomBefore: 0, bottomAfter: 100),
-              child: const Image(image: AssetImage(TImages.tSplashImage)),
+              child: const Image(image: AssetImage(TImages.tLogoImage)),
             ),
             TFadeInAnimation(
               durationInMs: 2000,
-              animate: TAnimatePosition(bottomBefore: 0, bottomAfter: 60, rightBefore: TSizes.defaultSpace, rightAfter: TSizes.defaultSpace),
+              animate: TAnimatePosition(
+                bottomBefore: 0,
+                bottomAfter: 60,
+                rightBefore: TSizes.defaultSpace,
+                rightAfter: TSizes.defaultSpace,
+              ),
               child: Container(
                 width: TSizes.xl,
                 height: TSizes.xl,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), color: TColors.primary),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  color: TColors.primary,
+                ),
               ),
             ),
           ],

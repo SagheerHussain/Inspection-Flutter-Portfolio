@@ -37,7 +37,7 @@ class OnBoardingController extends GetxController {
   final pages = [
     OnBoardingPageWidget(
       model: OnBoardingModel(
-        image: TImages.tOnBoardingImage1,
+        image: TImages.tLogoImage,
         title: TTexts.tOnBoardingTitle1,
         subTitle: TTexts.tOnBoardingSubTitle1,
         counterText: TTexts.tOnBoardingCounter1,
@@ -46,7 +46,7 @@ class OnBoardingController extends GetxController {
     ),
     OnBoardingPageWidget(
       model: OnBoardingModel(
-        image: TImages.tOnBoardingImage2,
+        image: TImages.tLogoImage,
         title: TTexts.tOnBoardingTitle2,
         subTitle: TTexts.tOnBoardingSubTitle2,
         counterText: TTexts.tOnBoardingCounter2,
@@ -55,7 +55,7 @@ class OnBoardingController extends GetxController {
     ),
     OnBoardingPageWidget(
       model: OnBoardingModel(
-        image: TImages.tOnBoardingImage3,
+        image: TImages.tLogoImage,
         title: TTexts.tOnBoardingTitle3,
         subTitle: TTexts.tOnBoardingSubTitle3,
         counterText: TTexts.tOnBoardingCounter3,

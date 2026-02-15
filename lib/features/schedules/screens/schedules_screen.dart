@@ -260,99 +260,113 @@ class _ScheduleCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Appointment ID
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          dark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.tag, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          schedule.appointmentId,
-                          style: txtTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-
-                  // City Badge
-                  if (schedule.city.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(right: 8),
+                  Flexible(
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        color:
+                            dark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.location_city,
-                            size: 12,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            schedule.city,
-                            style: txtTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
-                              fontSize: 11,
+                          const Icon(Icons.tag, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              schedule.appointmentId,
+                              style: txtTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // City Badge
+                  if (schedule.city.isNotEmpty)
+                    Flexible(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_city,
+                              size: 12,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                schedule.city,
+                                style: txtTheme.bodySmall?.copyWith(
+                                  color: Colors.grey,
+                                  fontSize: 11,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // Status Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          schedule.inspectionStatus,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              schedule.inspectionStatus,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -368,35 +382,40 @@ class _ScheduleCard extends StatelessWidget {
                   // Car Registration + Priority
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: TColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.directions_car,
-                              size: 16,
-                              color: TColors.dark,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              schedule.carRegistrationNumber,
-                              style: txtTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: TColors.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.directions_car,
+                                size: 16,
+                                color: TColors.dark,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  schedule.carRegistrationNumber,
+                                  style: txtTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -672,90 +691,19 @@ class _ScheduleCard extends StatelessWidget {
                 ),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Left side: Ready, Re-Schedule, Cancel
-                  _actionIcon(
-                    icon: Icons.play_circle_filled_rounded,
-                    color: const Color(0xFF4CAF50),
-                    tooltip: 'Ready',
-                    onTap:
-                        () => Get.to(
-                          () => InspectionFormScreen(
-                            appointmentId: schedule.appointmentId,
-                            schedule: schedule,
-                          ),
-                        ),
-                  ),
-                  const SizedBox(width: 12),
-                  _actionIcon(
-                    icon: Icons.event_repeat_rounded,
-                    color: const Color(0xFFFF9800),
-                    tooltip: 'Re-Schedule',
-                    onTap: () {
-                      // TODO: Re-schedule logic
-                      Get.snackbar(
-                        'Re-Schedule',
-                        'Coming soon...',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  _actionIcon(
-                    icon: Icons.cancel_rounded,
-                    color: const Color(0xFFF44336),
-                    tooltip: 'Cancel',
-                    onTap: () {
-                      // TODO: Cancel logic
-                      Get.snackbar(
-                        'Cancel',
-                        'Coming soon...',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                  ),
-
-                  const Spacer(),
-
-                  // Additional Notes
-                  if (schedule.additionalNotes.isNotEmpty) ...[
-                    _actionIcon(
-                      icon: Icons.sticky_note_2_outlined,
-                      color: const Color(0xFFFF9800),
-                      tooltip: 'Notes',
-                      onTap:
-                          () => _showNotesDialog(
-                            context,
-                            schedule.additionalNotes,
-                          ),
+                  // ── Left Group: Workflow Actions ──
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _buildLeftActions(context),
                     ),
-                    const SizedBox(width: 12),
-                  ],
-
-                  // Call
-                  if (schedule.customerContactNumber.isNotEmpty) ...[
-                    _actionIcon(
-                      icon: Icons.phone_outlined,
-                      color: const Color(0xFF4CAF50),
-                      tooltip: 'Call',
-                      onTap: () => _makeCall(schedule.customerContactNumber),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-
-                  // SMS
-                  _actionIcon(
-                    icon: Icons.sms_rounded,
-                    color: const Color(0xFF2196F3),
-                    tooltip: 'SMS',
-                    onTap: () async {
-                      if (schedule.customerContactNumber.isNotEmpty) {
-                        final uri = Uri.parse(
-                          'sms:${schedule.customerContactNumber}',
-                        );
-                        if (await canLaunchUrl(uri)) launchUrl(uri);
-                      }
-                    },
+                  ),
+                  // ── Right Group: Call & SMS ──
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _buildRightActions(),
                   ),
                 ],
               ),
@@ -764,6 +712,159 @@ class _ScheduleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Left-aligned workflow actions: Start/Resume, Re-Schedule, Cancel, Show Details, Notes
+  List<Widget> _buildLeftActions(BuildContext context) {
+    final status = schedule.inspectionStatus.toLowerCase();
+    final List<Widget> items = [];
+
+    if (status == 'scheduled' || status == 'running') {
+      // Primary Action (Ready / Resume)
+      items.add(
+        _actionIcon(
+          icon:
+              status == 'running'
+                  ? Icons.play_arrow_rounded
+                  : Icons.play_circle_filled_rounded,
+          color: const Color(0xFF4CAF50),
+          tooltip:
+              status == 'running' ? 'Resume Inspection' : 'Start Inspection',
+          onTap:
+              () => Get.to(
+                () => InspectionFormScreen(
+                  appointmentId: schedule.appointmentId,
+                  schedule: schedule,
+                ),
+              ),
+        ),
+      );
+      items.add(const SizedBox(width: 12));
+
+      // Re-Schedule
+      items.add(
+        _actionIcon(
+          icon: Icons.event_repeat_rounded,
+          color: const Color(0xFFFF9800),
+          tooltip: 'Re-Schedule',
+          onTap: () {
+            Get.snackbar(
+              'Re-Schedule',
+              'Coming soon...',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          },
+        ),
+      );
+      items.add(const SizedBox(width: 12));
+
+      // Cancel
+      items.add(
+        _actionIcon(
+          icon: Icons.cancel_rounded,
+          color: const Color(0xFFF44336),
+          tooltip: 'Cancel',
+          onTap: () {
+            Get.snackbar(
+              'Cancel',
+              'Coming soon...',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          },
+        ),
+      );
+    } else if (status == 'inspected' ||
+        status == 'completed' ||
+        status == 'approved') {
+      // Show Details button
+      items.add(
+        InkWell(
+          onTap:
+              () => Get.to(
+                () => CarDetailsScreen(appointmentId: schedule.appointmentId),
+              ),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: TColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: TColors.primary.withValues(alpha: 0.5)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.visibility_outlined,
+                  size: 16,
+                  color: TColors.primary,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'Show Details',
+                  style: TextStyle(
+                    color: TColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    // Canceled → no workflow buttons
+
+    // Notes (left group, after workflow actions)
+    if (schedule.additionalNotes.isNotEmpty) {
+      if (items.isNotEmpty) items.add(const SizedBox(width: 12));
+      items.add(
+        _actionIcon(
+          icon: Icons.sticky_note_2_outlined,
+          color: const Color(0xFFFF9800),
+          tooltip: 'Notes',
+          onTap: () => _showNotesDialog(context, schedule.additionalNotes),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  /// Right-aligned communication actions: Call & SMS
+  List<Widget> _buildRightActions() {
+    final List<Widget> items = [];
+
+    // Call
+    if (schedule.customerContactNumber.isNotEmpty) {
+      items.add(
+        _actionIcon(
+          icon: Icons.phone_outlined,
+          color: const Color(0xFF4CAF50),
+          tooltip: 'Call',
+          onTap: () => _makeCall(schedule.customerContactNumber),
+        ),
+      );
+      items.add(const SizedBox(width: 12));
+    }
+
+    // SMS
+    items.add(
+      _actionIcon(
+        icon: Icons.sms_rounded,
+        color: const Color(0xFF2196F3),
+        tooltip: 'SMS',
+        onTap: () async {
+          if (schedule.customerContactNumber.isNotEmpty) {
+            final uri = Uri.parse('sms:${schedule.customerContactNumber}');
+            if (await canLaunchUrl(uri)) launchUrl(uri);
+          }
+        },
+      ),
+    );
+
+    return items;
   }
 
   Widget _infoRow(

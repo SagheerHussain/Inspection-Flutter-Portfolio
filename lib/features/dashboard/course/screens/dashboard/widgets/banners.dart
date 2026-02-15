@@ -47,23 +47,40 @@ class DashboardBanners extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Icon (Top Right)
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF4A90D9,
-                          ).withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(12),
+                    // ── Top Row: Countdown (left) + Icon (right) ──
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Countdown Timer Label
+                        Expanded(
+                          child: Obx(() {
+                            if (!stats.hasCountdown.value) {
+                              return const SizedBox.shrink();
+                            }
+                            return _CountdownPill(
+                              time: stats.countdownText.value,
+                              dayLabel: stats.countdownDayLabel.value,
+                              dark: dark,
+                            );
+                          }),
                         ),
-                        child: const Icon(
-                          Icons.calendar_month_rounded,
-                          color: Color(0xFF4A90D9),
-                          size: 30,
+                        const SizedBox(width: 8),
+                        // Icon
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF4A90D9,
+                            ).withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.calendar_month_rounded,
+                            color: Color(0xFF4A90D9),
+                            size: 30,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                     const Spacer(),
 
@@ -184,6 +201,138 @@ class DashboardBanners extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ── Countdown Pill ──
+/// A small, premium countdown label with a pulsing dot indicator.
+class _CountdownPill extends StatefulWidget {
+  final String time;
+  final String dayLabel;
+  final bool dark;
+
+  const _CountdownPill({
+    required this.time,
+    required this.dayLabel,
+    required this.dark,
+  });
+
+  @override
+  State<_CountdownPill> createState() => _CountdownPillState();
+}
+
+class _CountdownPillState extends State<_CountdownPill>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color:
+            widget.dark
+                ? Colors.black.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFF4A90D9).withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // "Next inspection" label with pulsing dot
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(
+                        0xFF4A90D9,
+                      ).withValues(alpha: _pulseAnimation.value),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF4A90D9,
+                          ).withValues(alpha: _pulseAnimation.value * 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Next inspection',
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                  color:
+                      widget.dark
+                          ? Colors.white.withValues(alpha: 0.6)
+                          : Colors.black.withValues(alpha: 0.5),
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          // Timer value
+          Text(
+            widget.time,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF4A90D9),
+              fontFeatures: [FontFeature.tabularFigures()],
+              letterSpacing: 0.5,
+            ),
+          ),
+          // Day label
+          Text(
+            widget.dayLabel,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color:
+                  widget.dark
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : Colors.black.withValues(alpha: 0.4),
+              letterSpacing: 0.2,
             ),
           ),
         ],

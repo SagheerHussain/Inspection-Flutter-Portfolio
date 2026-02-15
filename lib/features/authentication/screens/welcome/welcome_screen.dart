@@ -51,22 +51,45 @@ class WelcomeScreen extends StatelessWidget {
                     children: [
                       Hero(
                         tag: 'welcome-image-tag',
-                        child: Image(image: const AssetImage(TImages.tWelcomeScreenImage), width: width * 0.7, height: height * 0.6),
+                        child: Image(
+                          image: const AssetImage(TImages.tLogoImage),
+                          width: width * 0.7,
+                          height: height * 0.4,
+                        ),
                       ),
                       const SizedBox(height: TSizes.spaceBtwSections),
                       Column(
                         children: [
-                          Text(TTexts.tWelcomeTitle, style: Theme.of(context).textTheme.displayMedium),
+                          Text(
+                            TTexts.tWelcomeTitle,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
                           const SizedBox(height: TSizes.sm),
-                          Text(TTexts.tWelcomeSubTitle, style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
+                          Text(
+                            TTexts.tWelcomeSubTitle,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                            textAlign: TextAlign.center,
+                          ),
                         ],
                       ),
                       const SizedBox(height: TSizes.spaceBtwSections),
                       Row(
                         children: [
-                          Expanded(child: OutlinedButton(onPressed: () => Get.to(() => const LoginScreen()), child: Text(TTexts.tLogin.toUpperCase()))),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed:
+                                  () => Get.to(() => const LoginScreen()),
+                              child: Text(TTexts.tLogin.toUpperCase()),
+                            ),
+                          ),
                           const SizedBox(width: 10.0),
-                          Expanded(child: ElevatedButton(onPressed: () => Get.to(() => const SignupScreen()), child: Text(TTexts.tSignup.toUpperCase()))),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed:
+                                  () => Get.to(() => const SignupScreen()),
+                              child: Text(TTexts.tSignup.toUpperCase()),
+                            ),
+                          ),
                         ],
                       ),
                     ],

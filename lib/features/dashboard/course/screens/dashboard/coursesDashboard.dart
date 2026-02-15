@@ -2,9 +2,7 @@ import 'package:cwt_starter_template/common/widgets/drawer/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
-import '../../../../../utils/helpers/helper_functions.dart';
 import '../../../../../personalization/controllers/user_controller.dart';
 import '../../controllers/dashboard_stats_controller.dart';
 import 'widgets/appbar.dart';
@@ -12,6 +10,7 @@ import 'widgets/banners.dart';
 import 'widgets/categories.dart';
 import 'widgets/search.dart';
 import 'widgets/top_courses.dart';
+import '../../../../../utils/constants/image_strings.dart';
 
 class CoursesDashboard extends StatelessWidget {
   const CoursesDashboard({super.key});
@@ -19,9 +18,10 @@ class CoursesDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final txtTheme = Theme.of(context).textTheme;
-    final dark = THelperFunctions.isDarkMode(context);
+    // final dark = THelperFunctions.isDarkMode(context);
     // Initialize dashboard stats controller
     Get.put(DashboardStatsController());
+    Get.put(UserController());
 
     return SafeArea(
       child: Scaffold(
@@ -69,21 +69,16 @@ class CoursesDashboard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              TColors.primary.withValues(alpha: 0.2),
-                              TColors.primary.withValues(alpha: 0.05),
-                            ],
-                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.directions_car,
-                              size: 16,
-                              color: dark ? TColors.primary : TColors.secondary,
+                            Image(
+                              image: const AssetImage(TImages.tLogoImage),
+                              width: 16,
+                              height: 16,
+                              fit: BoxFit.contain,
                             ),
                             const SizedBox(width: 6),
                             Text(

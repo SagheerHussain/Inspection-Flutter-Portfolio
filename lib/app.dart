@@ -11,7 +11,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       /// -- README(Docs[3]) -- Bindings
-      title: "Starter Template",
+      title: "Otobix InspectionApp",
       initialBinding: GeneralBindings(),
       themeMode: ThemeMode.system,
       theme: TAppTheme.lightTheme,

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
-import '../../../../../../routes/routes.dart';
 import '../../../../../../utils/constants/colors.dart';
 import '../../../../../../utils/constants/image_strings.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
@@ -16,23 +14,19 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       centerTitle: false,
       backgroundColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      leading: const SizedBox.shrink(),
+      leadingWidth: 0,
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  TColors.primary,
-                  TColors.primary.withValues(alpha: 0.7),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.directions_car,
-              color: TColors.secondary,
-              size: 22,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+            child: const Image(
+              image: AssetImage(TImages.tLogoImage),
+              height: 22,
+              width: 22,
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(width: 10),
@@ -99,8 +93,11 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: dark ? TColors.secondary : TColors.cardBackgroundColor,
           ),
           child: IconButton(
-            onPressed: () => Get.toNamed(TRoutes.profileScreen),
-            icon: const Image(image: AssetImage(TImages.tUserProfileImage)),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Image(
+              image: AssetImage(TImages.tLogoImage),
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ],

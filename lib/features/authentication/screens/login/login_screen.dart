@@ -19,7 +19,7 @@ class LoginScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const FormHeaderWidget(
-                  image: TImages.tWelcomeScreenImage,
+                  image: TImages.tLogoImage,
                   title: TTexts.tLoginTitle,
                   subTitle: TTexts.tLoginSubTitle,
                 ),

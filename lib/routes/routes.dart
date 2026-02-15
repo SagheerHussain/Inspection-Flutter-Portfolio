@@ -22,4 +22,6 @@ class TRoutes {
 
   // Schedules
   static const schedules = '/schedules';
+
+  static const editProfile = '/edit-profile';
 }

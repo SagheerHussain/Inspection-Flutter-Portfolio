@@ -17,6 +17,8 @@ import '../personalization/screens/notification/notification_screen.dart';
 import '../features/cart/screens/cart.dart';
 import '../features/checkout/screens/checkout.dart';
 
+import '../personalization/screens/profile/update_profile_screen.dart';
+
 class AppRoutes {
   static final pages = [
     GetPage(name: TRoutes.logIn, page: () => const LoginScreen()),
@@ -56,6 +58,11 @@ class AppRoutes {
       page: () => const NotificationDetailScreen(),
       binding: NotificationBinding(),
       transition: Transition.fade,
+    ),
+    GetPage(
+      name: TRoutes.editProfile,
+      page: () => const UpdateProfileScreen(),
+      transition: Transition.rightToLeftWithFade,
     ),
   ];
 }
