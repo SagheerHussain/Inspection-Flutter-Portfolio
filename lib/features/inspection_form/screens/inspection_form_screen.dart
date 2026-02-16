@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../schedules/models/schedule_model.dart';
@@ -31,10 +32,17 @@ class InspectionFormScreen extends StatelessWidget {
       tag: 'form_$appointmentId',
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: SafeArea(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            Brightness.light, // Light icons for dark gradient
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Column(
           children: [
             _AppBar(schedule: schedule),
             _ProgressBar(controller: controller),
@@ -104,8 +112,9 @@ class _AppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.fromLTRB(16, statusBarHeight + 14, 16, 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [_headerGradientStart, _headerGradientEnd],
@@ -1068,8 +1077,14 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        14,
+        16,
+        bottomPadding > 0 ? bottomPadding + 6 : 20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:get/get.dart';
 import '../../../../../../utils/constants/colors.dart';
 import '../../../../../../utils/constants/image_strings.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
+import '../../../../../../personalization/controllers/user_controller.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DashboardAppBar({super.key});
@@ -10,6 +11,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
+
     return AppBar(
       elevation: 0,
       centerTitle: false,
@@ -17,32 +19,20 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       leading: const SizedBox.shrink(),
       leadingWidth: 0,
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
-            child: const Image(
-              image: AssetImage(TImages.tLogoImage),
-              height: 22,
-              width: 22,
-              fit: BoxFit.contain,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            "OTOBIX",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
+      title: Text(
+        "OTOBIX",
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+          fontSize:
+              (Theme.of(context).textTheme.headlineMedium?.fontSize ?? 24) *
+              1.20,
+        ),
       ),
       actions: [
         // Notification Bell with Counter Badge
         Container(
-          margin: const EdgeInsets.only(right: 8, top: 7),
+          margin: const EdgeInsets.only(right: 12, top: 7),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: dark ? TColors.secondary : TColors.cardBackgroundColor,
@@ -85,17 +75,15 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
 
-        // Profile Image
-        Container(
-          margin: const EdgeInsets.only(right: 20, top: 7),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: dark ? TColors.secondary : TColors.cardBackgroundColor,
-          ),
-          child: IconButton(
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            icon: const Image(
-              image: AssetImage(TImages.tLogoImage),
+        // Otobix Logo next to bell
+        Padding(
+          padding: const EdgeInsets.only(right: 16, top: 7),
+          child: GestureDetector(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: Image(
+              image: const AssetImage(TImages.tLogoImage),
+              height: 35,
+              width: 35,
               fit: BoxFit.contain,
             ),
           ),
@@ -106,6 +94,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   void _showNotificationsSheet(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
+    final userController = Get.find<UserController>(); // Added this line
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -128,7 +117,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
+                    color: Colors.grey.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -138,10 +127,33 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Notifications",
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      Column(
+                        // Added Column for name and email
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Name
+                          Text(
+                            userController.user.value.fullName,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: dark ? Colors.white : TColors.textPrimary,
+                            ),
+                          ),
+                          // Email
+                          Text(
+                            userController.user.value.email,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color:
+                                  dark
+                                      ? Colors.white.withOpacity(0.8)
+                                      : TColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -149,7 +161,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: TColors.primary.withValues(alpha: 0.2),
+                          color: TColors.primary.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(
@@ -174,7 +186,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                         context,
                         icon: Icons.calendar_today_rounded,
                         iconColor: const Color(0xFF4CAF50),
-                        bgColor: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                        bgColor: const Color(0xFF4CAF50).withOpacity(0.1),
                         title: "New Schedule Ready",
                         subtitle:
                             "You have a new inspection schedule assigned to you.",

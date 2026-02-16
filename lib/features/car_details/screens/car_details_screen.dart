@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,61 +23,72 @@ class CarDetailsScreen extends StatelessWidget {
     final dark = THelperFunctions.isDarkMode(context);
     final txtTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: dark ? const Color(0xFF0A0E21) : const Color(0xFFF5F6FA),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: TColors.primary),
-                SizedBox(height: 16),
-                Text(
-                  'Loading inspection report...',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (controller.hasError.value) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 64,
-                  color: Colors.red.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load',
-                  style: txtTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor:
+            dark ? const Color(0xFF0A0E21) : const Color(0xFFF5F6FA),
+        systemNavigationBarIconBrightness:
+            dark ? Brightness.light : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor:
+            dark ? const Color(0xFF0A0E21) : const Color(0xFFF5F6FA),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: TColors.primary),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading inspection report...',
+                    style: TextStyle(color: Colors.grey),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  controller.errorMessage.value,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: controller.refresh,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
+                ],
+              ),
+            );
+          }
 
-        final car = controller.carDetails.value!;
-        return _CarDetailsBody(car: car, dark: dark, txtTheme: txtTheme);
-      }),
+          if (controller.hasError.value) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 64,
+                    color: Colors.red.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to load',
+                    style: txtTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    controller.errorMessage.value,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: controller.refresh,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final car = controller.carDetails.value!;
+          return _CarDetailsBody(car: car, dark: dark, txtTheme: txtTheme);
+        }),
+      ),
     );
   }
 }

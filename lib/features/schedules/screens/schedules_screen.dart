@@ -260,36 +260,31 @@ class _ScheduleCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            dark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.tag, size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              schedule.appointmentId,
-                              style: txtTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          dark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.tag, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          schedule.appointmentId,
+                          style: txtTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),

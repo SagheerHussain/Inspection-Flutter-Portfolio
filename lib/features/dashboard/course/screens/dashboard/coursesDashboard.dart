@@ -1,5 +1,6 @@
 import 'package:cwt_starter_template/common/widgets/drawer/drawer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../utils/constants/sizes.dart';
@@ -10,7 +11,6 @@ import 'widgets/banners.dart';
 import 'widgets/categories.dart';
 import 'widgets/search.dart';
 import 'widgets/top_courses.dart';
-import '../../../../../utils/constants/image_strings.dart';
 
 class CoursesDashboard extends StatelessWidget {
   const CoursesDashboard({super.key});
@@ -23,7 +23,13 @@ class CoursesDashboard extends StatelessWidget {
     Get.put(DashboardStatsController());
     Get.put(UserController());
 
-    return SafeArea(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
       child: Scaffold(
         appBar: const DashboardAppBar(),
         drawer: TDrawer(),
@@ -63,32 +69,11 @@ class CoursesDashboard extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       // Row 3: Platform Name
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image(
-                              image: const AssetImage(TImages.tLogoImage),
-                              width: 16,
-                              height: 16,
-                              fit: BoxFit.contain,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Otobix Inspections Platform",
-                              style: txtTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        "Otobix Inspections Platform",
+                        style: txtTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],

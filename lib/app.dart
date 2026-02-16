@@ -1,5 +1,6 @@
 import 'package:cwt_starter_template/bindings/general_bindings.dart';
 import 'package:cwt_starter_template/routes/app_routes.dart';
+import 'package:cwt_starter_template/features/authentication/screens/login/login_screen.dart';
 import 'package:cwt_starter_template/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,7 +22,7 @@ class App extends StatelessWidget {
 
       /// -- README(Docs[4]) -- To use Screen Transitions here
       /// -- README(Docs[5]) -- Home Screen or Progress Indicator
-      home: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      home: const LoginScreen(),
     );
   }
 }

@@ -33,72 +33,33 @@ class TDrawer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header Section
-          InkWell(
-            onTap: () {
-              Navigator.pop(context); // Close drawer
-              Get.to(
-                () => const UpdateProfileScreen(),
-                transition: Transition.rightToLeftWithFade,
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 60, 16, 30),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors:
-                      dark
-                          ? [TColors.secondary, TColors.dark]
-                          : [
-                            TColors.primary,
-                            TColors.primary.withValues(alpha: 0.8),
-                          ],
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 60, 16, 30),
+            decoration: BoxDecoration(
+              color: dark ? TColors.dark : TColors.cardBackgroundColor,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name
+                Text(
+                  userController.user.value.fullName,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: dark ? Colors.white : TColors.textPrimary,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Brand Logo
-                  Row(
-                    children: [
-                      const Image(
-                        image: AssetImage(TImages.tLogoImage),
-                        height: 30,
-                        width: 30,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "OTOBIX",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
+                // Email
+                Text(
+                  userController.user.value.email,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color:
+                        dark
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : TColors.textSecondary,
                   ),
-                  const SizedBox(height: 20),
-                  // Profile image with shadow
-
-                  // Name
-                  Text(
-                    userController.user.value.fullName,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  // Email
-                  Text(
-                    userController.user.value.email,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
