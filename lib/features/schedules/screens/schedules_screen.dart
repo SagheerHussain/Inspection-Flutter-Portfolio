@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../utils/constants/colors.dart';
 import '../../../utils/helpers/helper_functions.dart';
+import '../../../utils/constants/inspection_statuses.dart';
+import '../../../utils/popups/loaders.dart';
 import '../../car_details/screens/car_details_screen.dart';
 import '../../inspection_form/screens/inspection_form_screen.dart';
 import '../controllers/schedule_controller.dart';
@@ -156,6 +158,7 @@ class SchedulesScreen extends StatelessWidget {
                 return _ScheduleCard(
                   schedule: controller.schedules[index],
                   dark: dark,
+                  controller: controller,
                 );
               },
             ),
@@ -166,45 +169,41 @@ class SchedulesScreen extends StatelessWidget {
   }
 
   IconData _emptyIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'running':
-        return Icons.play_circle_outline_rounded;
-      case 're-inspection':
-        return Icons.replay_circle_filled_rounded;
-      case 'inspected':
-        return Icons.check_circle_outline_rounded;
-      case 'canceled':
-        return Icons.cancel_outlined;
-      default:
-        return Icons.calendar_today_rounded;
-    }
+    if (status == InspectionStatuses.running)
+      return Icons.play_circle_outline_rounded;
+    if (status == InspectionStatuses.reInspection)
+      return Icons.replay_circle_filled_rounded;
+    if (status == InspectionStatuses.inspected)
+      return Icons.check_circle_outline_rounded;
+    if (status == InspectionStatuses.cancel) return Icons.cancel_outlined;
+    return Icons.calendar_today_rounded;
   }
 }
 
 class _ScheduleCard extends StatelessWidget {
   final ScheduleModel schedule;
   final bool dark;
+  final ScheduleController controller;
 
-  const _ScheduleCard({required this.schedule, required this.dark});
+  const _ScheduleCard({
+    required this.schedule,
+    required this.dark,
+    required this.controller,
+  });
 
   Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'inspected':
-      case 'completed':
-      case 'approved':
-        return const Color(0xFF4CAF50);
-      case 'running':
-        return const Color(0xFFFF9800);
-      case 'scheduled':
-        return const Color(0xFF2196F3);
-      case 're-inspection':
-        return const Color(0xFF00BFA5);
-      case 'canceled':
-      case 'cancelled':
-        return const Color(0xFFF44336);
-      default:
-        return const Color(0xFF9E9E9E);
-    }
+    if (status == InspectionStatuses.inspected ||
+        status == 'Completed' ||
+        status == 'Approved')
+      return const Color(0xFF4CAF50);
+    if (status == InspectionStatuses.running) return const Color(0xFFFF9800);
+    if (status == InspectionStatuses.scheduled) return const Color(0xFF2196F3);
+    if (status == InspectionStatuses.reScheduled)
+      return const Color(0xFF673AB7);
+    if (status == InspectionStatuses.reInspection)
+      return const Color(0xFF00BFA5);
+    if (status == InspectionStatuses.cancel) return const Color(0xFFF44336);
+    return const Color(0xFF9E9E9E);
   }
 
   Color _priorityColor(String priority) {
@@ -704,7 +703,7 @@ class _ScheduleCard extends StatelessWidget {
                   Flexible(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: _buildLeftActions(context),
+                      children: _buildLeftActions(context, controller),
                     ),
                   ),
                   // ── Right Group: Call & SMS ──
@@ -722,28 +721,51 @@ class _ScheduleCard extends StatelessWidget {
   }
 
   /// Left-aligned workflow actions: Start/Resume, Re-Schedule, Cancel, Show Details, Notes
-  List<Widget> _buildLeftActions(BuildContext context) {
-    final status = schedule.inspectionStatus.toLowerCase();
+  List<Widget> _buildLeftActions(
+    BuildContext context,
+    ScheduleController controller,
+  ) {
+    final status = schedule.inspectionStatus;
     final List<Widget> items = [];
 
-    if (status == 'scheduled' || status == 'running') {
-      // Primary Action (Ready / Resume)
+    final isScheduled = status == InspectionStatuses.scheduled;
+    final isRescheduled = status == InspectionStatuses.reScheduled;
+    final isRunning = status == InspectionStatuses.running;
+
+    if (isScheduled || isRescheduled || isRunning) {
+      // Primary Action (Play / Resume)
       items.add(
         _actionIcon(
           icon:
-              status == 'running'
+              isRunning
                   ? Icons.play_arrow_rounded
                   : Icons.play_circle_filled_rounded,
           color: const Color(0xFF4CAF50),
-          tooltip:
-              status == 'running' ? 'Resume Inspection' : 'Start Inspection',
-          onTap:
-              () => Get.to(
-                () => InspectionFormScreen(
-                  appointmentId: schedule.appointmentId,
-                  schedule: schedule,
-                ),
+          tooltip: isRunning ? 'Resume Inspection' : 'Start Inspection',
+          onTap: () async {
+            if (isScheduled || isRescheduled) {
+              // Switch to Running via API as requested
+              try {
+                // Keep existing values as requested
+                await controller.updateTelecallingStatus(
+                  telecallingId: schedule.id,
+                  status: InspectionStatuses.running,
+                  dateTime: schedule.inspectionDateTime?.toIso8601String(),
+                  remarks: schedule.remarks,
+                );
+              } catch (e) {
+                // Error handled in controller
+                return;
+              }
+            }
+
+            Get.to(
+              () => InspectionFormScreen(
+                appointmentId: schedule.appointmentId,
+                schedule: schedule,
               ),
+            );
+          },
         ),
       );
       items.add(const SizedBox(width: 12));
@@ -754,13 +776,7 @@ class _ScheduleCard extends StatelessWidget {
           icon: Icons.event_repeat_rounded,
           color: const Color(0xFFFF9800),
           tooltip: 'Re-Schedule',
-          onTap: () {
-            Get.snackbar(
-              'Re-Schedule',
-              'Coming soon...',
-              snackPosition: SnackPosition.BOTTOM,
-            );
-          },
+          onTap: () => _showRescheduleFlow(context, controller),
         ),
       );
       items.add(const SizedBox(width: 12));
@@ -771,18 +787,13 @@ class _ScheduleCard extends StatelessWidget {
           icon: Icons.cancel_rounded,
           color: const Color(0xFFF44336),
           tooltip: 'Cancel',
-          onTap: () {
-            Get.snackbar(
-              'Cancel',
-              'Coming soon...',
-              snackPosition: SnackPosition.BOTTOM,
-            );
-          },
+          onTap: () => _showCancelDialog(context, controller),
         ),
       );
-    } else if (status == 'inspected' ||
-        status == 'completed' ||
-        status == 'approved') {
+    } else if (status == InspectionStatuses.inspected ||
+        status == 'Completed' ||
+        status == 'Approved' ||
+        status == InspectionStatuses.reInspection) {
       // Show Details button
       items.add(
         InkWell(
@@ -798,21 +809,19 @@ class _ScheduleCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: TColors.primary.withValues(alpha: 0.5)),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                Icon(
-                  Icons.visibility_outlined,
-                  size: 16,
+                const Icon(
+                  Icons.description_rounded,
+                  size: 14,
                   color: TColors.primary,
                 ),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
                 Text(
-                  'Show Details',
-                  style: TextStyle(
+                  'View Details',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: TColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -872,6 +881,454 @@ class _ScheduleCard extends StatelessWidget {
     );
 
     return items;
+  }
+
+  void _showCancelDialog(BuildContext context, ScheduleController controller) {
+    final reasonController = TextEditingController();
+    final dark = THelperFunctions.isDarkMode(context);
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: dark ? const Color(0xFF1E1E2E) : Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.cancel_rounded, color: Colors.red),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cancel Inspection',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: dark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          'Appointment ID: ${schedule.appointmentId}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Reason for cancellation',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                maxLines: 4,
+                style: TextStyle(color: dark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
+                  hintText: 'Tell us why you are canceling...',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  filled: true,
+                  fillColor:
+                      dark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Get.back(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Keep it',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (reasonController.text.trim().isEmpty) {
+                          TLoaders.warningSnackBar(
+                            title: 'Reason Required',
+                            message: 'Please provide a reason for cancellation',
+                          );
+                          return;
+                        }
+                        Get.back();
+                        controller.updateTelecallingStatus(
+                          telecallingId: schedule.id,
+                          status: InspectionStatuses.cancel,
+                          remarks: reasonController.text.trim(),
+                        );
+                      },
+                      child: const Text(
+                        'Confirm Cancel',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showRescheduleFlow(
+    BuildContext context,
+    ScheduleController controller,
+  ) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFFF9800),
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate == null) return;
+
+    if (!context.mounted) return;
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedTime == null) return;
+
+    final selectedDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    final String isoDate = selectedDateTime.toIso8601String();
+
+    if (!context.mounted) return;
+    _showRescheduleReasonDialog(context, controller, isoDate);
+  }
+
+  void _showRescheduleReasonDialog(
+    BuildContext context,
+    ScheduleController controller,
+    String isoDate,
+  ) {
+    final reasonController = TextEditingController();
+    final dark = THelperFunctions.isDarkMode(context);
+    final dt = DateTime.parse(isoDate);
+    final displayDate = '${dt.day} ${_getMonthName(dt.month)} ${dt.year}';
+    final displayTime =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: dark ? const Color(0xFF1E1E2E) : Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.event_repeat_rounded,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Reschedule Lead',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: dark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          'ID: ${schedule.appointmentId}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color:
+                      dark
+                          ? Colors.orange.withValues(alpha: 0.05)
+                          : Colors.orange.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'NEW INSPECTION TIME',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.orange.shade700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 16,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          displayDate,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.access_time_filled_rounded,
+                          size: 16,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          displayTime,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Reason for rescheduling',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                maxLines: 4,
+                style: TextStyle(color: dark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
+                  hintText: 'Enter reason here...',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  filled: true,
+                  fillColor:
+                      dark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Colors.orange,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Get.back();
+                        _showRescheduleFlow(context, controller);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Change Date',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (reasonController.text.trim().isEmpty) {
+                          TLoaders.warningSnackBar(
+                            title: 'Reason Required',
+                            message: 'Please provide a reason for rescheduling',
+                          );
+                          return;
+                        }
+                        Get.back();
+                        controller.updateTelecallingStatus(
+                          telecallingId: schedule.id,
+                          status: InspectionStatuses.reScheduled,
+                          dateTime: isoDate,
+                          remarks: reasonController.text.trim(),
+                        );
+                      },
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
   }
 
   Widget _infoRow(

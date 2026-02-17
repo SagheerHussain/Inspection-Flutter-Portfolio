@@ -88,8 +88,10 @@ class LoginController extends GetxController {
       localStorage.write('REMEMBER_ME_PHONE', userPhone);
       localStorage.write('REMEMBER_ME_PASSWORD', password.text.trim());
 
-      // Specifically save the engineer number for future API calls
+      // Specifically save the engineer number and details for future API calls
       localStorage.write('INSPECTION_ENGINEER_NUMBER', userPhone);
+      localStorage.write('USER_ID', response['user']?['_id'] ?? '');
+      localStorage.write('USER_ROLE', userType);
 
       // Remove Loader
       TFullScreenLoader.stopLoading();

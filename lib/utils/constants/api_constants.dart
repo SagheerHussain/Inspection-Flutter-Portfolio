@@ -51,6 +51,9 @@ class ApiConstants {
   static String get inspectionEngineerSchedulesUrl =>
       '${baseUrl}inspection/telecallings/get-list-by-inspection-engineer';
 
+  static String get updateTelecallingUrl =>
+      '${baseUrl}inspection/telecallings/update';
+
   static String schedulesUrl({int page = 1, int limit = 5}) =>
       '${baseUrl}admin/telecallings/get-list?page=$page&limit=$limit';
 

@@ -92,4 +92,37 @@ class ApiService {
       rethrow;
     }
   }
+
+  /// PUT request
+  static Future<Map<String, dynamic>> put(
+    String url,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      debugPrint('📡 PUT: $url');
+      debugPrint('📦 Body: ${jsonEncode(body)}');
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+
+      debugPrint('📬 Status: ${response.statusCode}');
+      debugPrint('📬 Response: ${response.body}');
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return data;
+      } else {
+        throw data['message'] ??
+            data['error'] ??
+            'Request failed with status ${response.statusCode}';
+      }
+    } catch (e) {
+      debugPrint('❌ API Error: $e');
+      rethrow;
+    }
+  }
 }

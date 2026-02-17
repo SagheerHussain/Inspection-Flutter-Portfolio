@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../data/services/api/api_service.dart';
 import '../../../utils/constants/api_constants.dart';
+import '../../../utils/constants/inspection_statuses.dart';
+import '../../../utils/popups/loaders.dart';
 import '../models/schedule_model.dart';
 
 class ScheduleController extends GetxController {
@@ -12,7 +14,10 @@ class ScheduleController extends GetxController {
   final String statusFilter;
   final String searchQuery;
 
-  ScheduleController({this.statusFilter = 'SCHEDULED', this.searchQuery = ''});
+  ScheduleController({
+    this.statusFilter = InspectionStatuses.scheduled,
+    this.searchQuery = '',
+  });
 
   final schedules = <ScheduleModel>[].obs;
   final isLoading = false.obs;
@@ -142,38 +147,71 @@ class ScheduleController extends GetxController {
   /// Get display title based on status filter
   String get screenTitle {
     if (searchQuery.isNotEmpty) return 'Search Results';
-    switch (statusFilter.toLowerCase()) {
-      case 'scheduled':
-        return 'Schedules';
-      case 'running':
-        return 'Running Inspections';
-      case 're-inspection':
-        return 'Re-Inspections';
-      case 'inspected':
-        return 'Inspected';
-      case 'canceled':
-        return 'Canceled';
-      default:
-        return 'Records';
-    }
+    if (statusFilter == InspectionStatuses.scheduled) return 'Schedules';
+    if (statusFilter == InspectionStatuses.running)
+      return 'Running Inspections';
+    if (statusFilter == InspectionStatuses.reInspection)
+      return 'Re-Inspections';
+    if (statusFilter == InspectionStatuses.inspected) return 'Inspected';
+    if (statusFilter == InspectionStatuses.cancel) return 'Canceled';
+    return 'Records';
   }
 
   /// Get subtitle
   String get screenSubtitle {
     if (searchQuery.isNotEmpty) return 'matches found';
-    switch (statusFilter.toLowerCase()) {
-      case 'scheduled':
-        return 'inspection leads';
-      case 'running':
-        return 'active inspections';
-      case 're-inspection':
-        return 're-inspection records';
-      case 'inspected':
-        return 'completed inspections';
-      case 'canceled':
-        return 'canceled records';
-      default:
-        return 'records';
+    if (statusFilter == InspectionStatuses.scheduled) return 'inspection leads';
+    if (statusFilter == InspectionStatuses.running) return 'active inspections';
+    if (statusFilter == InspectionStatuses.reInspection)
+      return 're-inspection records';
+    if (statusFilter == InspectionStatuses.inspected)
+      return 'completed inspections';
+    if (statusFilter == InspectionStatuses.cancel) return 'canceled records';
+    return 'records';
+  }
+
+  /// Update telecalling status
+  Future<void> updateTelecallingStatus({
+    required String telecallingId,
+    required String status,
+    String? dateTime,
+    String? remarks,
+  }) async {
+    try {
+      final storage = GetStorage();
+      final userId = storage.read('USER_ID') ?? '';
+      final userRole = storage.read('USER_ROLE') ?? 'Inspection Engineer';
+
+      final Map<String, dynamic> body = {
+        'telecallingId': telecallingId,
+        'changedBy': userId,
+        'source': userRole,
+        'inspectionStatus': status,
+        'remarks': remarks ?? '',
+      };
+
+      if (dateTime != null) {
+        body['inspectionDateTime'] = dateTime;
+      }
+
+      await ApiService.put(ApiConstants.updateTelecallingUrl, body);
+
+      // Update local item status for instant UI feedback
+      final index = schedules.indexWhere((s) => s.id == telecallingId);
+      if (index != -1) {
+        // We'd ideally fetch the updated record or update the model locally
+        // For now, let's refresh the whole list to be safe and accurate
+        await refreshSchedules();
+      }
+
+      TLoaders.successSnackBar(
+        title: 'Success',
+        message: 'Inspection status updated to $status',
+      );
+    } catch (e) {
+      debugPrint('❌ Status Update Error: $e');
+      TLoaders.errorSnackBar(title: 'Update Failed', message: e.toString());
+      rethrow;
     }
   }
 }

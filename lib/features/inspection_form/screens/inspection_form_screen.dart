@@ -558,7 +558,7 @@ class _BoundTextFieldState extends State<_BoundTextField> {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: SizedBox(
-                  height: 52,
+                  height: 45,
                   child: Obx(() {
                     final isFetching =
                         widget.controller.isFetchingDetails.value;
@@ -572,27 +572,33 @@ class _BoundTextFieldState extends State<_BoundTextField> {
                         backgroundColor: _accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        elevation: 0,
+                        elevation: 1,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (isFetching)
-                            const _SpinningIcon()
-                          else
-                            const Icon(Icons.refresh_rounded, size: 20),
-                          const Text(
-                            'Auto Fetch',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      child:
+                          isFetching
+                              ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: _SpinningIcon(),
+                              )
+                              : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.refresh_rounded, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Fetch'.toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
                     );
                   }),
                 ),

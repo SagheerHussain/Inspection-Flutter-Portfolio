@@ -6,6 +6,7 @@ import 'package:get_storage/get_storage.dart';
 
 import '../../../../data/services/api/api_service.dart';
 import '../../../../utils/constants/api_constants.dart';
+import '../../../../utils/constants/inspection_statuses.dart';
 import '../../../schedules/models/schedule_model.dart';
 
 /// Central controller that loads ALL records once and exposes
@@ -25,18 +26,18 @@ class DashboardStatsController extends GetxController {
   final inspectedCount = 0.obs;
   final canceledCount = 0.obs;
 
-  // ── Countdown state ──
-  /// The formatted countdown string: "HH:MM:SS"
-  final countdownText = ''.obs;
+  // ── Countdown states ──
+  final scheduledCountdownText = ''.obs;
+  final scheduledCountdownDayLabel = ''.obs;
+  final hasScheduledCountdown = false.obs;
 
-  /// The day label: "Today", "Tomorrow", or weekday name
-  final countdownDayLabel = ''.obs;
-
-  /// Whether a valid countdown is currently active
-  final hasCountdown = false.obs;
+  final reScheduledCountdownText = ''.obs;
+  final reScheduledCountdownDayLabel = ''.obs;
+  final hasReScheduledCountdown = false.obs;
 
   Timer? _countdownTimer;
-  DateTime? _nextInspectionTime;
+  DateTime? _nextScheduledTime;
+  DateTime? _nextReScheduledTime;
 
   @override
   void onInit() {
@@ -56,14 +57,14 @@ class DashboardStatsController extends GetxController {
       final engineerNumber =
           GetStorage().read('INSPECTION_ENGINEER_NUMBER') ?? '9090909090';
 
-      // Define statuses to fetch for dashboard stats
+      // Use constants from InspectionStatuses
       final statuses = [
-        'Scheduled',
-        'Running',
-        'Re-Scheduled',
-        'Re-Inspection',
-        'Inspected',
-        'Canceled',
+        InspectionStatuses.scheduled,
+        InspectionStatuses.running,
+        InspectionStatuses.reScheduled,
+        InspectionStatuses.reInspection,
+        InspectionStatuses.inspected,
+        InspectionStatuses.cancel,
       ];
 
       final Map<String, List<ScheduleModel>> results = {};
@@ -95,13 +96,15 @@ class DashboardStatsController extends GetxController {
 
       allRecords.assignAll(combined);
 
-      // Update individual counts
-      scheduledCount.value = results['Scheduled']?.length ?? 0;
-      runningCount.value = results['Running']?.length ?? 0;
-      reScheduledCount.value = results['Re-Scheduled']?.length ?? 0;
-      reInspectionCount.value = results['Re-Inspection']?.length ?? 0;
-      inspectedCount.value = results['Inspected']?.length ?? 0;
-      canceledCount.value = results['Canceled']?.length ?? 0;
+      // Update individual counts using constants
+      scheduledCount.value = results[InspectionStatuses.scheduled]?.length ?? 0;
+      runningCount.value = results[InspectionStatuses.running]?.length ?? 0;
+      reScheduledCount.value =
+          results[InspectionStatuses.reScheduled]?.length ?? 0;
+      reInspectionCount.value =
+          results[InspectionStatuses.reInspection]?.length ?? 0;
+      inspectedCount.value = results[InspectionStatuses.inspected]?.length ?? 0;
+      canceledCount.value = results[InspectionStatuses.cancel]?.length ?? 0;
 
       _startCountdown();
     } catch (e) {
@@ -115,71 +118,92 @@ class DashboardStatsController extends GetxController {
 
   void _startCountdown() {
     _countdownTimer?.cancel();
-    _findNextInspection();
+    _findNextInspections();
 
-    if (_nextInspectionTime == null) {
-      hasCountdown.value = false;
-      countdownText.value = '';
-      countdownDayLabel.value = '';
-      return;
-    }
-
-    hasCountdown.value = true;
-    _updateCountdownDisplay();
+    _updateAllCountdownDisplays();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
-      if (_nextInspectionTime == null || now.isAfter(_nextInspectionTime!)) {
-        _findNextInspection();
-        if (_nextInspectionTime == null) {
-          hasCountdown.value = false;
-          countdownText.value = '';
-          countdownDayLabel.value = '';
-          _countdownTimer?.cancel();
-          return;
-        }
+      bool searchNeeded = false;
+
+      if (_nextScheduledTime != null && now.isAfter(_nextScheduledTime!)) {
+        searchNeeded = true;
       }
-      _updateCountdownDisplay();
+      if (_nextReScheduledTime != null && now.isAfter(_nextReScheduledTime!)) {
+        searchNeeded = true;
+      }
+
+      if (searchNeeded) {
+        _findNextInspections();
+      }
+      _updateAllCountdownDisplays();
     });
   }
 
-  /// Scans all records and picks the closest FUTURE inspectionDateTime only.
-  void _findNextInspection() {
+  /// Scans records to find next inspection for Scheduled and Re-Scheduled specifically
+  void _findNextInspections() {
     final now = DateTime.now();
-    DateTime? nearest;
+    DateTime? nextSched;
+    DateTime? nextReSched;
 
     for (final record in allRecords) {
       final dt = record.inspectionDateTime;
       if (dt == null) continue;
       final localDt = dt.toLocal();
-      if (localDt.isAfter(now)) {
-        if (nearest == null || localDt.isBefore(nearest)) {
-          nearest = localDt;
+      if (localDt.isBefore(now)) continue;
+
+      if (record.inspectionStatus == InspectionStatuses.scheduled) {
+        if (nextSched == null || localDt.isBefore(nextSched)) {
+          nextSched = localDt;
+        }
+      } else if (record.inspectionStatus == InspectionStatuses.reScheduled) {
+        if (nextReSched == null || localDt.isBefore(nextReSched)) {
+          nextReSched = localDt;
         }
       }
     }
 
-    _nextInspectionTime = nearest;
+    _nextScheduledTime = nextSched;
+    _nextReScheduledTime = nextReSched;
+
+    hasScheduledCountdown.value = _nextScheduledTime != null;
+    hasReScheduledCountdown.value = _nextReScheduledTime != null;
   }
 
-  void _updateCountdownDisplay() {
-    if (_nextInspectionTime == null) return;
-
+  void _updateAllCountdownDisplays() {
     final now = DateTime.now();
-    final diff = _nextInspectionTime!.difference(now);
 
-    if (diff.isNegative) return;
+    // Update Scheduled
+    if (_nextScheduledTime != null) {
+      final diff = _nextScheduledTime!.difference(now);
+      if (diff.isNegative) {
+        scheduledCountdownText.value = '00:00:00';
+      } else {
+        scheduledCountdownText.value = _formatDuration(diff);
+        scheduledCountdownDayLabel.value = _getDayLabel(_nextScheduledTime!);
+      }
+    }
 
+    // Update Re-Scheduled
+    if (_nextReScheduledTime != null) {
+      final diff = _nextReScheduledTime!.difference(now);
+      if (diff.isNegative) {
+        reScheduledCountdownText.value = '00:00:00';
+      } else {
+        reScheduledCountdownText.value = _formatDuration(diff);
+        reScheduledCountdownDayLabel.value = _getDayLabel(
+          _nextReScheduledTime!,
+        );
+      }
+    }
+  }
+
+  String _formatDuration(Duration diff) {
     final hours = diff.inHours;
     final minutes = diff.inMinutes.remainder(60);
     final seconds = diff.inSeconds.remainder(60);
 
-    countdownText.value =
-        '${hours.toString().padLeft(2, '0')}:'
-        '${minutes.toString().padLeft(2, '0')}:'
-        '${seconds.toString().padLeft(2, '0')}';
-
-    countdownDayLabel.value = _getDayLabel(_nextInspectionTime!);
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   /// Returns "Today", "Tomorrow", or the weekday name.

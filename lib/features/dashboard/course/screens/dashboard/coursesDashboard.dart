@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../utils/constants/sizes.dart';
+import '../../../../../utils/constants/colors.dart';
 import '../../../../../personalization/controllers/user_controller.dart';
+import '../../../../../utils/helpers/helper_functions.dart';
 import '../../controllers/dashboard_stats_controller.dart';
 import 'widgets/appbar.dart';
 import 'widgets/banners.dart';
@@ -18,106 +20,111 @@ class CoursesDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final txtTheme = Theme.of(context).textTheme;
-    // final dark = THelperFunctions.isDarkMode(context);
-    // Initialize dashboard stats controller
+    final dark = THelperFunctions.isDarkMode(context);
+    // Initialize required controllers
     Get.put(DashboardStatsController());
-    Get.put(UserController());
+    if (!Get.isRegistered<UserController>()) Get.put(UserController());
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: dark ? Brightness.dark : Brightness.light,
         systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness:
+            dark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         appBar: const DashboardAppBar(),
         drawer: TDrawer(),
-        body: SingleChildScrollView(
-          child: Container(
-            // padding: const EdgeInsets.all(TSizes.lg), // Removed for full screen layout
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Row 1: Greeting
-                      Text(
-                        UserController.instance.user.value.fullName.isEmpty
-                            ? "Hey, Inspection Engineer"
-                            : "Hey, ${UserController.instance.user.value.fullName}",
-                        style: txtTheme.bodyMedium?.copyWith(
-                          color: Colors.grey,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            final stats = DashboardStatsController.instance;
+            await stats.refresh();
+          },
+          color: TColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Container(
+              // padding: const EdgeInsets.all(TSizes.lg), // Removed for full screen layout
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Row 1: Greeting
+                        Obx(
+                          () => Text(
+                            UserController.instance.user.value.fullName.isEmpty
+                                ? "Hey, Inspection Engineer"
+                                : "Hey, ${UserController.instance.user.value.fullName}",
+                            style: txtTheme.bodyMedium?.copyWith(
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Row 2: Welcome Back
-                      Text(
-                        "Welcome Back 👋",
-                        style: txtTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 4),
+                        // Row 2: Welcome Back
+                        Text(
+                          "Welcome Back 👋",
+                          style: txtTheme.displayMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Row 3: Platform Name
-                      Text(
-                        "Otobix Inspections Platform",
-                        style: txtTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+                        const SizedBox(height: 4),
+                        // Row 3: Platform Name
+                        Text(
+                          "Otobix Inspections Platform",
+                          style: txtTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: TSizes.lg),
-
-                // Search Box
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DashboardSearchBox(txtTheme: txtTheme),
-                ),
-                const SizedBox(height: TSizes.lg),
-
-                // Categories
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DashboardCategories(txtTheme: txtTheme),
-                ),
-                const SizedBox(height: TSizes.lg),
-
-                // Banners (Row 4: Schedules + Running)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DashboardBanners(txtTheme: txtTheme),
-                ),
-                const SizedBox(height: TSizes.lg + 4),
-
-                // Row 5: Quick Links Title
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Quick Links",
-                    style: txtTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: txtTheme.headlineMedium!.fontSize! * 1.2,
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-
-                // Row 6: Quick Links Carousel
-                DashboardTopCourses(txtTheme: txtTheme),
-              ],
+                  const SizedBox(height: TSizes.lg),
+                  // Search Box
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DashboardSearchBox(txtTheme: txtTheme),
+                  ),
+                  const SizedBox(height: TSizes.lg),
+                  // Categories
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DashboardCategories(txtTheme: txtTheme),
+                  ),
+                  const SizedBox(height: TSizes.lg),
+                  // Banners (Row 4: Schedules + Running)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DashboardBanners(txtTheme: txtTheme),
+                  ),
+                  const SizedBox(height: TSizes.lg + 4),
+                  // Row 5: Quick Links Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      "Quick Links",
+                      style: txtTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: txtTheme.headlineMedium!.fontSize! * 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // Row 6: Quick Links Carousel
+                  DashboardTopCourses(txtTheme: txtTheme),
+                ],
+              ),
             ),
           ),
         ),

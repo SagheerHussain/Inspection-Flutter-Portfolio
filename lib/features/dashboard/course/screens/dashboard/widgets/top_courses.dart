@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../utils/constants/inspection_statuses.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../../course/controllers/dashboard_stats_controller.dart';
 import '../../../../../schedules/screens/schedules_screen.dart';
@@ -21,18 +22,24 @@ class DashboardTopCourses extends StatelessWidget {
         countObs: stats.reScheduledCount,
         icon: Icons.event_repeat_rounded,
         iconColor: const Color(0xFF7C4DFF),
-        statusFilter: "Re-Scheduled",
+        statusFilter: InspectionStatuses.reScheduled,
         gradientColors:
             dark
                 ? [const Color(0xFF12103A), const Color(0xFF1E1A50)]
-                : [const Color(0xFFE0D6FF), const Color(0xFFCBBEFF)],
+                : [
+                  const Color.fromARGB(255, 175, 149, 253),
+                  const Color.fromARGB(255, 185, 169, 252),
+                ],
+        hasTimerObs: stats.hasReScheduledCountdown,
+        timerTextObs: stats.reScheduledCountdownText,
+        dayLabelObs: stats.reScheduledCountdownDayLabel,
       ),
       _QuickLinkItem(
         title: "Re-Inspected",
         countObs: stats.reInspectionCount,
         icon: Icons.replay_circle_filled_rounded,
         iconColor: const Color(0xFF00BFA5),
-        statusFilter: "Re-Inspection",
+        statusFilter: InspectionStatuses.reInspection,
         gradientColors:
             dark
                 ? [const Color(0xFF0A2028), const Color(0xFF103038)]
@@ -43,7 +50,7 @@ class DashboardTopCourses extends StatelessWidget {
         countObs: stats.inspectedCount,
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF4CAF50),
-        statusFilter: "Inspected",
+        statusFilter: InspectionStatuses.inspected,
         gradientColors:
             dark
                 ? [const Color(0xFF0D200F), const Color(0xFF15301A)]
@@ -54,7 +61,7 @@ class DashboardTopCourses extends StatelessWidget {
         countObs: stats.canceledCount,
         icon: Icons.cancel_rounded,
         iconColor: const Color(0xFFF44336),
-        statusFilter: "Canceled",
+        statusFilter: InspectionStatuses.cancel,
         gradientColors:
             dark
                 ? [const Color(0xFF2A0F0F), const Color(0xFF3A1515)]
@@ -93,17 +100,88 @@ class DashboardTopCourses extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top-right icon
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: item.iconColor.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
+                    // Top Row: Timer (left) + Icon (right)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (item.hasTimerObs != null)
+                          Obx(() {
+                            if (!item.hasTimerObs!.value)
+                              return const SizedBox.shrink();
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (item.dayLabelObs != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      item.dayLabelObs!.value.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 7,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.access_time_rounded,
+                                        size: 10,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        item.timerTextObs?.value ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: item.iconColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            item.icon,
+                            color: item.iconColor,
+                            size: 22,
+                          ),
                         ),
-                        child: Icon(item.icon, color: item.iconColor, size: 22),
-                      ),
+                      ],
                     ),
                     const Spacer(),
 
@@ -134,7 +212,7 @@ class DashboardTopCourses extends StatelessWidget {
                       item.title,
                       style: txtTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 20,
+                        fontSize: 16,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -220,6 +298,9 @@ class _QuickLinkItem {
   final Color iconColor;
   final String statusFilter;
   final List<Color> gradientColors;
+  final RxBool? hasTimerObs;
+  final RxString? timerTextObs;
+  final RxString? dayLabelObs;
 
   _QuickLinkItem({
     required this.title,
@@ -228,5 +309,8 @@ class _QuickLinkItem {
     required this.iconColor,
     required this.statusFilter,
     required this.gradientColors,
+    this.hasTimerObs,
+    this.timerTextObs,
+    this.dayLabelObs,
   });
 }

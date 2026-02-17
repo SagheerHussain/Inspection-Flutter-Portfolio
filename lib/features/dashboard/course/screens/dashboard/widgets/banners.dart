@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../utils/constants/inspection_statuses.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../../course/controllers/dashboard_stats_controller.dart';
 import '../../../../../schedules/screens/schedules_screen.dart';
@@ -25,7 +26,9 @@ class DashboardBanners extends StatelessWidget {
             child: GestureDetector(
               onTap:
                   () => Get.to(
-                    () => const SchedulesScreen(statusFilter: 'Scheduled'),
+                    () => const SchedulesScreen(
+                      statusFilter: InspectionStatuses.scheduled,
+                    ),
                   ),
               child: Container(
                 decoration: BoxDecoration(
@@ -54,12 +57,12 @@ class DashboardBanners extends StatelessWidget {
                         // Countdown Timer Label
                         Expanded(
                           child: Obx(() {
-                            if (!stats.hasCountdown.value) {
+                            if (!stats.hasScheduledCountdown.value) {
                               return const SizedBox.shrink();
                             }
                             return _CountdownPill(
-                              time: stats.countdownText.value,
-                              dayLabel: stats.countdownDayLabel.value,
+                              time: stats.scheduledCountdownText.value,
+                              dayLabel: stats.scheduledCountdownDayLabel.value,
                               dark: dark,
                             );
                           }),
@@ -126,7 +129,9 @@ class DashboardBanners extends StatelessWidget {
             child: GestureDetector(
               onTap:
                   () => Get.to(
-                    () => const SchedulesScreen(statusFilter: 'Running'),
+                    () => const SchedulesScreen(
+                      statusFilter: InspectionStatuses.running,
+                    ),
                   ),
               child: Container(
                 decoration: BoxDecoration(
@@ -252,42 +257,46 @@ class _CountdownPillState extends State<_CountdownPill>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color:
             widget.dark
-                ? Colors.black.withValues(alpha: 0.35)
-                : Colors.white.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(10),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF4A90D9).withValues(alpha: 0.25),
+          color: const Color(0xFF4A90D9).withValues(alpha: 0.2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // "Next inspection" label with pulsing dot
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedBuilder(
                 animation: _pulseAnimation,
                 builder: (context, child) {
                   return Container(
-                    width: 6,
-                    height: 6,
+                    width: 7,
+                    height: 7,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(
+                      color: const Color(
                         0xFF4A90D9,
                       ).withValues(alpha: _pulseAnimation.value),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(
                             0xFF4A90D9,
-                          ).withValues(alpha: _pulseAnimation.value * 0.5),
-                          blurRadius: 4,
+                          ).withValues(alpha: _pulseAnimation.value * 0.6),
+                          blurRadius: 6,
                           spreadRadius: 1,
                         ),
                       ],
@@ -295,44 +304,40 @@ class _CountdownPillState extends State<_CountdownPill>
                   );
                 },
               ),
-              const SizedBox(width: 5),
-              Text(
-                'Next inspection',
+              const SizedBox(width: 6),
+              const Text(
+                'NEXT UP',
                 style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      widget.dark
-                          ? Colors.white.withValues(alpha: 0.6)
-                          : Colors.black.withValues(alpha: 0.5),
-                  letterSpacing: 0.3,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF4A90D9),
+                  letterSpacing: 1.0,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
-          // Timer value
+          const SizedBox(height: 6),
           Text(
             widget.time,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF4A90D9),
-              fontFeatures: [FontFeature.tabularFigures()],
-              letterSpacing: 0.5,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: widget.dark ? Colors.white : const Color(0xFF1A237E),
+              fontFeatures: const [FontFeature.tabularFigures()],
+              letterSpacing: 1.0,
             ),
           ),
-          // Day label
+          const SizedBox(height: 2),
           Text(
-            widget.dayLabel,
+            widget.dayLabel.toUpperCase(),
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 8,
               fontWeight: FontWeight.w700,
               color:
                   widget.dark
                       ? Colors.white.withValues(alpha: 0.5)
                       : Colors.black.withValues(alpha: 0.4),
-              letterSpacing: 0.2,
+              letterSpacing: 0.5,
             ),
           ),
         ],
