@@ -15,10 +15,10 @@ flutter_native_splash:
   color_dark: "#272727"
   
   # Image asset for the splash screen
-  image: assets/logo/t-store-splash-logo-black.png
+  image: assets/images/profile/logo.png
   
   # Image asset for the splash screen in dark mode
-  image_dark: assets/logo/t-store-splash-logo-white.png
+  image_dark: assets/images/profile/logo.png
 
   # Configuration for Android 12 splash screen
   android_12:
@@ -29,10 +29,10 @@ flutter_native_splash:
     color_dark: "#272727"
     
     # Image asset for the splash screen on Android 12
-    image: assets/logo/t-store-splash-logo-black.png
+    image: assets/images/profile/logo.png
     
     # Image asset for the splash screen in dark mode on Android 12
-    image_dark: assets/logo/t-store-splash-logo-white.png
+    image_dark: assets/images/profile/logo.png
 
   # Disable splash screen on the web platform
   web: true

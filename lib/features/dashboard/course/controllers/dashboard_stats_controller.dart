@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../../../../data/services/api/api_service.dart';
 import '../../../../utils/constants/api_constants.dart';
@@ -20,6 +21,7 @@ class DashboardStatsController extends GetxController {
   final scheduledCount = 0.obs;
   final runningCount = 0.obs;
   final reInspectionCount = 0.obs;
+  final reScheduledCount = 0.obs;
   final inspectedCount = 0.obs;
   final canceledCount = 0.obs;
 
@@ -51,57 +53,62 @@ class DashboardStatsController extends GetxController {
   Future<void> fetchAllRecords() async {
     try {
       isLoading.value = true;
+      final engineerNumber =
+          GetStorage().read('INSPECTION_ENGINEER_NUMBER') ?? '9090909090';
 
-      final response = await ApiService.get(
-        ApiConstants.schedulesAggregationUrl,
+      // Define statuses to fetch for dashboard stats
+      final statuses = [
+        'Scheduled',
+        'Running',
+        'Re-Scheduled',
+        'Re-Inspection',
+        'Inspected',
+        'Canceled',
+      ];
+
+      final Map<String, List<ScheduleModel>> results = {};
+
+      // Fetch all statuses in parallel
+      await Future.wait(
+        statuses.map((status) async {
+          try {
+            final response = await ApiService.post(
+              ApiConstants.inspectionEngineerSchedulesUrl,
+              {
+                "inspectionStatus": status,
+                "inspectionEngineerNumber": engineerNumber,
+              },
+            );
+            final List<dynamic> dataList = response['data'] ?? [];
+            results[status] =
+                dataList.map((json) => ScheduleModel.fromJson(json)).toList();
+          } catch (e) {
+            debugPrint('❌ Error fetching $status: $e');
+            results[status] = [];
+          }
+        }),
       );
-      final List<dynamic> dataList = response['data'] ?? [];
-      final records =
-          dataList.map((json) => ScheduleModel.fromJson(json)).toList();
 
-      allRecords.assignAll(records);
-      _computeCounts();
+      // Combine all records for general use (like finding next inspection)
+      final List<ScheduleModel> combined = [];
+      results.values.forEach((list) => combined.addAll(list));
+
+      allRecords.assignAll(combined);
+
+      // Update individual counts
+      scheduledCount.value = results['Scheduled']?.length ?? 0;
+      runningCount.value = results['Running']?.length ?? 0;
+      reScheduledCount.value = results['Re-Scheduled']?.length ?? 0;
+      reInspectionCount.value = results['Re-Inspection']?.length ?? 0;
+      inspectedCount.value = results['Inspected']?.length ?? 0;
+      canceledCount.value = results['Canceled']?.length ?? 0;
+
       _startCountdown();
     } catch (e) {
       debugPrint('❌ Dashboard stats fetch error: $e');
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void _computeCounts() {
-    int scheduled = 0,
-        running = 0,
-        reInspection = 0,
-        inspected = 0,
-        canceled = 0;
-
-    for (final record in allRecords) {
-      switch (record.inspectionStatus.toLowerCase()) {
-        case 'scheduled':
-          scheduled++;
-          break;
-        case 'running':
-          running++;
-          break;
-        case 're-inspection':
-          reInspection++;
-          break;
-        case 'inspected':
-          inspected++;
-          break;
-        case 'canceled':
-        case 'cancelled':
-          canceled++;
-          break;
-      }
-    }
-
-    scheduledCount.value = scheduled;
-    runningCount.value = running;
-    reInspectionCount.value = reInspection;
-    inspectedCount.value = inspected;
-    canceledCount.value = canceled;
   }
 
   // ── Countdown Logic ──

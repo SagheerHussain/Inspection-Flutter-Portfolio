@@ -25,7 +25,7 @@ class DashboardBanners extends StatelessWidget {
             child: GestureDetector(
               onTap:
                   () => Get.to(
-                    () => const SchedulesScreen(statusFilter: 'SCHEDULED'),
+                    () => const SchedulesScreen(statusFilter: 'Scheduled'),
                   ),
               child: Container(
                 decoration: BoxDecoration(
@@ -126,7 +126,7 @@ class DashboardBanners extends StatelessWidget {
             child: GestureDetector(
               onTap:
                   () => Get.to(
-                    () => const SchedulesScreen(statusFilter: 'RUNNING'),
+                    () => const SchedulesScreen(statusFilter: 'Running'),
                   ),
               child: Container(
                 decoration: BoxDecoration(

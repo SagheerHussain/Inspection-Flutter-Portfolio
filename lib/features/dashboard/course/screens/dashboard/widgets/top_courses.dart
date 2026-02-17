@@ -18,10 +18,10 @@ class DashboardTopCourses extends StatelessWidget {
     final quickLinks = [
       _QuickLinkItem(
         title: "Re-Schedule",
-        countObs: stats.reInspectionCount,
+        countObs: stats.reScheduledCount,
         icon: Icons.event_repeat_rounded,
         iconColor: const Color(0xFF7C4DFF),
-        statusFilter: "Re-Inspection",
+        statusFilter: "Re-Scheduled",
         gradientColors:
             dark
                 ? [const Color(0xFF12103A), const Color(0xFF1E1A50)]
@@ -43,7 +43,7 @@ class DashboardTopCourses extends StatelessWidget {
         countObs: stats.inspectedCount,
         icon: Icons.check_circle_rounded,
         iconColor: const Color(0xFF4CAF50),
-        statusFilter: "INSPECTED",
+        statusFilter: "Inspected",
         gradientColors:
             dark
                 ? [const Color(0xFF0D200F), const Color(0xFF15301A)]

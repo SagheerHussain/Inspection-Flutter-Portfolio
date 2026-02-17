@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
 
 import '../../../data/services/api/api_service.dart';
@@ -65,10 +66,16 @@ class ScheduleController extends GetxController {
       _currentIndex = 0;
       hasMoreData.value = true;
 
-      // Use aggregation URL to fetch ALL records (limit=1000)
-      final response = await ApiService.get(
-        ApiConstants.schedulesAggregationUrl,
-      );
+      // Retrieve stored engineer number
+      final engineerNumber =
+          GetStorage().read('INSPECTION_ENGINEER_NUMBER') ?? '9090909090';
+
+      // Use the new inspection list endpoint via POST with required body
+      final response =
+          await ApiService.post(ApiConstants.inspectionEngineerSchedulesUrl, {
+            "inspectionStatus": statusFilter,
+            "inspectionEngineerNumber": engineerNumber,
+          });
       final List<dynamic> dataList = response['data'] ?? [];
       final allRecords =
           dataList.map((json) => ScheduleModel.fromJson(json)).toList();

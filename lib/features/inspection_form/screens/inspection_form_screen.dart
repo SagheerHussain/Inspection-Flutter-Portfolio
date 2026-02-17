@@ -482,64 +482,159 @@ class _BoundTextFieldState extends State<_BoundTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final isOptional = widget.field.optional;
+    return Obx(() {
+      final value = widget.controller.getFieldValue(widget.field.key);
+      if (_textController.text != value) {
+        _textController.text = value;
+      }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: _textController,
-        maxLines: widget.field.maxLines,
-        readOnly: widget.field.readonly,
-        onChanged: (v) => widget.controller.updateField(widget.field.key, v),
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+      final isRegNumber = widget.field.key == 'registrationNumber';
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _textController,
+                  maxLines: widget.field.maxLines,
+                  readOnly: widget.field.readonly,
+                  onChanged:
+                      (v) => widget.controller.updateField(widget.field.key, v),
+                  style: const TextStyle(
+                    color: Color(0xFF1E293B),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: widget.field.label,
+                    labelStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _accent, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    suffixIcon:
+                        widget.field.readonly
+                            ? Icon(
+                              Icons.lock_outline,
+                              size: 18,
+                              color: Colors.grey.shade400,
+                            )
+                            : null,
+                  ),
+                ),
+              ),
+            ),
+            if (isRegNumber)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: SizedBox(
+                  height: 52,
+                  child: Obx(() {
+                    final isFetching =
+                        widget.controller.isFetchingDetails.value;
+                    return ElevatedButton(
+                      onPressed:
+                          isFetching
+                              ? null
+                              : () =>
+                                  widget.controller.autoFetchVehicleDetails(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (isFetching)
+                            const _SpinningIcon()
+                          else
+                            const Icon(Icons.refresh_rounded, size: 20),
+                          const Text(
+                            'Auto Fetch',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+          ],
         ),
-        decoration: InputDecoration(
-          labelText:
-              isOptional
-                  ? '${widget.field.label} (Optional)'
-                  : widget.field.label,
-          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _accent, width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          suffixIcon:
-              widget.field.readonly
-                  ? Icon(
-                    Icons.lock_outline,
-                    size: 18,
-                    color: Colors.grey.shade400,
-                  )
-                  : null,
-        ),
-      ),
+      );
+    });
+  }
+}
+
+class _SpinningIcon extends StatefulWidget {
+  const _SpinningIcon();
+
+  @override
+  State<_SpinningIcon> createState() => _SpinningIconState();
+}
+
+class _SpinningIconState extends State<_SpinningIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: const Icon(Icons.refresh_rounded, size: 20),
     );
   }
 }
@@ -574,59 +669,67 @@ class _BoundNumberFieldState extends State<_BoundNumberField> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: _textController,
-        keyboardType: TextInputType.number,
-        onChanged: (v) {
-          final parsed = int.tryParse(v) ?? 0;
-          widget.controller.updateField(widget.field.key, parsed);
-        },
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+    return Obx(() {
+      final val = widget.controller.getFieldValue(widget.field.key);
+      final displayVal = (val == '0' || val.isEmpty) ? '' : val;
+      if (_textController.text != displayVal) {
+        _textController.text = displayVal;
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        decoration: InputDecoration(
-          labelText: widget.field.label,
-          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+        child: TextFormField(
+          controller: _textController,
+          keyboardType: TextInputType.number,
+          onChanged: (v) {
+            final parsed = int.tryParse(v) ?? 0;
+            widget.controller.updateField(widget.field.key, parsed);
+          },
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _accent, width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          prefixIcon: Icon(
-            Icons.numbers_rounded,
-            size: 18,
-            color: _accent.withValues(alpha: 0.6),
+          decoration: InputDecoration(
+            labelText: widget.field.label,
+            labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _accent, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.numbers_rounded,
+              size: 18,
+              color: _accent.withValues(alpha: 0.6),
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -643,79 +746,91 @@ class _BoundDropdown extends StatefulWidget {
 }
 
 class _BoundDropdownState extends State<_BoundDropdown> {
-  String? _selectedValue;
-
-  @override
-  void initState() {
-    super.initState();
-    final rawValue = widget.controller.getFieldValue(widget.field.key);
-    _selectedValue =
-        (rawValue.isNotEmpty && widget.field.options.contains(rawValue))
-            ? rawValue
-            : null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: DropdownButtonFormField<String>(
-        initialValue: _selectedValue,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: widget.field.label,
-          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _accent, width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+    return Obx(() {
+      final value = widget.controller.getFieldValue(widget.field.key);
+      final dynamicOptions =
+          widget.controller.dropdownOptions[widget.field.key];
+      final options =
+          (dynamicOptions != null && dynamicOptions.isNotEmpty)
+              ? dynamicOptions
+              : widget.field.options;
+
+      final selectedValue =
+          (value.isNotEmpty && options.contains(value)) ? value : null;
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        dropdownColor: Colors.white,
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+        child: DropdownButtonFormField<String>(
+          value: selectedValue,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: widget.field.label,
+            labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            floatingLabelStyle: const TextStyle(
+              color: Color(0xFF0D6EFD),
+              fontWeight: FontWeight.bold,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF0D6EFD),
+                width: 1.5,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.list_rounded,
+              size: 18,
+              color: _accent.withValues(alpha: 0.6),
+            ),
+          ),
+          dropdownColor: Colors.white,
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: _accent.withValues(alpha: 0.7),
+          ),
+          items:
+              options
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+          onChanged: (v) {
+            if (v != null) {
+              widget.controller.updateField(widget.field.key, v);
+            }
+          },
         ),
-        icon: Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: _accent.withValues(alpha: 0.7),
-        ),
-        items:
-            widget.field.options
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-        onChanged: (v) {
-          if (v != null) {
-            setState(() => _selectedValue = v);
-            widget.controller.updateField(widget.field.key, v);
-          }
-        },
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -729,8 +844,6 @@ class _BoundImagePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOptional = field.optional;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -745,7 +858,7 @@ class _BoundImagePicker extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    isOptional ? '${field.label} (Optional)' : field.label,
+                    field.label,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

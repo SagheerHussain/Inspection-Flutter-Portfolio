@@ -27,10 +27,10 @@ class LoginController extends GetxController {
 
   @override
   void onInit() {
-    // Pre-fill with saved credentials or default
-    userName.text = localStorage.read('REMEMBER_ME_USERNAME') ?? 'Amit_P';
-    phoneNumber.text = localStorage.read('REMEMBER_ME_PHONE') ?? '9830300300';
-    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? 'Amit_P1974*';
+    // Pre-fill with saved credentials or default as requested
+    userName.text = localStorage.read('REMEMBER_ME_USERNAME') ?? 'inspection';
+    phoneNumber.text = localStorage.read('REMEMBER_ME_PHONE') ?? '9090909090';
+    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? 'Admin@123';
     super.onInit();
   }
 
@@ -57,22 +57,39 @@ class LoginController extends GetxController {
         return;
       }
 
+      final userPhone = phoneNumber.text.trim();
+
       // Call Backend API
       final response = await ApiService.post(ApiConstants.loginUrl, {
         'userName': userName.text.trim(),
-        'phoneNumber': phoneNumber.text.trim(),
+        'phoneNumber': userPhone,
         'password': password.text.trim(),
       });
+
+      // Role Check
+      // Validating based on userType as per API response
+      final userType = response['user']?['userType']?.toString() ?? '';
+      if (userType != 'Inspection Engineer') {
+        TFullScreenLoader.stopLoading();
+        TLoaders.warningSnackBar(
+          title: 'Access Denied',
+          message: 'You are not authorized for this app',
+        );
+        return;
+      }
 
       // Save auth token if present
       if (response['token'] != null) {
         await ApiService.saveToken(response['token']);
       }
 
-      // Save credentials for remember me
+      // Save credentials for remember me and session
       localStorage.write('REMEMBER_ME_USERNAME', userName.text.trim());
-      localStorage.write('REMEMBER_ME_PHONE', phoneNumber.text.trim());
+      localStorage.write('REMEMBER_ME_PHONE', userPhone);
       localStorage.write('REMEMBER_ME_PASSWORD', password.text.trim());
+
+      // Specifically save the engineer number for future API calls
+      localStorage.write('INSPECTION_ENGINEER_NUMBER', userPhone);
 
       // Remove Loader
       TFullScreenLoader.stopLoading();

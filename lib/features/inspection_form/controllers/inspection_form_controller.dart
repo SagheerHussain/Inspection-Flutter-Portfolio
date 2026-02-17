@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/services/api/api_service.dart';
 import '../../../utils/constants/api_constants.dart';
+import '../../../utils/popups/exports.dart';
 import '../models/inspection_field_defs.dart';
 import '../models/inspection_form_model.dart';
 import '../../schedules/models/schedule_model.dart';
@@ -18,6 +19,7 @@ class InspectionFormController extends GetxController {
   final isLoading = true.obs;
   final isSubmitting = false.obs;
   final isSaving = false.obs;
+  final isFetchingDetails = false.obs;
 
   // Tabs / Sections
   final currentSectionIndex = 0.obs;
@@ -27,6 +29,10 @@ class InspectionFormController extends GetxController {
 
   // Image storage: key → list of local file paths
   final RxMap<String, List<String>> imageFiles = <String, List<String>>{}.obs;
+
+  // Dynamic Dropdown Options: key → list of string options
+  final RxMap<String, List<String>> dropdownOptions =
+      <String, List<String>>{}.obs;
 
   List<String> get sectionTitles =>
       InspectionFieldDefs.sections.map((s) => s.title).toList();
@@ -63,6 +69,7 @@ class InspectionFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    fetchDropdownList();
     fetchInspectionData();
   }
 
@@ -117,6 +124,115 @@ class InspectionFormController extends GetxController {
       _initializeNewInspection();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchDropdownList() async {
+    try {
+      final response = await ApiService.get(ApiConstants.getAllDropdownsUrl);
+      if (response['data'] is List) {
+        final List<dynamic> data = response['data'];
+        final Map<String, List<String>> apiDropdowns = {};
+
+        // 1. Build the API dropdown map (isActive only)
+        for (var item in data) {
+          if (item is Map &&
+              item['dropdownName'] != null &&
+              item['dropdownValues'] is List &&
+              item['isActive'] == true) {
+            final String name = item['dropdownName'];
+            final List<dynamic> vals = item['dropdownValues'];
+            apiDropdowns[name] = vals.map((v) => v.toString()).toList();
+          }
+        }
+
+        if (apiDropdowns.isEmpty) return;
+
+        // 2. Map API dropdowns to form fields using Priority Rules
+        final Map<String, List<String>> mappedOptions = {};
+
+        // Internal helper for normalization
+        String normalize(String s) =>
+            s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+        // Internal helper for Levenshtein Distance (Similarity)
+        double calculateSimilarity(String s1, String s2) {
+          if (s1 == s2) return 1.0;
+          if (s1.isEmpty || s2.isEmpty) return 0.0;
+
+          List<int> v0 = List<int>.generate(s2.length + 1, (i) => i);
+          List<int> v1 = List<int>.filled(s2.length + 1, 0);
+
+          for (int i = 0; i < s1.length; i++) {
+            v1[0] = i + 1;
+            for (int j = 0; j < s2.length; j++) {
+              int cost = (s1[i] == s2[j]) ? 0 : 1;
+              v1[j + 1] = [
+                v1[j] + 1,
+                v0[j + 1] + 1,
+                v0[j] + cost,
+              ].reduce((a, b) => a < b ? a : b);
+            }
+            v0 = List.from(v1);
+          }
+          int distance = v0[s2.length];
+          return 1.0 -
+              (distance /
+                  [s1.length, s2.length].reduce((a, b) => a > b ? a : b));
+        }
+
+        for (final section in InspectionFieldDefs.sections) {
+          for (final field in section.fields) {
+            if (field.type != FType.dropdown) continue;
+
+            final fieldKey = field.key;
+            final fieldLabel = field.label;
+            final normKey = normalize(fieldKey);
+            final normLabel = normalize(fieldLabel);
+
+            String? bestMatchName;
+            double bestScore = 0.0;
+
+            for (final dropdownName in apiDropdowns.keys) {
+              final normApiName = normalize(dropdownName);
+
+              // Priority 1 & 2: Exact/Normalized Match
+              if (normKey == normApiName || normLabel == normApiName) {
+                bestMatchName = dropdownName;
+                bestScore = 1.0;
+                break;
+              }
+
+              // Priority 3: Fuzzy Match (Confidence Check)
+              final keyScore = calculateSimilarity(normKey, normApiName);
+              final labelScore = calculateSimilarity(normLabel, normApiName);
+              final currentBest = keyScore > labelScore ? keyScore : labelScore;
+
+              if (currentBest > bestScore) {
+                bestScore = currentBest;
+                bestMatchName = dropdownName;
+              }
+            }
+
+            // High confidence threshold (0.75) for fuzzy matching
+            if (bestMatchName != null && bestScore >= 0.75) {
+              mappedOptions[fieldKey] = apiDropdowns[bestMatchName]!;
+              debugPrint(
+                '🔗 Mapped [$fieldKey] to API [$bestMatchName] (Score: ${bestScore.toStringAsFixed(2)})',
+              );
+            }
+          }
+        }
+
+        if (mappedOptions.isNotEmpty) {
+          dropdownOptions.addAll(mappedOptions);
+          debugPrint(
+            '✨ Dynamic mapping complete. ${mappedOptions.length} fields populated from API.',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error mapping dropdowns: $e');
     }
   }
 
@@ -575,6 +691,263 @@ class InspectionFormController extends GetxController {
       );
     } finally {
       isSubmitting.value = false;
+    }
+  }
+
+  // ─── Auto Fetch Vehicle Details ───
+  Future<void> autoFetchVehicleDetails() async {
+    final regNo = getFieldValue('registrationNumber').trim();
+    if (regNo.isEmpty) {
+      TLoaders.warningSnackBar(
+        title: 'Registration Missing',
+        message: 'Please enter a vehicle registration number first.',
+      );
+      return;
+    }
+
+    try {
+      isFetchingDetails.value = true;
+
+      final response = await ApiService.post(
+        ApiConstants.fetchVehicleDetailsUrl,
+        {"vehicleRegistrationNumber": regNo},
+      );
+
+      // Print auto-fetched data to console as requested
+      debugPrint('🚀 [AutoFetch] Response: $response');
+
+      // Access data.result as specified
+      final result = response['data']?['result'];
+      if (result != null && result is Map<String, dynamic>) {
+        _applyFetchedData(result);
+        TLoaders.successSnackBar(
+          title: 'Details Fetched',
+          message: 'Vehicle information has been auto-filled.',
+        );
+      } else {
+        throw 'No details found for this registration number.';
+      }
+    } catch (e) {
+      debugPrint('❌ AutoFetch Error: $e');
+      TLoaders.errorSnackBar(
+        title: 'Fetch Failed',
+        message:
+            e.toString().contains('No details found')
+                ? 'No data found for this vehicle.'
+                : 'Unable to connect to RTO service.',
+      );
+    } finally {
+      isFetchingDetails.value = false;
+    }
+  }
+
+  void _applyFetchedData(Map<String, dynamic> result) {
+    debugPrint(
+      '🧩 [AutoFetch] Starting data mapping. Available keys: ${result.keys.toList()}',
+    );
+
+    // Helper to find a value by checking multiple potential keys case-insensitively
+    dynamic find(List<String> keys) {
+      final searchKeys =
+          keys
+              .map(
+                (k) => k.toLowerCase().replaceAll('_', '').replaceAll(' ', ''),
+              )
+              .toSet();
+
+      for (final entry in result.entries) {
+        final entryKey = entry.key
+            .toLowerCase()
+            .replaceAll('_', '')
+            .replaceAll(' ', '');
+        if (searchKeys.contains(entryKey) &&
+            entry.value != null &&
+            entry.value.toString().isNotEmpty) {
+          return entry.value;
+        }
+      }
+      return null;
+    }
+
+    final mapping = {
+      'registrationDate': [
+        'registration_date',
+        'reg_date',
+        'regDate',
+        'date_of_registration',
+        'reg_dt',
+      ],
+      'fitnessValidity': [
+        'fitness_upto',
+        'fitness_valid_upto',
+        'fitnessValidity',
+        'fitness_limit',
+        'fit_dt',
+      ],
+      'engineNumber': [
+        'engine_number',
+        'engine_no',
+        'engineNo',
+        'eng_no',
+        'engineNumber',
+      ],
+      'chassisNumber': [
+        'chassis_number',
+        'chassis_no',
+        'chassisNo',
+        'chassisNumber',
+      ],
+      'chassisDetails': [
+        'chassis_number',
+        'chassis_no',
+        'chassisNo',
+        'chassisNumber',
+      ], // Also fill chassis details
+      'make': ['maker', 'make', 'manufacturer', 'brand', 'maker_name'],
+      'model': ['model', 'maker_model', 'model_name'],
+      'variant': ['variant', 'series', 'model_variant'],
+      'yearMonthOfManufacture': [
+        'manufacturing_date',
+        'mfg_date',
+        'mfgDate',
+        'year_of_manufacture',
+        'manufacturing_month_year',
+        'manu_month_yr',
+      ],
+      'fuelType': ['fuel_type', 'fuelType', 'fuel', 'fuel_descr'],
+      'seatingCapacity': [
+        'seating_capacity',
+        'seat_cap',
+        'seatingCapacity',
+        'seat_capacity',
+      ],
+      'color': ['color', 'colour'],
+      'cubicCapacity': [
+        'cubic_capacity',
+        'cc',
+        'engine_capacity',
+        'displacement',
+      ],
+      'norms': [
+        'norms',
+        'pollution_norms',
+        'norms_type',
+        'emission_norms',
+        'norms_descr',
+      ],
+      'registrationState': [
+        'state',
+        'st_name',
+        'registration_state',
+        'state_name',
+      ],
+      'registeredRto': [
+        'rto',
+        'rto_name',
+        'registered_rto',
+        'rto_code',
+        'rto_descr',
+      ],
+      'ownerSerialNumber': [
+        'owner_serial_number',
+        'owner_count',
+        'owner_number',
+        'ownership_count',
+        'owner_sr',
+      ],
+      'registeredOwner': [
+        'owner_name',
+        'registered_owner',
+        'ownerName',
+        'owner',
+      ],
+      'registeredAddressAsPerRc': [
+        'permanent_address',
+        'address',
+        'owner_address',
+        'present_address',
+      ],
+      'taxValidTill': [
+        'tax_upto',
+        'tax_paid_upto',
+        'tax_validity',
+        'mv_tax_upto',
+        'tax_dt',
+      ],
+      'hypothecatedTo': [
+        'hypothecated_to',
+        'financer',
+        'hypothecation_details',
+        'financed_by',
+        'fncr',
+      ],
+      'insuranceValidity': [
+        'insurance_upto',
+        'insurance_valid_upto',
+        'insurance_validity',
+        'ins_upto',
+        'ins_dt',
+      ],
+      'insurer': [
+        'insurance_company',
+        'insurer_name',
+        'insurance_name',
+        'ins_name',
+        'insurance_descr',
+      ],
+      'insurancePolicyNumber': [
+        'insurance_policy_number',
+        'policy_no',
+        'policyNumber',
+        'policy_number',
+        'ins_policy_no',
+      ],
+      'pucValidity': [
+        'puc_upto',
+        'puc_valid_upto',
+        'puc_validity',
+        'pollution_upto',
+        'puc_dt',
+      ],
+      'pucNumber': ['puc_number', 'pucNo', 'pollution_no', 'puc_no'],
+      'rcStatus': [
+        'rc_status',
+        'status_as_on',
+        'status',
+        'rc_status_description',
+        'status_descr',
+      ],
+      'blacklistStatus': [
+        'blacklist_status',
+        'is_blacklisted',
+        'blacklisted_details',
+      ],
+      'rtoNoc': ['noc_details', 'rto_noc', 'noc_status'],
+    };
+
+    bool updatedAny = false;
+    mapping.forEach((targetKey, sourceKeys) {
+      final value = find(sourceKeys);
+      if (value != null) {
+        // Log mapping attempt
+        debugPrint(
+          '📍 Mapping [$targetKey] <--- Found value: "$value" in source keys: $sourceKeys',
+        );
+
+        // Overwrite the field with the new value
+        updateField(targetKey, value.toString());
+        updatedAny = true;
+        debugPrint('✅ [$targetKey] Overwrite SUCCESS');
+      }
+    });
+
+    if (updatedAny) {
+      debugPrint('✨ Data mapping completed. Refreshing UI...');
+      inspectionData.refresh();
+    } else {
+      debugPrint(
+        '📢 No fields were updated (all fields may already have data).',
+      );
     }
   }
 

@@ -18,8 +18,8 @@ class ApiConstants {
   /// Check if using production
   static bool get isProduction => environment == 'production';
 
-  /// Get the active base URL — always use production
-  static String get baseUrl => _prodBaseUrl;
+  /// Get the active base URL — switched to Development by default as requested
+  static String get baseUrl => isProduction ? _prodBaseUrl : _devBaseUrl;
 
   /// Switch to production
   static Future<void> switchToProduction() async {
@@ -48,6 +48,9 @@ class ApiConstants {
   // ──────────────────────────────────────────
   // SCHEDULE / TELECALLING ENDPOINTS
   // ──────────────────────────────────────────
+  static String get inspectionEngineerSchedulesUrl =>
+      '${baseUrl}inspection/telecallings/get-list-by-inspection-engineer';
+
   static String schedulesUrl({int page = 1, int limit = 5}) =>
       '${baseUrl}admin/telecallings/get-list?page=$page&limit=$limit';
 
@@ -62,8 +65,14 @@ class ApiConstants {
       '${baseUrl}car/details/carId?appointmentId=$appointmentId';
 
   // ──────────────────────────────────────────
-  // INSPECTION SUBMISSION ENDPOINT (Dev)
+  // INSPECTION SUBMISSION ENDPOINTS (Dev)
   // ──────────────────────────────────────────
   static String get inspectionSubmitUrl =>
       '${_devBaseUrl}inspection/car/add-car-through-inspection';
+
+  static String get fetchVehicleDetailsUrl =>
+      '${_devBaseUrl}customer/sell-my-car/fetch-vehicle-registration-details';
+
+  static String get getAllDropdownsUrl =>
+      '${baseUrl}inspection/dropdowns/get-all-dropdowns-list';
 }

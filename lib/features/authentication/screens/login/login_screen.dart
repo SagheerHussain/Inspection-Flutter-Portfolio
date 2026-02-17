@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../../common/widgets/form/form_header_widget.dart';
 import '../../../../../utils/constants/image_strings.dart';
 import '../../../../../utils/constants/sizes.dart';
-import '../../../../../utils/constants/text_strings.dart';
+
 import 'widgets/login_form_widget.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -19,21 +19,42 @@ class LoginScreen extends StatelessWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        body: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(TSizes.defaultSpace),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const FormHeaderWidget(
-                  image: TImages.tLogoImage,
-                  title: TTexts.tLoginTitle,
-                  subTitle: TTexts.tLoginSubTitle,
+        body: Stack(
+          children: [
+            // Decorative background element
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
                 ),
-                const LoginFormWidget(),
-              ],
+              ),
             ),
-          ),
+            SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.all(TSizes.defaultSpace),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: TSizes.appBarHeight),
+                    const FormHeaderWidget(
+                      image: TImages.tLogoImage,
+                      title: "Engineer Login", // More specific title
+                      subTitle:
+                          "Welcome back, please enter your details to continue.",
+                      imageHeight: 0.12,
+                    ),
+                    const SizedBox(height: TSizes.spaceBtwSections),
+                    const LoginFormWidget(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
