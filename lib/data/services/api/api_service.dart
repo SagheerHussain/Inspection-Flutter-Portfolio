@@ -125,4 +125,94 @@ class ApiService {
       rethrow;
     }
   }
+
+  /// DELETE request
+  static Future<Map<String, dynamic>> delete(
+    String url,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      debugPrint('📡 DELETE: $url');
+      debugPrint('📦 Body: ${jsonEncode(body)}');
+
+      final request = http.Request('DELETE', Uri.parse(url));
+      request.headers.addAll(_headers);
+      request.body = jsonEncode(body);
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('📬 Status: ${response.statusCode}');
+      _logResponse(response);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        return data;
+      } else {
+        throw data['message'] ??
+            data['error'] ??
+            'Request failed with status ${response.statusCode}';
+      }
+    } catch (e) {
+      debugPrint('❌ API Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Multipart POST request
+  static Future<Map<String, dynamic>> multipartPost({
+    required String url,
+    required Map<String, String> fields,
+    required List<http.MultipartFile> files,
+  }) async {
+    try {
+      debugPrint('📡 MULTIPART: $url');
+      debugPrint('📦 Fields: $fields');
+
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+
+      // Add Headers
+      final token = authToken;
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+
+      // Add Fields
+      request.fields.addAll(fields);
+
+      // Add Files
+      request.files.addAll(files);
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('📬 Status: ${response.statusCode}');
+      _logResponse(response);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return data;
+      } else {
+        throw data['message'] ??
+            data['error'] ??
+            'Request failed with status ${response.statusCode}';
+      }
+    } catch (e) {
+      debugPrint('❌ API Error: $e');
+      rethrow;
+    }
+  }
+
+  static void _logResponse(http.Response res) {
+    if (res.body.length > 500) {
+      debugPrint('📬 Response: ${res.body.substring(0, 500)}...');
+    } else {
+      debugPrint('📬 Response: ${res.body}');
+    }
+  }
 }

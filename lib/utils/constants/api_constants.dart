@@ -78,4 +78,14 @@ class ApiConstants {
 
   static String get getAllDropdownsUrl =>
       '${baseUrl}inspection/dropdowns/get-all-dropdowns-list';
+
+  // Cloudinary Upload/Delete
+  static String get uploadImagesUrl =>
+      '${baseUrl}inspection/car/upload-car-images-to-cloudinary';
+  static String get deleteImageUrl =>
+      '${baseUrl}inspection/car/delete-image-from-cloudinary';
+  static String get uploadVideoUrl =>
+      '${baseUrl}inspection/car/upload-car-video-to-cloudinary';
+  static String get deleteVideoUrl =>
+      '${baseUrl}inspection/car/delete-video-from-cloudinary';
 }

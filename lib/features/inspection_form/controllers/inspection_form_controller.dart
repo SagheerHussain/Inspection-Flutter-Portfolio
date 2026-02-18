@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../../../data/services/api/api_service.dart';
 import '../../../utils/constants/api_constants.dart';
 import '../../../utils/popups/exports.dart';
@@ -39,6 +40,10 @@ class InspectionFormController extends GetxController {
 
   // Image storage: key → list of local file paths
   final RxMap<String, List<String>> imageFiles = <String, List<String>>{}.obs;
+
+  // Cloudinary storage: localPath → {url, publicId}
+  final RxMap<String, Map<String, String>> mediaCloudinaryData =
+      <String, Map<String, String>>{}.obs;
 
   // Dynamic Dropdown Options: key → list of string options
   final RxMap<String, List<String>> dropdownOptions =
@@ -313,6 +318,9 @@ class InspectionFormController extends GetxController {
         currentList.add(picked.path);
         imageFiles[key] = List.from(currentList);
         imageFiles.refresh();
+
+        // Trigger Upload
+        _uploadMedia(key, picked.path, isVideo: false);
       }
     } catch (e) {
       Get.snackbar(
@@ -333,6 +341,9 @@ class InspectionFormController extends GetxController {
         // Video always limited (maxImages is 1 for video by default now)
         imageFiles[key] = [picked.path];
         imageFiles.refresh();
+
+        // Trigger Upload
+        _uploadMedia(key, picked.path, isVideo: true);
       }
     } catch (e) {
       Get.snackbar(
@@ -380,6 +391,11 @@ class InspectionFormController extends GetxController {
         imageFiles[key] = currentList;
         imageFiles.refresh();
 
+        // Trigger Uploads
+        for (final path in toAdd) {
+          _uploadMedia(key, path, isVideo: false);
+        }
+
         if (picked.length > remaining) {
           Get.snackbar(
             'Limit Restricted',
@@ -406,9 +422,133 @@ class InspectionFormController extends GetxController {
   void removeImage(String key, int index) {
     final currentList = imageFiles[key] ?? [];
     if (index >= 0 && index < currentList.length) {
+      final path = currentList[index];
+      final field = _findFieldByKey(key);
+      final label = field?.label ?? key;
+      final fileName = path.split('/').last;
+
+      debugPrint(
+        '🗑️ USER ACTION: Removing image "$fileName" from field "$label"',
+      );
+
+      // Trigger Delete from Cloudinary
+      final data = mediaCloudinaryData[path];
+      if (data != null && data['publicId'] != null) {
+        final isVideo = field?.type == FType.video;
+        _deleteMedia(
+          data['publicId']!,
+          isVideo: isVideo,
+          localInfo: '[$label] $fileName',
+        );
+      } else {
+        debugPrint(
+          'ℹ️ Note: No remote delete called. This image was likely not uploaded yet or failed upload.',
+        );
+      }
+
       currentList.removeAt(index);
+      mediaCloudinaryData.remove(path);
+
       imageFiles[key] = List.from(currentList);
       imageFiles.refresh();
+    }
+  }
+
+  // ─── Cloudinary API Helpers ───
+  Future<void> _uploadMedia(
+    String fieldKey,
+    String localPath, {
+    required bool isVideo,
+  }) async {
+    try {
+      debugPrint(
+        '⬆️ [START] Uploading ${isVideo ? 'video' : 'image'} to Cloudinary...',
+      );
+      debugPrint('📍 Local Path: $localPath');
+
+      final url =
+          isVideo ? ApiConstants.uploadVideoUrl : ApiConstants.uploadImagesUrl;
+      final fileKey = isVideo ? 'video' : 'imagesList';
+
+      final file = await http.MultipartFile.fromPath(fileKey, localPath);
+
+      final response = await ApiService.multipartPost(
+        url: url,
+        fields: {'appointmentId': appointmentId},
+        files: [file],
+      );
+
+      // Print full API response for transparency
+      debugPrint('📦 API RESPONSE (Upload - $fieldKey): $response');
+
+      final resultData = response['data'] ?? response;
+      String? returnedUrl;
+      String? publicId;
+
+      // Check if files list exists (for image uploads)
+      if (resultData['files'] is List &&
+          (resultData['files'] as List).isNotEmpty) {
+        final firstFile = resultData['files'][0];
+        returnedUrl = firstFile['url']?.toString();
+        publicId =
+            (firstFile['publicId'] ?? firstFile['public_id'])?.toString();
+      } else {
+        // Fallback for direct fields (common in video uploads)
+        // Check multiple possible URL keys: originalUrl, optimizedUrl, url
+        returnedUrl =
+            (resultData['originalUrl'] ??
+                    resultData['optimizedUrl'] ??
+                    resultData['url'])
+                ?.toString();
+        publicId =
+            (resultData['publicId'] ?? resultData['public_id'])?.toString();
+      }
+
+      if (returnedUrl != null) {
+        debugPrint('🌐 SUCCESS: File available at: $returnedUrl');
+        if (publicId != null) {
+          debugPrint('🔑 PublicID stored for deletion: $publicId');
+          mediaCloudinaryData[localPath] = {
+            'url': returnedUrl,
+            'publicId': publicId,
+          };
+        } else {
+          debugPrint(
+            '⚠️ WARNING: No publicId found in response. Remote deletion will not work for this file.',
+          );
+        }
+      } else {
+        debugPrint(
+          '❌ ERROR: Upload response did not contain a URL or files list.',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ FATAL: Upload failed for $localPath: $e');
+    }
+  }
+
+  Future<void> _deleteMedia(
+    String publicId, {
+    required bool isVideo,
+    required String localInfo,
+  }) async {
+    try {
+      debugPrint(
+        '� API CALL: Deleting ${isVideo ? 'video' : 'image'} from Cloudinary',
+      );
+      debugPrint('📍 Target: $localInfo (PublicID: $publicId)');
+
+      final url =
+          isVideo ? ApiConstants.deleteVideoUrl : ApiConstants.deleteImageUrl;
+
+      final response = await ApiService.delete(url, {'publicId': publicId});
+
+      // Print full API response
+      debugPrint('� API RESPONSE (Delete $localInfo): $response');
+
+      debugPrint('✅ SUCCESS: Remote file deleted.');
+    } catch (e) {
+      debugPrint('❌ ERROR: Delete failed for $localInfo: $e');
     }
   }
 
