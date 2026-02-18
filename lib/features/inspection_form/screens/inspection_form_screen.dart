@@ -322,7 +322,66 @@ class _SectionPage extends StatelessWidget {
             totalSections: controller.sectionCount,
           ),
           const SizedBox(height: 20),
-          ...section.fields.map((field) => _buildField(field)),
+          ...section.fields.map((field) {
+            // Define fields that have dynamic visibility
+            final visibilityParents = {
+              'rcCondition': 'rcBookAvailability',
+              'rtoForm28': 'rtoNoc',
+              'duplicateKeyImages': 'duplicateKey',
+              // Interior / Airbags
+              'airbagImages': 'airbagFeaturesDriverSide',
+              'coDriverAirbagImages': 'airbagFeaturesCoDriverSide',
+              'driverSeatAirbagImages': 'driverSeatAirbag',
+              'coDriverSeatAirbagImages': 'coDriverSeatAirbag',
+              'rhsCurtainAirbagImages': 'rhsCurtainAirbag',
+              'lhsCurtainAirbagImages': 'lhsCurtainAirbag',
+              'driverKneeAirbagImages': 'driverSideKneeAirbag',
+              'coDriverKneeAirbagImages': 'coDriverKneeSeatAirbag',
+              'rhsRearSideAirbagImages': 'rhsRearSideAirbag',
+              'lhsRearSideAirbagImages': 'lhsRearSideAirbag',
+              // Exterior / Electricals
+              'lhsFoglampImages': 'lhsFoglamp',
+              'rhsFoglampImages': 'rhsFoglamp',
+              'lhsRearFogLampImages': 'lhsRearFogLamp',
+              'rhsRearFogLampImages': 'rhsRearFogLamp',
+              'rearWiperAndWasherImages': 'rearWiperWasher',
+              'reverseCameraImages': 'reverseCamera',
+              'sunroofImages': 'sunroof',
+              'insuranceImages': 'insurance',
+            };
+
+            if (visibilityParents.containsKey(field.key)) {
+              return Obx(() {
+                final parentKey = visibilityParents[field.key]!;
+                final parentVal = controller.getFieldValue(parentKey);
+
+                if (field.key == 'rcCondition') {
+                  if (parentVal != 'Original' && parentVal != 'Duplicate') {
+                    return const SizedBox.shrink();
+                  }
+                } else if (field.key == 'rtoForm28') {
+                  if (parentVal == 'Not Applicable') {
+                    return const SizedBox.shrink();
+                  }
+                } else if (field.key == 'duplicateKeyImages') {
+                  if (parentVal != 'Duplicate Key Available') {
+                    return const SizedBox.shrink();
+                  }
+                } else {
+                  // Media dependency (Not Applicable/Not Available/Policy Not Available check)
+                  if (parentVal == 'Not Applicable' ||
+                      parentVal == 'Not Available' ||
+                      parentVal == 'Policy Not Available') {
+                    return const SizedBox.shrink();
+                  }
+                }
+
+                return _buildField(field);
+              });
+            }
+
+            return _buildField(field);
+          }),
         ],
       ),
     );
@@ -338,6 +397,12 @@ class _SectionPage extends StatelessWidget {
         return _BoundImagePicker(controller: controller, field: field);
       case FType.number:
         return _BoundNumberField(controller: controller, field: field);
+      case FType.video:
+        return _BoundImagePicker(
+          controller: controller,
+          field: field,
+          isVideo: true,
+        );
     }
   }
 }
@@ -846,10 +911,17 @@ class _BoundDropdownState extends State<_BoundDropdown> {
 class _BoundImagePicker extends StatelessWidget {
   final InspectionFormController controller;
   final F field;
-  const _BoundImagePicker({required this.controller, required this.field});
+  final bool isVideo;
+  const _BoundImagePicker({
+    required this.controller,
+    required this.field,
+    this.isVideo = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bool isVideoField = isVideo || field.type == FType.video;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -860,7 +932,13 @@ class _BoundImagePicker extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8, left: 4),
             child: Row(
               children: [
-                const Icon(Icons.camera_alt_rounded, size: 16, color: _accent),
+                Icon(
+                  isVideoField
+                      ? Icons.videocam_rounded
+                      : Icons.camera_alt_rounded,
+                  size: 16,
+                  color: _accent,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -876,22 +954,29 @@ class _BoundImagePicker extends StatelessWidget {
             ),
           ),
 
-          // Image preview grid
+          // Image/Video preview grid
           Obx(() {
             controller.imageFiles.length; // trigger reactivity
-            final images = controller.getImages(field.key);
+            final media = controller.getImages(field.key);
 
             return Column(
               children: [
-                if (images.isNotEmpty) ...[
+                if (media.isNotEmpty) ...[
                   SizedBox(
                     height: 100,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: images.length,
+                      itemCount: media.length,
                       itemBuilder: (context, index) {
+                        if (isVideoField) {
+                          return _VideoThumbnail(
+                            path: media[index],
+                            onRemove:
+                                () => controller.removeImage(field.key, index),
+                          );
+                        }
                         return _ImageThumbnail(
-                          path: images[index],
+                          path: media[index],
                           onRemove:
                               () => controller.removeImage(field.key, index),
                         );
@@ -901,7 +986,8 @@ class _BoundImagePicker extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
                 _ImageUploadButton(
-                  hasImages: images.isNotEmpty,
+                  isVideo: isVideoField,
+                  hasImages: media.isNotEmpty,
                   onTap: () => _showPickerSheet(context),
                 ),
               ],
@@ -913,6 +999,7 @@ class _BoundImagePicker extends StatelessWidget {
   }
 
   void _showPickerSheet(BuildContext context) {
+    final bool isVideoField = isVideo || field.type == FType.video;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -936,9 +1023,9 @@ class _BoundImagePicker extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Add Photo',
-                  style: TextStyle(
+                Text(
+                  isVideoField ? 'Add Video' : 'Add Photo',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E293B),
@@ -954,39 +1041,61 @@ class _BoundImagePicker extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _PickerOption(
-                        icon: Icons.camera_alt_rounded,
+                        icon:
+                            isVideoField
+                                ? Icons.videocam_rounded
+                                : Icons.camera_alt_rounded,
                         label: 'Camera',
                         color: _accent,
                         onTap: () {
                           Navigator.pop(ctx);
-                          controller.pickImage(field.key, ImageSource.camera);
+                          if (isVideoField) {
+                            controller.pickVideo(field.key, ImageSource.camera);
+                          } else {
+                            controller.pickImage(field.key, ImageSource.camera);
+                          }
                         },
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _PickerOption(
-                        icon: Icons.photo_library_rounded,
+                        icon:
+                            isVideoField
+                                ? Icons.video_library_rounded
+                                : Icons.photo_library_rounded,
                         label: 'Gallery',
                         color: const Color(0xFF7C3AED),
                         onTap: () {
                           Navigator.pop(ctx);
-                          controller.pickImage(field.key, ImageSource.gallery);
+                          if (isVideoField) {
+                            controller.pickVideo(
+                              field.key,
+                              ImageSource.gallery,
+                            );
+                          } else {
+                            controller.pickImage(
+                              field.key,
+                              ImageSource.gallery,
+                            );
+                          }
                         },
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _PickerOption(
-                        icon: Icons.photo_album_rounded,
-                        label: 'Multiple',
-                        color: const Color(0xFF059669),
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          controller.pickMultipleImages(field.key);
-                        },
+                    if (!isVideoField) ...[
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _PickerOption(
+                          icon: Icons.photo_album_rounded,
+                          label: 'Multiple',
+                          color: const Color(0xFF059669),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            controller.pickMultipleImages(field.key);
+                          },
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
@@ -1144,12 +1253,22 @@ class _ImageThumbnail extends StatelessWidget {
 }
 
 class _ImageUploadButton extends StatelessWidget {
-  final bool hasImages;
   final VoidCallback onTap;
-  const _ImageUploadButton({required this.hasImages, required this.onTap});
+  final bool hasImages;
+  final bool isVideo;
+  const _ImageUploadButton({
+    required this.onTap,
+    required this.hasImages,
+    this.isVideo = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    String label = isVideo ? 'Tap to Add Video' : 'Tap to Add Photos';
+    if (hasImages) {
+      label = isVideo ? 'Add More Videos' : 'Add More Photos';
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1164,15 +1283,19 @@ class _ImageUploadButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasImages
-                    ? Icons.add_photo_alternate_rounded
-                    : Icons.add_a_photo_rounded,
+                isVideo
+                    ? (hasImages
+                        ? Icons.video_call_rounded
+                        : Icons.videocam_rounded)
+                    : (hasImages
+                        ? Icons.add_photo_alternate_rounded
+                        : Icons.add_a_photo_rounded),
                 color: _accent.withValues(alpha: 0.7),
                 size: hasImages ? 20 : 24,
               ),
               const SizedBox(width: 8),
               Text(
-                hasImages ? 'Add More Photos' : 'Tap to Add Photos',
+                label,
                 style: TextStyle(
                   color: _accent.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
@@ -1182,6 +1305,63 @@ class _ImageUploadButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _VideoThumbnail extends StatelessWidget {
+  final String path;
+  final VoidCallback onRemove;
+  const _VideoThumbnail({required this.path, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Center(
+            child: Icon(
+              Icons.play_circle_fill_rounded,
+              color: _accent,
+              size: 40,
+            ),
+          ),
+          Positioned(
+            bottom: 4,
+            left: 4,
+            right: 4,
+            child: Text(
+              path.split('/').last,
+              style: const TextStyle(fontSize: 8, color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -300,6 +300,26 @@ class InspectionFormController extends GetxController {
     }
   }
 
+  Future<void> pickVideo(String key, ImageSource source) async {
+    try {
+      final XFile? picked = await _picker.pickVideo(source: source);
+      if (picked != null) {
+        // Limited to 1 video for these specific fields
+        imageFiles[key] = [picked.path];
+        imageFiles.refresh();
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Could not pick video: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+      );
+    }
+  }
+
   Future<void> pickMultipleImages(String key) async {
     try {
       final List<XFile> picked = await _picker.pickMultiImage(
@@ -452,20 +472,70 @@ class InspectionFormController extends GetxController {
     final missingBySection = <String, List<String>>{};
     for (final section in InspectionFieldDefs.sections) {
       for (final field in section.fields) {
-        // Skip non-mandatory fields
-        if (field.optional || nonMandatoryKeys.contains(field.key)) continue;
+        // 1. Skip if field should technically be hidden (Optional/Dynamic logic)
+        if (field.optional) continue;
 
-        if (field.type == FType.image) {
+        // RC Condition visibility logic
+        if (field.key == 'rcCondition') {
+          final rcBookVal = getFieldValue('rcBookAvailability');
+          if (rcBookVal != 'Original' && rcBookVal != 'Duplicate') continue;
+        }
+
+        // RTO Form 28 visibility logic
+        if (field.key == 'rtoForm28') {
+          final rtoNocVal = getFieldValue('rtoNoc');
+          if (rtoNocVal == 'Not Applicable') continue;
+        }
+
+        // Conditional requirements for images based on Not Applicable selection
+        final parentFields = {
+          'lhsFoglampImages': 'lhsFoglamp',
+          'rhsFoglampImages': 'rhsFoglamp',
+          'lhsRearFogLampImages': 'lhsRearFogLamp',
+          'rhsRearFogLampImages': 'rhsRearFogLamp',
+          'rearWiperAndWasherImages': 'rearWiperWasher',
+          'reverseCameraImages': 'reverseCamera',
+          'sunroofImages': 'sunroof',
+          'airbagImages': 'airbagFeaturesDriverSide',
+          'coDriverAirbagImages': 'airbagFeaturesCoDriverSide',
+          'driverSeatAirbagImages': 'driverSeatAirbag',
+          'coDriverSeatAirbagImages': 'coDriverSeatAirbag',
+          'rhsCurtainAirbagImages': 'rhsCurtainAirbag',
+          'lhsCurtainAirbagImages': 'lhsCurtainAirbag',
+          'driverKneeAirbagImages': 'driverSideKneeAirbag',
+          'coDriverKneeAirbagImages': 'coDriverKneeSeatAirbag',
+          'rhsRearSideAirbagImages': 'rhsRearSideAirbag',
+          'lhsRearSideAirbagImages': 'lhsRearSideAirbag',
+          'insuranceImages': 'insurance',
+        };
+
+        if (parentFields.containsKey(field.key)) {
+          final parentVal = getFieldValue(parentFields[field.key]!);
+          if (parentVal == 'Not Applicable' ||
+              parentVal == 'Not Available' ||
+              parentVal == 'Policy Not Available') {
+            continue;
+          }
+        }
+
+        // Duplicate Key Images requirement
+        if (field.key == 'duplicateKeyImages') {
+          final dupKeyVal = getFieldValue('duplicateKey');
+          if (dupKeyVal != 'Duplicate Key Available') continue;
+        }
+
+        // 2. Perform Validation
+        if (field.type == FType.image || field.type == FType.video) {
           final imgs = getImages(field.key);
-          if (imgs.isEmpty) {
-            missingBySection
-                .putIfAbsent(section.title, () => [])
-                .add(field.label);
+          final minReq = field.minImages > 0 ? field.minImages : 1;
+          if (imgs.length < minReq) {
+            String label = field.label;
+            if (minReq > 1) label += ' (At least $minReq photos)';
+            missingBySection.putIfAbsent(section.title, () => []).add(label);
           }
         } else {
           final val = getFieldValue(field.key);
           if (val.isEmpty || val == '0') {
-            // Allow 0 for numbers that might legitimately be 0
             if (field.type == FType.number && val == '0') continue;
             missingBySection
                 .putIfAbsent(section.title, () => [])
@@ -917,6 +987,7 @@ class InspectionFormController extends GetxController {
         'rc_status_description',
         'status_descr',
       ],
+      'city': ['city', 'city_name', 'registered_city', 'rto_city'],
       'blacklistStatus': [
         'blacklist_status',
         'is_blacklisted',

@@ -35,6 +35,9 @@ class DashboardStatsController extends GetxController {
   final reScheduledCountdownDayLabel = ''.obs;
   final hasReScheduledCountdown = false.obs;
 
+  final isScheduledExpired = false.obs;
+  final isReScheduledExpired = false.obs;
+
   Timer? _countdownTimer;
   DateTime? _nextScheduledTime;
   DateTime? _nextReScheduledTime;
@@ -125,11 +128,17 @@ class DashboardStatsController extends GetxController {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
       bool searchNeeded = false;
+      final isSchedExpired = isScheduledExpired.value;
+      final isReSchedExpired = isReScheduledExpired.value;
 
-      if (_nextScheduledTime != null && now.isAfter(_nextScheduledTime!)) {
+      if (_nextScheduledTime != null &&
+          !isSchedExpired &&
+          now.isAfter(_nextScheduledTime!)) {
         searchNeeded = true;
       }
-      if (_nextReScheduledTime != null && now.isAfter(_nextReScheduledTime!)) {
+      if (_nextReScheduledTime != null &&
+          !isReSchedExpired &&
+          now.isAfter(_nextReScheduledTime!)) {
         searchNeeded = true;
       }
 
@@ -142,7 +151,6 @@ class DashboardStatsController extends GetxController {
 
   /// Scans records to find next inspection for Scheduled and Re-Scheduled specifically
   void _findNextInspections() {
-    final now = DateTime.now();
     DateTime? nextSched;
     DateTime? nextReSched;
 
@@ -150,7 +158,8 @@ class DashboardStatsController extends GetxController {
       final dt = record.inspectionDateTime;
       if (dt == null) continue;
       final localDt = dt.toLocal();
-      if (localDt.isBefore(now)) continue;
+      // Remove isBefore(now) check so the earliest item (even if overdue) is tracked
+      // and showing 00h:00m:00s until it is moved out of this status.
 
       if (record.inspectionStatus == InspectionStatuses.scheduled) {
         if (nextSched == null || localDt.isBefore(nextSched)) {
@@ -166,8 +175,10 @@ class DashboardStatsController extends GetxController {
     _nextScheduledTime = nextSched;
     _nextReScheduledTime = nextReSched;
 
-    hasScheduledCountdown.value = _nextScheduledTime != null;
-    hasReScheduledCountdown.value = _nextReScheduledTime != null;
+    // Badge stays visible as long as there is data (count > 0)
+    hasScheduledCountdown.value = scheduledCount.value > 0 && nextSched != null;
+    hasReScheduledCountdown.value =
+        reScheduledCount.value > 0 && nextReSched != null;
   }
 
   void _updateAllCountdownDisplays() {
@@ -176,34 +187,31 @@ class DashboardStatsController extends GetxController {
     // Update Scheduled
     if (_nextScheduledTime != null) {
       final diff = _nextScheduledTime!.difference(now);
-      if (diff.isNegative) {
-        scheduledCountdownText.value = '00:00:00';
-      } else {
-        scheduledCountdownText.value = _formatDuration(diff);
-        scheduledCountdownDayLabel.value = _getDayLabel(_nextScheduledTime!);
-      }
+      // Turn red/pulse if 1 hour or less remains
+      isScheduledExpired.value = diff.inSeconds <= 3600;
+      scheduledCountdownText.value = _formatDuration(diff);
+      scheduledCountdownDayLabel.value = _getDayLabel(_nextScheduledTime!);
     }
 
     // Update Re-Scheduled
     if (_nextReScheduledTime != null) {
       final diff = _nextReScheduledTime!.difference(now);
-      if (diff.isNegative) {
-        reScheduledCountdownText.value = '00:00:00';
-      } else {
-        reScheduledCountdownText.value = _formatDuration(diff);
-        reScheduledCountdownDayLabel.value = _getDayLabel(
-          _nextReScheduledTime!,
-        );
-      }
+      // Turn red/pulse if 1 hour or less remains
+      isReScheduledExpired.value = diff.inSeconds <= 3600;
+      reScheduledCountdownText.value = _formatDuration(diff);
+      reScheduledCountdownDayLabel.value = _getDayLabel(_nextReScheduledTime!);
     }
   }
 
   String _formatDuration(Duration diff) {
+    if (diff.isNegative || diff == Duration.zero) {
+      return '00h:00m:00s';
+    }
     final hours = diff.inHours;
     final minutes = diff.inMinutes.remainder(60);
     final seconds = diff.inSeconds.remainder(60);
 
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')}h:${minutes.toString().padLeft(2, '0')}m:${seconds.toString().padLeft(2, '0')}s';
   }
 
   /// Returns "Today", "Tomorrow", or the weekday name.

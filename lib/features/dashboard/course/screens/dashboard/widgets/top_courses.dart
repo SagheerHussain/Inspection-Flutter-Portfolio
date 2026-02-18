@@ -33,6 +33,7 @@ class DashboardTopCourses extends StatelessWidget {
         hasTimerObs: stats.hasReScheduledCountdown,
         timerTextObs: stats.reScheduledCountdownText,
         dayLabelObs: stats.reScheduledCountdownDayLabel,
+        isExpiredObs: stats.isReScheduledExpired,
       ),
       _QuickLinkItem(
         title: "Re-Inspected",
@@ -86,7 +87,7 @@ class DashboardTopCourses extends StatelessWidget {
                     () => SchedulesScreen(statusFilter: item.statusFilter),
                   ),
               child: Container(
-                width: 150,
+                width: 165,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: LinearGradient(
@@ -100,15 +101,15 @@ class DashboardTopCourses extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Timer (left) + Icon (right)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (item.hasTimerObs != null)
                           Obx(() {
-                            if (!item.hasTimerObs!.value)
+                            if (!item.hasTimerObs!.value) {
                               return const SizedBox.shrink();
+                            }
                             return Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +122,9 @@ class DashboardTopCourses extends StatelessWidget {
                                     ),
                                     margin: const EdgeInsets.only(bottom: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.3),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -134,23 +137,47 @@ class DashboardTopCourses extends StatelessWidget {
                                       ),
                                     ),
                                   ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 2,
+                                    bottom: 4,
+                                  ),
+                                  child: Text(
+                                    "Next Inspection in",
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
                                 Container(
+                                  width: 98,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 6,
-                                    vertical: 4,
+                                    vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color:
+                                        (item.isExpiredObs?.value ?? false)
+                                            ? Colors.red.withValues(alpha: 0.9)
+                                            : Colors.black.withValues(
+                                              alpha: 0.4,
+                                            ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
-                                        Icons.access_time_rounded,
-                                        size: 10,
-                                        color: Colors.white,
-                                      ),
+                                      if (item.isExpiredObs?.value ?? false)
+                                        const _PulseDot()
+                                      else
+                                        const Icon(
+                                          Icons.access_time_rounded,
+                                          size: 10,
+                                          color: Colors.white,
+                                        ),
                                       const SizedBox(width: 4),
                                       Text(
                                         item.timerTextObs?.value ?? '',
@@ -291,6 +318,56 @@ class _AnimatedCounterState extends State<_AnimatedCounter>
   }
 }
 
+class _PulseDot extends StatefulWidget {
+  const _PulseDot();
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: Colors.red, blurRadius: 4, spreadRadius: 1),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickLinkItem {
   final String title;
   final RxInt countObs;
@@ -301,6 +378,7 @@ class _QuickLinkItem {
   final RxBool? hasTimerObs;
   final RxString? timerTextObs;
   final RxString? dayLabelObs;
+  final RxBool? isExpiredObs;
 
   _QuickLinkItem({
     required this.title,
@@ -312,5 +390,6 @@ class _QuickLinkItem {
     this.hasTimerObs,
     this.timerTextObs,
     this.dayLabelObs,
+    this.isExpiredObs,
   });
 }

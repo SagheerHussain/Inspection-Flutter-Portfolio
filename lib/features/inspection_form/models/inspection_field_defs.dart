@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Field type enum
-enum FType { text, dropdown, image, number }
+enum FType { text, dropdown, image, number, video }
 
 /// Single form field definition
 class F {
@@ -12,6 +12,7 @@ class F {
   final bool optional;
   final bool readonly;
   final int maxLines;
+  final int minImages;
 
   const F.text(
     this.key,
@@ -20,12 +21,14 @@ class F {
     this.readonly = false,
     this.maxLines = 1,
   }) : type = FType.text,
-       options = const [];
+       options = const [],
+       minImages = 0;
   const F.drop(this.key, this.label, this.options, {this.optional = false})
     : type = FType.dropdown,
       readonly = false,
-      maxLines = 1;
-  const F.img(this.key, this.label, {this.optional = false})
+      maxLines = 1,
+      minImages = 0;
+  const F.img(this.key, this.label, {this.optional = false, this.minImages = 1})
     : type = FType.image,
       options = const [],
       readonly = false,
@@ -34,7 +37,14 @@ class F {
     : type = FType.number,
       options = const [],
       readonly = false,
-      maxLines = 1;
+      maxLines = 1,
+      minImages = 0;
+  const F.video(this.key, this.label, {this.optional = false})
+    : type = FType.video,
+      options = const [],
+      readonly = false,
+      maxLines = 1,
+      minImages = 0;
 }
 
 /// A section in the form
@@ -62,7 +72,7 @@ class InspectionFieldDefs {
       icon: Icons.description,
       fields: [
         F.text('appointmentId', 'Appointment ID', readonly: true),
-        F.text('city', 'City'),
+        F.text('city', 'City', readonly: true),
         F.text('registrationNumber', 'Registration Number'),
         F.drop('toBeScrapped', 'To Be Scrapped', ['Yes', 'No']),
         F.text('chassisDetails', 'Chassis Details'),
@@ -70,7 +80,8 @@ class InspectionFieldDefs {
         F.text('vinPlateDetails', 'Vin Plate Details'),
         F.img('vinPlateImages', 'Vin Plate Image'),
         F.drop('rcBookAvailability', 'RC Book Availability', [
-          'Available',
+          'Original',
+          'Duplicate',
           'Not Available',
         ]),
         F.drop('rcCondition', 'RC Condition', [
@@ -79,7 +90,7 @@ class InspectionFieldDefs {
           'Poor',
           'Damaged',
         ]),
-        F.img('rcTokenImages', 'RC Token Image'),
+        F.img('rcTokenImages', 'RC Token Image', minImages: 2),
         F.drop('mismatchInRc', 'Mismatch in RC', ['No', 'Yes']),
         F.text('registrationDate', 'Registration Date'),
         F.text('fitnessValidity', 'Fitness Validity'),
@@ -116,7 +127,7 @@ class InspectionFieldDefs {
           'Lifetime',
         ]),
         F.text('taxValidTill', 'Tax Valid Till'),
-        F.img('roadTaxImages', 'Road Tax Image'),
+        F.img('roadTaxImages', 'Road Tax Image', minImages: 1),
         F.text('hypothecationDetails', 'Hypothecation Details'),
         F.text('hypothecatedTo', 'Hypothecated To'),
         F.drop('insurance', 'Insurance Type', [
@@ -124,6 +135,7 @@ class InspectionFieldDefs {
           'Third Party',
           'Expired',
           'Not Available',
+          'Policy Not Available',
         ]),
         F.text('insuranceValidity', 'Insurance Validity'),
         F.text('insurer', 'Insured By'),
@@ -138,6 +150,7 @@ class InspectionFieldDefs {
           'Required',
           'Not Required',
           'Issued',
+          'Not Applicable',
         ]),
         F.drop('rtoForm28', 'RTO Form 28 (2 Copies)', [
           'Required',
@@ -145,7 +158,11 @@ class InspectionFieldDefs {
           'Available',
         ]),
         F.drop('partyPeshi', 'Party Peshi', ['Yes', 'No']),
-        F.drop('duplicateKey', 'Duplicate Key', ['Yes', 'No']),
+        F.drop('duplicateKey', 'Duplicate Key', [
+          'Yes',
+          'No',
+          'Duplicate Key Available',
+        ]),
         F.img('duplicateKeyImages', 'Duplicate Key Images'),
         F.text(
           'additionalDetails',
@@ -174,7 +191,6 @@ class InspectionFieldDefs {
         ]),
         F.img('bonnetOpenImages', 'Bonnet Open'),
         F.img('bonnetClosedImages', 'Bonnet Closed'),
-        F.img('bonnetImages', 'Bonnet Images', optional: true),
         F.drop('frontWindshield', 'Front Windshield', [
           'OK',
           'Crack',
@@ -206,7 +222,12 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('lhsHeadlampImages', 'LHS Headlamp Image'),
-        F.drop('lhsFoglamp', 'LHS Foglamp', ['OK', 'Broken', 'Not Present']),
+        F.drop('lhsFoglamp', 'LHS Foglamp', [
+          'OK',
+          'Broken',
+          'Not Present',
+          'Not Applicable',
+        ]),
         F.img('lhsFoglampImages', 'LHS Foglamp Image'),
         F.drop('rhsHeadlamp', 'RHS Headlamp', [
           'OK',
@@ -215,7 +236,12 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('rhsHeadlampImages', 'RHS Headlamp Image'),
-        F.drop('rhsFoglamp', 'RHS Foglamp', ['OK', 'Broken', 'Not Present']),
+        F.drop('rhsFoglamp', 'RHS Foglamp', [
+          'OK',
+          'Broken',
+          'Not Present',
+          'Not Applicable',
+        ]),
         F.img('rhsFoglampImages', 'RHS Foglamp Image'),
       ],
     ),
@@ -350,6 +376,7 @@ class InspectionFieldDefs {
           'Present',
           'Not Present',
           'Broken',
+          'Not Applicable',
         ]),
         F.img('lhsRearFogLampImages', 'LHS Rear Fog Lamp Image'),
         F.drop('rhsTailLamp', 'RHS Tail Lamp', ['OK', 'Broken', 'Fogged']),
@@ -358,6 +385,7 @@ class InspectionFieldDefs {
           'Present',
           'Not Present',
           'Broken',
+          'Not Applicable',
         ]),
         F.img('rhsRearFogLampImages', 'RHS Rear Fog Lamp Image'),
         F.drop('rearWindshield', 'Rear Windshield', [
@@ -503,7 +531,7 @@ class InspectionFieldDefs {
       icon: Icons.engineering,
       fields: [
         F.img('engineBayImages', 'Engine Bay'),
-        F.img('engineVideo', 'Engine Sound Video'),
+        F.video('engineVideo', 'Engine Sound Video'),
         F.drop('engine', 'Engine', [
           'OK',
           'Noise',
@@ -602,7 +630,7 @@ class InspectionFieldDefs {
           'Black',
           'Blue',
         ]),
-        F.img('exhaustSmokeVideo', 'Exhaust Smoke Video'),
+        F.video('exhaustSmokeVideo', 'Exhaust Smoke Video'),
         F.text(
           'commentsOnTowing',
           'Comment on Towing',
@@ -682,17 +710,30 @@ class InspectionFieldDefs {
           'Working',
           'Not Working',
           'Not Available',
+          'Not Applicable',
         ]),
         F.img('rearWiperAndWasherImages', 'Rear Wiper & Washer Image'),
         F.drop('reverseCamera', 'Reverse Camera', [
           'Working',
           'Not Working',
           'Not Available',
+          'Not Applicable',
         ]),
         F.img('reverseCameraImages', 'Reverse Camera Image'),
-        F.drop('sunroof', 'Sunroof', ['Yes', 'No', 'Jammed']),
+        F.drop('sunroof', 'Sunroof', ['Yes', 'No', 'Jammed', 'Not Applicable']),
         F.img('sunroofImages', 'Sunroof Image'),
-        F.text('noOfPowerWindows', 'Number of Power Windows'),
+        F.drop('noOfPowerWindows', 'Number of Power Windows', [
+          'Not Applicable',
+          '1',
+          '2',
+          '4',
+          '6',
+          '7',
+          '8',
+          '9',
+          '10',
+          '12',
+        ]),
         F.drop('powerWindowConditionRhsFront', 'Driver Door Features', [
           'Power Window',
           'Central Lock',
@@ -723,22 +764,36 @@ class InspectionFieldDefs {
       title: 'Interior',
       icon: Icons.airline_seat_recline_extra,
       fields: [
-        F.num('noOfAirBags', 'Number of Airbags'),
+        F.drop('noOfAirBags', 'Number of Airbags', [
+          'Not Applicable',
+          '1',
+          '2',
+          '4',
+          '6',
+          '7',
+          '8',
+          '9',
+          '10',
+          '12',
+        ]),
         F.drop('airbagFeaturesDriverSide', 'Driver Airbag', [
           'Present',
           'Not Present',
           'Deployed',
+          'Not Applicable',
         ]),
         F.img('airbagImages', 'Driver Airbag Image', optional: true),
         F.drop('airbagFeaturesCoDriverSide', 'Co-Driver Airbag', [
           'Present',
           'Not Present',
           'Deployed',
+          'Not Applicable',
         ]),
         F.img('coDriverAirbagImages', 'Co-Driver Airbag Image', optional: true),
         F.drop('driverSeatAirbag', 'Driver Seat Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'driverSeatAirbagImages',
@@ -748,6 +803,7 @@ class InspectionFieldDefs {
         F.drop('coDriverSeatAirbag', 'Co-Driver Seat Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'coDriverSeatAirbagImages',
@@ -757,6 +813,7 @@ class InspectionFieldDefs {
         F.drop('rhsCurtainAirbag', 'RHS Curtain Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'rhsCurtainAirbagImages',
@@ -766,6 +823,7 @@ class InspectionFieldDefs {
         F.drop('lhsCurtainAirbag', 'LHS Curtain Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'lhsCurtainAirbagImages',
@@ -775,6 +833,7 @@ class InspectionFieldDefs {
         F.drop('driverSideKneeAirbag', 'Driver Knee Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'driverKneeAirbagImages',
@@ -784,6 +843,7 @@ class InspectionFieldDefs {
         F.drop('coDriverKneeSeatAirbag', 'Co-Driver Knee Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'coDriverKneeAirbagImages',
@@ -793,6 +853,7 @@ class InspectionFieldDefs {
         F.drop('rhsRearSideAirbag', 'RHS Rear Side Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'rhsRearSideAirbagImages',
@@ -802,6 +863,7 @@ class InspectionFieldDefs {
         F.drop('lhsRearSideAirbag', 'LHS Rear Side Airbag', [
           'Present',
           'Not Present',
+          'Not Applicable',
         ]),
         F.img(
           'lhsRearSideAirbagImages',
