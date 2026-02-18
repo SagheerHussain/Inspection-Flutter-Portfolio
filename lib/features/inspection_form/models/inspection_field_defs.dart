@@ -13,6 +13,7 @@ class F {
   final bool readonly;
   final int maxLines;
   final int minImages;
+  final int maxImages;
 
   const F.text(
     this.key,
@@ -22,29 +23,41 @@ class F {
     this.maxLines = 1,
   }) : type = FType.text,
        options = const [],
-       minImages = 0;
+       minImages = 0,
+       maxImages = 0;
   const F.drop(this.key, this.label, this.options, {this.optional = false})
     : type = FType.dropdown,
       readonly = false,
       maxLines = 1,
-      minImages = 0;
-  const F.img(this.key, this.label, {this.optional = false, this.minImages = 1})
-    : type = FType.image,
-      options = const [],
-      readonly = false,
-      maxLines = 1;
+      minImages = 0,
+      maxImages = 0;
+  const F.img(
+    this.key,
+    this.label, {
+    this.optional = false,
+    this.minImages = 1,
+    this.maxImages = 3,
+  }) : type = FType.image,
+       options = const [],
+       readonly = false,
+       maxLines = 1;
   const F.num(this.key, this.label, {this.optional = false})
     : type = FType.number,
       options = const [],
       readonly = false,
       maxLines = 1,
-      minImages = 0;
-  const F.video(this.key, this.label, {this.optional = false})
-    : type = FType.video,
-      options = const [],
-      readonly = false,
-      maxLines = 1,
-      minImages = 0;
+      minImages = 0,
+      maxImages = 0;
+  const F.video(
+    this.key,
+    this.label, {
+    this.optional = false,
+    this.minImages = 1,
+    this.maxImages = 1,
+  }) : type = FType.video,
+       options = const [],
+       readonly = false,
+       maxLines = 1;
 }
 
 /// A section in the form

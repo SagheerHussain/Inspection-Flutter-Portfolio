@@ -987,7 +987,8 @@ class _BoundImagePicker extends StatelessWidget {
                 ],
                 _ImageUploadButton(
                   isVideo: isVideoField,
-                  hasImages: media.isNotEmpty,
+                  currentCount: media.length,
+                  maxCount: field.maxImages,
                   onTap: () => _showPickerSheet(context),
                 ),
               ],
@@ -1254,56 +1255,119 @@ class _ImageThumbnail extends StatelessWidget {
 
 class _ImageUploadButton extends StatelessWidget {
   final VoidCallback onTap;
-  final bool hasImages;
+  final int currentCount;
+  final int maxCount;
   final bool isVideo;
+
   const _ImageUploadButton({
     required this.onTap,
-    required this.hasImages,
+    required this.currentCount,
+    required this.maxCount,
     this.isVideo = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isLimitReached = maxCount > 0 && currentCount >= maxCount;
+    final bool hasImages = currentCount > 0;
+
     String label = isVideo ? 'Tap to Add Video' : 'Tap to Add Photos';
     if (hasImages) {
-      label = isVideo ? 'Add More Videos' : 'Add More Photos';
+      if (isLimitReached) {
+        label = isVideo ? 'Video Limit Reached' : 'Photo Limit Reached';
+      } else {
+        label = isVideo ? 'Add More Videos' : 'Add More Photos';
+      }
     }
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: hasImages ? 48 : 80,
+      onTap: isLimitReached ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: hasImages ? 52 : 84,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _accent.withValues(alpha: 0.3), width: 1.5),
+          color: isLimitReached ? Colors.grey.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                isLimitReached
+                    ? Colors.grey.shade300
+                    : _accent.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          boxShadow:
+              hasImages
+                  ? []
+                  : [
+                    BoxShadow(
+                      color: _accent.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
         ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isVideo
-                    ? (hasImages
-                        ? Icons.video_call_rounded
-                        : Icons.videocam_rounded)
-                    : (hasImages
-                        ? Icons.add_photo_alternate_rounded
-                        : Icons.add_a_photo_rounded),
-                color: _accent.withValues(alpha: 0.7),
-                size: hasImages ? 20 : 24,
+        child: Stack(
+          children: [
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isVideo
+                        ? (hasImages
+                            ? Icons.video_call_rounded
+                            : Icons.videocam_rounded)
+                        : (hasImages
+                            ? Icons.add_photo_alternate_rounded
+                            : Icons.add_a_photo_rounded),
+                    color:
+                        isLimitReached
+                            ? Colors.grey
+                            : _accent.withValues(alpha: 0.7),
+                    size: hasImages ? 22 : 28,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isLimitReached ? Colors.grey : _accent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: hasImages ? 14 : 15,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: _accent.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w600,
-                  fontSize: hasImages ? 13 : 14,
+            ),
+            if (maxCount > 0)
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          isLimitReached
+                              ? Colors.grey.shade200
+                              : _accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$currentCount / $maxCount',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isLimitReached ? Colors.grey : _accent,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

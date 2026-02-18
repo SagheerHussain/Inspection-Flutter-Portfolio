@@ -21,6 +21,16 @@ class InspectionFormController extends GetxController {
   final isSaving = false.obs;
   final isFetchingDetails = false.obs;
 
+  // Helper to find field definition by key
+  F? _findFieldByKey(String key) {
+    for (final section in InspectionFieldDefs.sections) {
+      for (final field in section.fields) {
+        if (field.key == key) return field;
+      }
+    }
+    return null;
+  }
+
   // Tabs / Sections
   final currentSectionIndex = 0.obs;
   final pageController = PageController();
@@ -276,6 +286,22 @@ class InspectionFormController extends GetxController {
   // ─── Image Operations ───
   Future<void> pickImage(String key, ImageSource source) async {
     try {
+      final field = _findFieldByKey(key);
+      final max = field?.maxImages ?? 3;
+      final current = imageFiles[key]?.length ?? 0;
+
+      if (current >= max) {
+        Get.snackbar(
+          'Limit Reached',
+          'You can only upload up to $max images for this field.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+        return;
+      }
+
       final XFile? picked = await _picker.pickImage(
         source: source,
         imageQuality: 80,
@@ -304,7 +330,7 @@ class InspectionFormController extends GetxController {
     try {
       final XFile? picked = await _picker.pickVideo(source: source);
       if (picked != null) {
-        // Limited to 1 video for these specific fields
+        // Video always limited (maxImages is 1 for video by default now)
         imageFiles[key] = [picked.path];
         imageFiles.refresh();
       }
@@ -322,16 +348,48 @@ class InspectionFormController extends GetxController {
 
   Future<void> pickMultipleImages(String key) async {
     try {
+      final field = _findFieldByKey(key);
+      final max = field?.maxImages ?? 3;
+      final currentPaths = imageFiles[key] ?? [];
+
+      if (currentPaths.length >= max) {
+        Get.snackbar(
+          'Limit Reached',
+          'You can already have $max images for this field.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+        return;
+      }
+
       final List<XFile> picked = await _picker.pickMultiImage(
         imageQuality: 80,
         maxWidth: 1920,
         maxHeight: 1080,
       );
+
       if (picked.isNotEmpty) {
-        final currentList = imageFiles[key] ?? [];
-        currentList.addAll(picked.map((x) => x.path));
-        imageFiles[key] = List.from(currentList);
+        final currentList = List<String>.from(imageFiles[key] ?? []);
+        // Take only up to what fits
+        final remaining = max - currentList.length;
+        final toAdd = picked.take(remaining).map((x) => x.path);
+
+        currentList.addAll(toAdd);
+        imageFiles[key] = currentList;
         imageFiles.refresh();
+
+        if (picked.length > remaining) {
+          Get.snackbar(
+            'Limit Restricted',
+            'Only $remaining images were added to respect the $max image limit.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.blueAccent,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(12),
+          );
+        }
       }
     } catch (e) {
       Get.snackbar(
