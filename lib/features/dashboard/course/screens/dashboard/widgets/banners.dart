@@ -5,6 +5,7 @@ import '../../../../../../utils/constants/inspection_statuses.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../../course/controllers/dashboard_stats_controller.dart';
 import '../../../../../schedules/screens/schedules_screen.dart';
+import 'search.dart';
 
 class DashboardBanners extends StatelessWidget {
   const DashboardBanners({super.key, required this.txtTheme});
@@ -24,12 +25,16 @@ class DashboardBanners extends StatelessWidget {
           // 1st Banner: Schedules
           Expanded(
             child: GestureDetector(
-              onTap:
-                  () => Get.to(
-                    () => const SchedulesScreen(
-                      statusFilter: InspectionStatuses.scheduled,
-                    ),
+              onTap: () {
+                if (Get.isRegistered<DashboardSearchController>()) {
+                  Get.find<DashboardSearchController>().clearSearch();
+                }
+                Get.to(
+                  () => const SchedulesScreen(
+                    statusFilter: InspectionStatuses.scheduled,
                   ),
+                );
+              },
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -60,9 +65,10 @@ class DashboardBanners extends StatelessWidget {
                             if (!stats.hasScheduledCountdown.value) {
                               return const SizedBox.shrink();
                             }
-                            return _CountdownPill(
+                            return _BannerTimer(
                               time: stats.scheduledCountdownText.value,
                               dayLabel: stats.scheduledCountdownDayLabel.value,
+                              isExpired: stats.isScheduledExpired.value,
                               dark: dark,
                             );
                           }),
@@ -95,12 +101,12 @@ class DashboardBanners extends StatelessWidget {
                           style:
                               txtTheme.displayLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                fontSize: 64,
+                                fontSize: 48,
                                 height: 1.0,
                                 color: const Color(0xFF4A90D9),
                               ) ??
                               const TextStyle(
-                                fontSize: 64,
+                                fontSize: 48,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFF4A90D9),
                               ),
@@ -114,7 +120,7 @@ class DashboardBanners extends StatelessWidget {
                       "Schedules",
                       style: txtTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 24,
+                        fontSize: 20,
                       ),
                     ),
                   ],
@@ -127,12 +133,16 @@ class DashboardBanners extends StatelessWidget {
           // 2nd Banner: Running
           Expanded(
             child: GestureDetector(
-              onTap:
-                  () => Get.to(
-                    () => const SchedulesScreen(
-                      statusFilter: InspectionStatuses.running,
-                    ),
+              onTap: () {
+                if (Get.isRegistered<DashboardSearchController>()) {
+                  Get.find<DashboardSearchController>().clearSearch();
+                }
+                Get.to(
+                  () => const SchedulesScreen(
+                    statusFilter: InspectionStatuses.running,
                   ),
+                );
+              },
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -181,12 +191,12 @@ class DashboardBanners extends StatelessWidget {
                           style:
                               txtTheme.displayLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                fontSize: 64,
+                                fontSize: 48,
                                 height: 1.0,
                                 color: const Color(0xFFFF6B35),
                               ) ??
                               const TextStyle(
-                                fontSize: 64,
+                                fontSize: 48,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFFFF6B35),
                               ),
@@ -200,7 +210,7 @@ class DashboardBanners extends StatelessWidget {
                       "Running",
                       style: txtTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 24,
+                        fontSize: 20,
                       ),
                     ),
                   ],
@@ -214,133 +224,147 @@ class DashboardBanners extends StatelessWidget {
   }
 }
 
-/// ── Countdown Pill ──
-/// A small, premium countdown label with a pulsing dot indicator.
-class _CountdownPill extends StatefulWidget {
+class _BannerTimer extends StatelessWidget {
   final String time;
   final String dayLabel;
+  final bool isExpired;
   final bool dark;
 
-  const _CountdownPill({
+  const _BannerTimer({
     required this.time,
     required this.dayLabel,
+    required this.isExpired,
     required this.dark,
   });
 
   @override
-  State<_CountdownPill> createState() => _CountdownPillState();
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Day Label (e.g., TODAY, TOMORROW)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: BoxDecoration(
+            color:
+                dark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            dayLabel.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 7,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+
+        // "Next Inspection in" Label
+        const Padding(
+          padding: EdgeInsets.only(left: 2, bottom: 4),
+          child: Text(
+            "Next Inspection in",
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+
+        // Timer Box
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color:
+                isExpired
+                    ? Colors.red.withValues(alpha: 0.9)
+                    : (dark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.4)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isExpired)
+                const _PulseDot()
+              else
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 10,
+                  color: Colors.white,
+                ),
+              const SizedBox(width: 4),
+              Text(
+                time,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _CountdownPillState extends State<_CountdownPill>
+class _PulseDot extends StatefulWidget {
+  const _PulseDot();
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color:
-            widget.dark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFF4A90D9).withValues(alpha: 0.2),
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: Colors.red, blurRadius: 4, spreadRadius: 1),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(
-                        0xFF4A90D9,
-                      ).withValues(alpha: _pulseAnimation.value),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFF4A90D9,
-                          ).withValues(alpha: _pulseAnimation.value * 0.6),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'NEXT UP',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF4A90D9),
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            widget.time,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: widget.dark ? Colors.white : const Color(0xFF1A237E),
-              fontFeatures: const [FontFeature.tabularFigures()],
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            widget.dayLabel.toUpperCase(),
-            style: TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.w700,
-              color:
-                  widget.dark
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : Colors.black.withValues(alpha: 0.4),
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
       ),
     );
   }

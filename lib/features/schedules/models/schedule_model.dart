@@ -110,23 +110,23 @@ class ScheduleModel {
       carImages: List<String>.from(json['carImages'] ?? []),
       inspectionDateTime:
           json['inspectionDateTime'] != null
-              ? DateTime.tryParse(json['inspectionDateTime'])
+              ? DateTime.tryParse(json['inspectionDateTime'])?.toLocal()
               : null,
       inspectionAddress: json['inspectionAddress'] ?? '',
       inspectionEngineerNumber: json['inspectionEngineerNumber'] ?? '',
       addedBy: json['addedBy'] ?? '',
       timeStamp:
           json['timeStamp'] != null
-              ? DateTime.tryParse(json['timeStamp'])
+              ? DateTime.tryParse(json['timeStamp'])?.toLocal()
               : null,
       appointmentId: json['appointmentId'] ?? '',
       createdAt:
           json['createdAt'] != null
-              ? DateTime.tryParse(json['createdAt'])
+              ? DateTime.tryParse(json['createdAt'])?.toLocal()
               : null,
       updatedAt:
           json['updatedAt'] != null
-              ? DateTime.tryParse(json['updatedAt'])
+              ? DateTime.tryParse(json['updatedAt'])?.toLocal()
               : null,
     );
   }
@@ -149,7 +149,10 @@ class ScheduleModel {
       'Nov',
       'Dec',
     ];
-    return '${d.day} ${months[d.month - 1]} ${d.year}, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final hour = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+    final period = d.hour >= 12 ? 'PM' : 'AM';
+    final minute = d.minute.toString().padLeft(2, '0');
+    return '${d.day} ${months[d.month - 1]} ${d.year}, ${hour.toString().padLeft(2, '0')}:$minute $period';
   }
 
   /// Get full car name

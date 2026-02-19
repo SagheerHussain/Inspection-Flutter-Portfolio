@@ -5,6 +5,15 @@ import '../../../../../../utils/constants/colors.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../../../schedules/screens/schedules_screen.dart';
 
+class DashboardSearchController extends GetxController {
+  static DashboardSearchController get instance => Get.find();
+  final searchController = TextEditingController();
+
+  void clearSearch() {
+    searchController.clear();
+  }
+}
+
 class DashboardSearchBox extends StatelessWidget {
   const DashboardSearchBox({super.key, required this.txtTheme});
 
@@ -13,19 +22,18 @@ class DashboardSearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = THelperFunctions.isDarkMode(context);
+    final controller = Get.put(DashboardSearchController());
+
     return Container(
       decoration: BoxDecoration(
-        color: dark ? TColors.dark : Colors.grey[200], // Darker background
+        color: dark ? TColors.dark : Colors.grey[200],
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [], // clean look
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
-      ), // Vertical padding handled by TextField contentPadding
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextField(
+        controller: controller.searchController,
         decoration: InputDecoration(
-          hintText: "Search by Appointment Id, Contact Number etc..",
+          hintText: "Search Appt ID, Phone, or Owner...",
           hintStyle: txtTheme.bodyMedium?.copyWith(
             color: Colors.grey.withValues(alpha: 0.6),
           ),
@@ -41,8 +49,11 @@ class DashboardSearchBox extends StatelessWidget {
         ),
         textInputAction: TextInputAction.search,
         onSubmitted: (value) {
-          if (value.trim().isNotEmpty) {
-            Get.to(() => SchedulesScreen(searchQuery: value.trim()));
+          final query = value.trim();
+          if (query.isNotEmpty) {
+            // Clear search field as requested when navigating to results screen
+            controller.clearSearch();
+            Get.to(() => SchedulesScreen(searchQuery: query));
           }
         },
       ),

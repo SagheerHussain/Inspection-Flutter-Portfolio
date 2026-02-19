@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -587,6 +588,17 @@ class _ScheduleCard extends StatelessWidget {
                                 color: const Color(0xFF4A90D9),
                               ),
                             ),
+                            if (schedule.inspectionDateTime != null) ...[
+                              const SizedBox(height: 2),
+                              _CountdownText(
+                                targetDate: schedule.inspectionDateTime!,
+                                style: txtTheme.labelSmall?.copyWith(
+                                  color: const Color(0xFF4A90D9),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -1075,7 +1087,8 @@ class _ScheduleCard extends StatelessWidget {
       pickedTime.minute,
     );
 
-    final String isoDate = selectedDateTime.toIso8601String();
+    // Convert to UTC before sending to API
+    final String isoDate = selectedDateTime.toUtc().toIso8601String();
 
     if (!context.mounted) return;
     _showRescheduleReasonDialog(context, controller, isoDate);
@@ -1088,10 +1101,12 @@ class _ScheduleCard extends StatelessWidget {
   ) {
     final reasonController = TextEditingController();
     final dark = THelperFunctions.isDarkMode(context);
-    final dt = DateTime.parse(isoDate);
+    final dt = DateTime.parse(isoDate).toLocal();
     final displayDate = '${dt.day} ${_getMonthName(dt.month)} ${dt.year}';
-    final displayTime =
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final displayTime = '${hour.toString().padLeft(2, '0')}:$minute $period';
 
     Get.dialog(
       Dialog(
@@ -1429,5 +1444,76 @@ class _ScheduleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CountdownText extends StatefulWidget {
+  final DateTime targetDate;
+  final TextStyle? style;
+
+  const _CountdownText({required this.targetDate, this.style});
+
+  @override
+  State<_CountdownText> createState() => _CountdownTextState();
+}
+
+class _CountdownTextState extends State<_CountdownText> {
+  late Timer _timer;
+  String _timeString = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _calculateTime();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  void _calculateTime() {
+    final now = DateTime.now();
+    final diff = widget.targetDate.difference(now);
+
+    if (diff.isNegative) {
+      final absoluteDiff = diff.abs();
+      final hours = absoluteDiff.inHours;
+      final minutes = absoluteDiff.inMinutes.remainder(60);
+      final seconds = absoluteDiff.inSeconds.remainder(60);
+
+      final h = hours.toString().padLeft(2, '0');
+      final m = minutes.toString().padLeft(2, '0');
+      final s = seconds.toString().padLeft(2, '0');
+
+      if (mounted) {
+        setState(() {
+          _timeString = "Started $h:$m:$s ago";
+        });
+      }
+    } else {
+      final hours = diff.inHours;
+      final minutes = diff.inMinutes.remainder(60);
+      final seconds = diff.inSeconds.remainder(60);
+
+      final h = hours.toString().padLeft(2, '0');
+      final m = minutes.toString().padLeft(2, '0');
+      final s = seconds.toString().padLeft(2, '0');
+
+      if (mounted) {
+        setState(() {
+          _timeString = "Starts in $h:$m:$s";
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(_timeString, style: widget.style);
   }
 }

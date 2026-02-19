@@ -35,21 +35,6 @@ class LoginFormWidget extends StatelessWidget {
             ),
             const SizedBox(height: TSizes.spaceBtwInputFields),
 
-            /// -- Phone Number Field
-            TextFormField(
-              validator:
-                  (value) =>
-                      TValidator.validateEmptyText('Phone Number', value),
-              controller: controller.phoneNumber,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.phone_outlined),
-                labelText: 'Phone Number',
-                hintText: 'Enter your phone number',
-              ),
-            ),
-            const SizedBox(height: TSizes.spaceBtwInputFields),
-
             /// -- Password Field
             Obx(
               () => TextFormField(
@@ -73,6 +58,21 @@ class LoginFormWidget extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: TSizes.spaceBtwInputFields),
+
+            /// -- Phone Number Field
+            TextFormField(
+              validator:
+                  (value) =>
+                      TValidator.validateEmptyText('Phone Number', value),
+              controller: controller.phoneNumber,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.phone_outlined),
+                labelText: 'Phone Number',
+                hintText: 'Enter your phone number',
               ),
             ),
             const SizedBox(height: TSizes.sm),

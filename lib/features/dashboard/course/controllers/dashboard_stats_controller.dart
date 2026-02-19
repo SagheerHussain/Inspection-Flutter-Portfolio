@@ -151,34 +151,56 @@ class DashboardStatsController extends GetxController {
 
   /// Scans records to find next inspection for Scheduled and Re-Scheduled specifically
   void _findNextInspections() {
+    final now = DateTime.now();
     DateTime? nextSched;
     DateTime? nextReSched;
+
+    // Fallback for overdue items if no future ones exist
+    DateTime? earliestPastSched;
+    DateTime? earliestPastReSched;
 
     for (final record in allRecords) {
       final dt = record.inspectionDateTime;
       if (dt == null) continue;
       final localDt = dt.toLocal();
-      // Remove isBefore(now) check so the earliest item (even if overdue) is tracked
-      // and showing 00h:00m:00s until it is moved out of this status.
 
       if (record.inspectionStatus == InspectionStatuses.scheduled) {
-        if (nextSched == null || localDt.isBefore(nextSched)) {
-          nextSched = localDt;
+        if (localDt.isAfter(now)) {
+          // Future inspection - get the earliest one
+          if (nextSched == null || localDt.isBefore(nextSched)) {
+            nextSched = localDt;
+          }
+        } else {
+          // Past inspection - track the most recent past one as fallback
+          if (earliestPastSched == null || localDt.isAfter(earliestPastSched)) {
+            earliestPastSched = localDt;
+          }
         }
       } else if (record.inspectionStatus == InspectionStatuses.reScheduled) {
-        if (nextReSched == null || localDt.isBefore(nextReSched)) {
-          nextReSched = localDt;
+        if (localDt.isAfter(now)) {
+          // Future inspection - get the earliest one
+          if (nextReSched == null || localDt.isBefore(nextReSched)) {
+            nextReSched = localDt;
+          }
+        } else {
+          // Past inspection - track the most recent past one as fallback
+          if (earliestPastReSched == null ||
+              localDt.isAfter(earliestPastReSched)) {
+            earliestPastReSched = localDt;
+          }
         }
       }
     }
 
-    _nextScheduledTime = nextSched;
-    _nextReScheduledTime = nextReSched;
+    // Prioritize future inspections, fallback to past ones to show 00:00 logic
+    _nextScheduledTime = nextSched ?? earliestPastSched;
+    _nextReScheduledTime = nextReSched ?? earliestPastReSched;
 
     // Badge stays visible as long as there is data (count > 0)
-    hasScheduledCountdown.value = scheduledCount.value > 0 && nextSched != null;
+    hasScheduledCountdown.value =
+        scheduledCount.value > 0 && _nextScheduledTime != null;
     hasReScheduledCountdown.value =
-        reScheduledCount.value > 0 && nextReSched != null;
+        reScheduledCount.value > 0 && _nextReScheduledTime != null;
   }
 
   void _updateAllCountdownDisplays() {

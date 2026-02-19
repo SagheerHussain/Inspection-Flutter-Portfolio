@@ -2,6 +2,7 @@ import 'package:cwt_starter_template/utils/popups/exports.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../common/widgets/loaders/circular_loader.dart';
@@ -34,6 +35,7 @@ class UserController extends GetxController {
   final email = TextEditingController();
   final phoneNo = TextEditingController();
   final fullName = TextEditingController();
+  final username = TextEditingController();
   final imageUploading = false.obs;
   final profileImageUrl = ''.obs;
   GlobalKey<FormState> updateUserProfileFormKey = GlobalKey<FormState>();
@@ -371,8 +373,13 @@ class UserController extends GetxController {
   }
 
   void assignDataToProfile() {
+    final localStorage = GetStorage();
+    username.text = localStorage.read('REMEMBER_ME_USERNAME') ?? '';
     fullName.text = user.value.fullName;
     email.text = user.value.email;
-    phoneNo.text = user.value.phoneNumber;
+    phoneNo.text =
+        user.value.phoneNumber.isNotEmpty
+            ? user.value.phoneNumber
+            : (localStorage.read('REMEMBER_ME_PHONE') ?? '');
   }
 }

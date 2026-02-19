@@ -9,6 +9,7 @@ import '../../../personalization/controllers/user_controller.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/helper_functions.dart';
+import '../../../../features/dashboard/course/screens/dashboard/widgets/search.dart';
 import '../images/t_rounded_image.dart';
 
 /// A reusable custom drawer widget with predefined settings for account details,
@@ -75,6 +76,9 @@ class TDrawer extends StatelessWidget {
                   icon: Iconsax.user,
                   title: "My Profile",
                   onTap: () {
+                    if (Get.isRegistered<DashboardSearchController>()) {
+                      Get.find<DashboardSearchController>().clearSearch();
+                    }
                     Navigator.pop(context); // Close drawer
                     Get.to(
                       () => const UpdateProfileScreen(),

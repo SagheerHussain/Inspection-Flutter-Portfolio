@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
+import '../../../../../personalization/controllers/user_controller.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 
@@ -9,28 +10,21 @@ class ProfileFormScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = UserController.instance;
+
     return Column(
       children: [
         TextFormField(
-          initialValue: 'Inspection Engineer',
+          controller: controller.username,
           enabled: false,
           decoration: const InputDecoration(
-            label: Text(TTexts.tFullName),
+            label: Text("Username"),
             prefixIcon: Icon(LineAwesomeIcons.user),
           ),
         ),
         const SizedBox(height: TSizes.xl - 20),
         TextFormField(
-          initialValue: 'sagheer@gmail.com',
-          enabled: false,
-          decoration: const InputDecoration(
-            label: Text(TTexts.tEmail),
-            prefixIcon: Icon(LineAwesomeIcons.envelope),
-          ),
-        ),
-        const SizedBox(height: TSizes.xl - 20),
-        TextFormField(
-          initialValue: '03313908443',
+          controller: controller.phoneNo,
           enabled: false,
           decoration: const InputDecoration(
             label: Text(TTexts.tPhoneNo),

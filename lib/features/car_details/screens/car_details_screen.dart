@@ -1804,7 +1804,8 @@ class _ImageGalleryScreenState extends State<_ImageGalleryScreen> {
 // ══════════════════════════════════════════
 String _formatDate(String dateStr) {
   try {
-    final dt = DateTime.parse(dateStr);
+    if (dateStr.isEmpty) return '';
+    final dt = DateTime.parse(dateStr).toLocal();
     const months = [
       'Jan',
       'Feb',
@@ -1819,7 +1820,17 @@ String _formatDate(String dateStr) {
       'Nov',
       'Dec',
     ];
-    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    final datePart = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+
+    // If string looks like it contains time, append formatted time
+    if (dateStr.contains('T') || dateStr.contains(':')) {
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '$datePart, $hour:$minute $period';
+    }
+
+    return datePart;
   } catch (_) {
     return dateStr;
   }

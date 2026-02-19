@@ -5,6 +5,7 @@ import '../../../../../../utils/constants/inspection_statuses.dart';
 import '../../../../../../utils/helpers/helper_functions.dart';
 import '../../../../course/controllers/dashboard_stats_controller.dart';
 import '../../../../../schedules/screens/schedules_screen.dart';
+import 'search.dart';
 
 class DashboardTopCourses extends StatelessWidget {
   const DashboardTopCourses({super.key, required this.txtTheme});
@@ -82,10 +83,12 @@ class DashboardTopCourses extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12, top: 8, bottom: 4),
             child: GestureDetector(
-              onTap:
-                  () => Get.to(
-                    () => SchedulesScreen(statusFilter: item.statusFilter),
-                  ),
+              onTap: () {
+                if (Get.isRegistered<DashboardSearchController>()) {
+                  Get.find<DashboardSearchController>().clearSearch();
+                }
+                Get.to(() => SchedulesScreen(statusFilter: item.statusFilter));
+              },
               child: Container(
                 width: 165,
                 decoration: BoxDecoration(

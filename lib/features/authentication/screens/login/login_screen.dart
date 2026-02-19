@@ -46,7 +46,7 @@ class LoginScreen extends StatelessWidget {
                       title: "Engineer Login", // More specific title
                       subTitle:
                           "Welcome back, please enter your details to continue.",
-                      imageHeight: 0.12,
+                      imageHeight: 0.16,
                     ),
                     const SizedBox(height: TSizes.spaceBtwSections),
                     const LoginFormWidget(),

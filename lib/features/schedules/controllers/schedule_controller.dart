@@ -7,6 +7,7 @@ import '../../../utils/constants/api_constants.dart';
 import '../../../utils/constants/inspection_statuses.dart';
 import '../../../utils/popups/loaders.dart';
 import '../models/schedule_model.dart';
+import '../../dashboard/course/controllers/dashboard_stats_controller.dart';
 
 class ScheduleController extends GetxController {
   static ScheduleController get instance => Get.find();
@@ -75,22 +76,42 @@ class ScheduleController extends GetxController {
       final engineerNumber =
           GetStorage().read('INSPECTION_ENGINEER_NUMBER') ?? '9090909090';
 
-      // Use the new inspection list endpoint via POST with required body
-      final response =
-          await ApiService.post(ApiConstants.inspectionEngineerSchedulesUrl, {
-            "inspectionStatus": statusFilter,
-            "inspectionEngineerNumber": engineerNumber,
-          });
-      final List<dynamic> dataList = response['data'] ?? [];
-      final allRecords =
-          dataList.map((json) => ScheduleModel.fromJson(json)).toList();
+      List<ScheduleModel> allCombinedRecords = [];
 
-      // Apply Filters Locally
       if (searchQuery.isNotEmpty) {
-        // SEARCH MODE
+        // SEARCH MODE: Fetch all statuses to search across assigned data
+        final statuses = [
+          InspectionStatuses.scheduled,
+          InspectionStatuses.running,
+          InspectionStatuses.reScheduled,
+          InspectionStatuses.reInspection,
+          InspectionStatuses.inspected,
+          InspectionStatuses.cancel,
+        ];
+
+        await Future.wait(
+          statuses.map((status) async {
+            try {
+              final response = await ApiService.post(
+                ApiConstants.inspectionEngineerSchedulesUrl,
+                {
+                  "inspectionStatus": status,
+                  "inspectionEngineerNumber": engineerNumber,
+                },
+              );
+              final List<dynamic> dataList = response['data'] ?? [];
+              allCombinedRecords.addAll(
+                dataList.map((json) => ScheduleModel.fromJson(json)),
+              );
+            } catch (e) {
+              debugPrint('❌ Search fetch error for $status: $e');
+            }
+          }),
+        );
+
         final query = searchQuery.toLowerCase();
         _allFilteredRecords =
-            allRecords.where((record) {
+            allCombinedRecords.where((record) {
               final idMatch = record.appointmentId
                   .toString()
                   .toLowerCase()
@@ -99,10 +120,23 @@ class ScheduleController extends GetxController {
                   .toString()
                   .toLowerCase()
                   .contains(query);
-              return idMatch || phoneMatch;
+              final ownerMatch = record.ownerName
+                  .toString()
+                  .toLowerCase()
+                  .contains(query);
+              return idMatch || phoneMatch || ownerMatch;
             }).toList();
       } else {
-        // STATUS MODE
+        // STATUS MODE:
+        final response =
+            await ApiService.post(ApiConstants.inspectionEngineerSchedulesUrl, {
+              "inspectionStatus": statusFilter,
+              "inspectionEngineerNumber": engineerNumber,
+            });
+        final List<dynamic> dataList = response['data'] ?? [];
+        final allRecords =
+            dataList.map((json) => ScheduleModel.fromJson(json)).toList();
+
         _allFilteredRecords =
             allRecords.where((record) {
               // Exclude 'Pending' unless specific requirement
@@ -202,6 +236,11 @@ class ScheduleController extends GetxController {
         // We'd ideally fetch the updated record or update the model locally
         // For now, let's refresh the whole list to be safe and accurate
         await refreshSchedules();
+
+        // Also refresh dashboard stats so the countdown timer updates immediately
+        if (Get.isRegistered<DashboardStatsController>()) {
+          Get.find<DashboardStatsController>().refresh();
+        }
       }
 
       TLoaders.successSnackBar(

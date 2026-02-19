@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
+import '../../../../../personalization/controllers/user_controller.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import 'profile_form.dart';
@@ -12,6 +13,9 @@ class UpdateProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = UserController.instance;
+    controller.assignDataToProfile();
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -26,14 +30,17 @@ class UpdateProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.all(TSizes.defaultSpace),
-          child: const Column(
+          child: Column(
             children: [
               /// -- IMAGE with ICON
-              ImageWithIcon(),
-              SizedBox(height: 50),
+              InkWell(
+                onTap: () => controller.uploadUserProfilePicture(),
+                child: const ImageWithIcon(),
+              ),
+              const SizedBox(height: 50),
 
               /// -- Form
-              ProfileFormScreen(),
+              const ProfileFormScreen(),
             ],
           ),
         ),

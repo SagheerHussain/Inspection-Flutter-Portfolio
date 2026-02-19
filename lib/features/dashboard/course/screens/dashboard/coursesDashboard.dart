@@ -39,6 +39,10 @@ class CoursesDashboard extends StatelessWidget {
         drawer: TDrawer(),
         body: RefreshIndicator(
           onRefresh: () async {
+            // Clear search on refresh as requested
+            if (Get.isRegistered<DashboardSearchController>()) {
+              Get.find<DashboardSearchController>().clearSearch();
+            }
             final stats = DashboardStatsController.instance;
             await stats.refresh();
           },
