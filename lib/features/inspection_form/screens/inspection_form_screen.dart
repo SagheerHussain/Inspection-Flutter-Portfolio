@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 import '../../schedules/models/schedule_model.dart';
 import '../controllers/inspection_form_controller.dart';
 import '../models/inspection_field_defs.dart';
@@ -1177,76 +1178,120 @@ class _ImageThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Get.dialog(
+          Dialog.fullscreen(
+            backgroundColor: Colors.black,
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    maxScale: 5.0,
+                    child: Image.file(
+                      File(path),
+                      fit: BoxFit.contain,
+                      errorBuilder:
+                          (c, e, s) => const Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                    onPressed: () => Get.back(),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.file(
-              File(path),
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (c, e, s) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-            ),
-            // Gradient overlay
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 30,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.4),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Remove button
-            Positioned(
-              top: 4,
-              right: 4,
-              child: GestureDetector(
-                onTap: onRemove,
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 14),
-                ),
-              ),
+        );
+      },
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(
+                File(path),
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (c, e, s) => Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+              ),
+              // Gradient overlay
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.4),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Remove button
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1381,51 +1426,160 @@ class _VideoThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const Center(
-            child: Icon(
-              Icons.play_circle_fill_rounded,
-              color: _accent,
-              size: 40,
-            ),
-          ),
-          Positioned(
-            bottom: 4,
-            left: 4,
-            right: 4,
-            child: Text(
-              path.split('/').last,
-              style: const TextStyle(fontSize: 8, color: Colors.grey),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, color: Colors.white, size: 12),
+    return GestureDetector(
+      onTap: () => Get.to(() => _VideoPreviewScreen(videoPath: path)),
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: _accent,
+                size: 40,
               ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 4,
+              left: 4,
+              right: 4,
+              child: Text(
+                path.split('/').last,
+                style: const TextStyle(fontSize: 8, color: Colors.grey),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoPreviewScreen extends StatefulWidget {
+  final String videoPath;
+  const _VideoPreviewScreen({required this.videoPath});
+
+  @override
+  State<_VideoPreviewScreen> createState() => _VideoPreviewScreenState();
+}
+
+class _VideoPreviewScreenState extends State<_VideoPreviewScreen> {
+  late VideoPlayerController _controller;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeController();
+  }
+
+  Future<void> _initializeController() async {
+    try {
+      final file = File(widget.videoPath);
+      if (!file.existsSync()) {
+        debugPrint('❌ Video file does NOT exist: ${widget.videoPath}');
+        if (mounted) setState(() => _isError = true);
+        return;
+      }
+
+      _controller = VideoPlayerController.file(file);
+      await _controller.initialize();
+      if (mounted) {
+        setState(() {});
+        _controller.play();
+        _controller.setLooping(true);
+      }
+    } catch (e) {
+      debugPrint('❌ Video player error: $e');
+      if (mounted) setState(() => _isError = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: const Text('Video Preview'),
+      ),
+      body: Center(
+        child:
+            _isError
+                ? const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error loading video',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                )
+                : _controller.value.isInitialized
+                ? AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      VideoPlayer(_controller),
+                      VideoProgressIndicator(_controller, allowScrubbing: true),
+                      Positioned(
+                        bottom: 20,
+                        child: FloatingActionButton(
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          onPressed: () {
+                            setState(() {
+                              _controller.value.isPlaying
+                                  ? _controller.pause()
+                                  : _controller.play();
+                            });
+                          },
+                          child: Icon(
+                            _controller.value.isPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                : const CircularProgressIndicator(color: Colors.white),
       ),
     );
   }

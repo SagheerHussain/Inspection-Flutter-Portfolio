@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:video_compress/video_compress.dart';
 import '../../../data/services/api/api_service.dart';
 import '../../../utils/constants/api_constants.dart';
 import '../../../utils/popups/exports.dart';
@@ -336,13 +338,38 @@ class InspectionFormController extends GetxController {
 
   Future<void> pickVideo(String key, ImageSource source) async {
     try {
-      final XFile? picked = await _picker.pickVideo(source: source);
+      final field = _findFieldByKey(key);
+      final XFile? picked = await _picker.pickVideo(
+        source: source,
+        maxDuration:
+            field?.maxDuration != null
+                ? Duration(seconds: field!.maxDuration!)
+                : null,
+      );
+
       if (picked != null) {
+        // --- Gallery Duration Validation ---
+        if (field?.maxDuration != null) {
+          final info = await VideoCompress.getMediaInfo(picked.path);
+          final durationSec = (info.duration ?? 0) / 1000;
+
+          // Add a tiny 0.5s buffer for metadata inconsistencies
+          if (durationSec > (field!.maxDuration! + 0.5)) {
+            TLoaders.errorSnackBar(
+              title: 'Video Too Long',
+              message:
+                  'The selected video is ${durationSec.toStringAsFixed(1)}s. '
+                  'Maximum allowed for ${field.label} is ${field.maxDuration}s.',
+            );
+            return;
+          }
+        }
+
         // Video always limited (maxImages is 1 for video by default now)
         imageFiles[key] = [picked.path];
         imageFiles.refresh();
 
-        // Trigger Upload
+        // Trigger Upload (Compression starts inside _uploadMedia)
         _uploadMedia(key, picked.path, isVideo: true);
       }
     } catch (e) {
@@ -466,11 +493,34 @@ class InspectionFormController extends GetxController {
       );
       debugPrint('📍 Local Path: $localPath');
 
+      String finalPath = localPath;
+
+      if (isVideo) {
+        TLoaders.customToast(message: 'Compressing video...');
+        final compressedPath = await _compressVideo(localPath);
+        if (compressedPath == null) {
+          debugPrint('❌ Video compression failed or was cancelled.');
+          return;
+        }
+
+        // Check size limit: 10MB = 10 * 1024 * 1024 bytes
+        final file = File(compressedPath);
+        final size = await file.length();
+        if (size > 10 * 1024 * 1024) {
+          TLoaders.errorSnackBar(
+            title: 'Video Too Large',
+            message: 'Compressed video exceeds 10MB limit.',
+          );
+          return;
+        }
+        finalPath = compressedPath;
+      }
+
       final url =
           isVideo ? ApiConstants.uploadVideoUrl : ApiConstants.uploadImagesUrl;
       final fileKey = isVideo ? 'video' : 'imagesList';
 
-      final file = await http.MultipartFile.fromPath(fileKey, localPath);
+      final file = await http.MultipartFile.fromPath(fileKey, finalPath);
 
       final response = await ApiService.multipartPost(
         url: url,
@@ -524,6 +574,21 @@ class InspectionFormController extends GetxController {
       }
     } catch (e) {
       debugPrint('❌ FATAL: Upload failed for $localPath: $e');
+    }
+  }
+
+  Future<String?> _compressVideo(String videoPath) async {
+    try {
+      final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
+        videoPath,
+        quality: VideoQuality.MediumQuality,
+        deleteOrigin: false, // Keep the original just in case
+        includeAudio: true,
+      );
+      return mediaInfo?.path;
+    } catch (e) {
+      debugPrint('❌ Video compress error: $e');
+      return null;
     }
   }
 

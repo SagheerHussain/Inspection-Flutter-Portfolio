@@ -14,6 +14,7 @@ class F {
   final int maxLines;
   final int minImages;
   final int maxImages;
+  final int? maxDuration;
 
   const F.text(
     this.key,
@@ -24,13 +25,17 @@ class F {
   }) : type = FType.text,
        options = const [],
        minImages = 0,
-       maxImages = 0;
+       maxImages = 0,
+       maxDuration = null;
+
   const F.drop(this.key, this.label, this.options, {this.optional = false})
     : type = FType.dropdown,
       readonly = false,
       maxLines = 1,
       minImages = 0,
-      maxImages = 0;
+      maxImages = 0,
+      maxDuration = null;
+
   const F.img(
     this.key,
     this.label, {
@@ -40,20 +45,25 @@ class F {
   }) : type = FType.image,
        options = const [],
        readonly = false,
-       maxLines = 1;
+       maxLines = 1,
+       maxDuration = null;
+
   const F.num(this.key, this.label, {this.optional = false})
     : type = FType.number,
       options = const [],
       readonly = false,
       maxLines = 1,
       minImages = 0,
-      maxImages = 0;
+      maxImages = 0,
+      maxDuration = null;
+
   const F.video(
     this.key,
     this.label, {
     this.optional = false,
     this.minImages = 1,
     this.maxImages = 1,
+    this.maxDuration,
   }) : type = FType.video,
        options = const [],
        readonly = false,
@@ -544,7 +554,7 @@ class InspectionFieldDefs {
       icon: Icons.engineering,
       fields: [
         F.img('engineBayImages', 'Engine Bay'),
-        F.video('engineVideo', 'Engine Sound Video'),
+        F.video('engineVideo', 'Engine Sound Video', maxDuration: 15),
         F.drop('engine', 'Engine', [
           'OK',
           'Noise',
@@ -643,7 +653,7 @@ class InspectionFieldDefs {
           'Black',
           'Blue',
         ]),
-        F.video('exhaustSmokeVideo', 'Exhaust Smoke Video'),
+        F.video('exhaustSmokeVideo', 'Exhaust Smoke Video', maxDuration: 10),
         F.text(
           'commentsOnTowing',
           'Comment on Towing',
