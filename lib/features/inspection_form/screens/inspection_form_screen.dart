@@ -1188,16 +1188,38 @@ class _ImageThumbnail extends StatelessWidget {
                 Center(
                   child: InteractiveViewer(
                     maxScale: 5.0,
-                    child: Image.file(
-                      File(path),
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (c, e, s) => const Icon(
-                            Icons.broken_image,
-                            color: Colors.white,
-                            size: 50,
-                          ),
-                    ),
+                    child:
+                        path.startsWith('http')
+                            ? Image.network(
+                              path,
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (c, e, s) => const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 50,
+                                  ),
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              },
+                            )
+                            : Image.file(
+                              File(path),
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (c, e, s) => const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 50,
+                                  ),
+                            ),
                   ),
                 ),
                 Positioned(
@@ -1235,15 +1257,41 @@ class _ImageThumbnail extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.file(
-                File(path),
-                fit: BoxFit.cover,
-                errorBuilder:
-                    (c, e, s) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-              ),
+              path.startsWith('http')
+                  ? Image.network(
+                    path,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (c, e, s) => Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                          ),
+                        ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                  )
+                  : Image.file(
+                    File(path),
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (c, e, s) => Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                          ),
+                        ),
+                  ),
               // Gradient overlay
               Positioned(
                 bottom: 0,
@@ -1499,14 +1547,20 @@ class _VideoPreviewScreenState extends State<_VideoPreviewScreen> {
 
   Future<void> _initializeController() async {
     try {
-      final file = File(widget.videoPath);
-      if (!file.existsSync()) {
-        debugPrint('❌ Video file does NOT exist: ${widget.videoPath}');
-        if (mounted) setState(() => _isError = true);
-        return;
+      final isNetwork = widget.videoPath.startsWith('http');
+      if (isNetwork) {
+        _controller = VideoPlayerController.networkUrl(
+          Uri.parse(widget.videoPath),
+        );
+      } else {
+        final file = File(widget.videoPath);
+        if (!file.existsSync()) {
+          debugPrint('❌ Video file does NOT exist: ${widget.videoPath}');
+          if (mounted) setState(() => _isError = true);
+          return;
+        }
+        _controller = VideoPlayerController.file(file);
       }
-
-      _controller = VideoPlayerController.file(file);
       await _controller.initialize();
       if (mounted) {
         setState(() {});

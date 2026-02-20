@@ -93,46 +93,68 @@ class InspectionFormController extends GetxController {
   Future<void> fetchInspectionData() async {
     isLoading.value = true;
     try {
-      // Check for local draft first
-      final draftKey = 'draft_$appointmentId';
-      final localDraft = _storage.read(draftKey);
-      if (localDraft != null && localDraft is Map) {
-        inspectionData.value = InspectionFormModel.fromJson(
-          Map<String, dynamic>.from(localDraft),
-        );
-        // Restore image paths from draft
-        final imgKey = 'draft_images_$appointmentId';
-        final savedImages = _storage.read(imgKey);
-        if (savedImages != null && savedImages is Map) {
-          for (final entry in savedImages.entries) {
-            final list = entry.value;
-            if (list is List) {
-              imageFiles[entry.key.toString()] =
-                  list.map((e) => e.toString()).toList();
+      final isReinspection =
+          schedule?.inspectionStatus == 'Re-Inspection' ||
+          schedule?.inspectionStatus == 'Reinspection';
+
+      // Only check local draft if NOT a re-inspection
+      // For re-inspection, we always want the latest data from the prescribed API
+      if (!isReinspection) {
+        final draftKey = 'draft_$appointmentId';
+        final localDraft = _storage.read(draftKey);
+        if (localDraft != null && localDraft is Map) {
+          inspectionData.value = InspectionFormModel.fromJson(
+            Map<String, dynamic>.from(localDraft),
+          );
+          // Restore image paths from draft
+          final imgKey = 'draft_images_$appointmentId';
+          final savedImages = _storage.read(imgKey);
+          if (savedImages != null && savedImages is Map) {
+            for (final entry in savedImages.entries) {
+              final list = entry.value;
+              if (list is List) {
+                imageFiles[entry.key.toString()] =
+                    list.map((e) => e.toString()).toList();
+              }
             }
           }
+          Get.snackbar(
+            'Draft Loaded',
+            'Continuing from your saved progress.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.blue.shade700,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(12),
+            borderRadius: 12,
+            duration: const Duration(seconds: 2),
+          );
+          isLoading.value = false;
+          return;
         }
-        Get.snackbar(
-          'Draft Loaded',
-          'Continuing from your saved progress.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.blue.shade700,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(12),
-          borderRadius: 12,
-          duration: const Duration(seconds: 2),
-        );
-        return;
       }
 
       // Try fetching from API
       final response = await ApiService.get(
         ApiConstants.carDetailsUrl(appointmentId),
       );
-      if (response['carDetails'] != null) {
-        inspectionData.value = InspectionFormModel.fromJson(
-          response['carDetails'],
-        );
+
+      final carData = response['carDetails'];
+      if (carData != null) {
+        inspectionData.value = InspectionFormModel.fromJson(carData);
+
+        // For Re-Inspection, we must populate imageFiles from the API response
+        if (isReinspection) {
+          _preFillMedia(carData);
+          Get.snackbar(
+            'Success',
+            'Re-Inspection data pre-filled successfully.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green.shade700,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(12),
+            borderRadius: 12,
+          );
+        }
       } else {
         _initializeNewInspection();
       }
@@ -142,6 +164,65 @@ class InspectionFormController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// Extracts image/video URLs from API response and populates imageFiles
+  void _preFillMedia(Map<String, dynamic> carData) {
+    // 1. Explicit mappings where API keys and Form keys differ significantly
+    final mediaMap = {
+      'rcTaxToken': 'rcTokenImages',
+      'insuranceCopy': 'insuranceImages',
+      'bothKeys': 'duplicateKeyImages',
+      'frontMain': 'frontMainImages',
+      'lhsFront45Degree': 'lhsFullViewImages',
+      'lhsFrontAlloyImages': 'lhsFrontWheelImages',
+      'rhsRear45Degree': 'rhsFullViewImages',
+      'rhsRearWheelImages': 'rhsRearWheelImages',
+      'rhsFrontAlloyImages': 'rhsFrontWheelImages',
+      'engineBay': 'engineBayImages',
+      'engineSound': 'engineVideo',
+      'apronLhsRhs': 'lhsApronImages',
+      'meterConsoleWithEngineOn': 'meterConsoleWithEngineOnImages',
+      'frontSeatsFromDriverSideDoorOpen': 'interiorImage1',
+      'rearSeatsFromRightSideDoorOpen': 'interiorImage2',
+      'dashboardFromRearSeat': 'interiorImage3',
+      'additionalImages2': 'interiorImage4',
+    };
+
+    // 2. Iterate through all API data and try to find matching form fields
+    carData.forEach((apiKey, val) {
+      if (val == null) return;
+
+      String? targetFormKey;
+
+      if (mediaMap.containsKey(apiKey)) {
+        targetFormKey = mediaMap[apiKey];
+      } else {
+        // Try exact match or appending 'Images'
+        if (_findFieldByKey(apiKey) != null) {
+          targetFormKey = apiKey;
+        } else if (_findFieldByKey('${apiKey}Images') != null) {
+          targetFormKey = '${apiKey}Images';
+        }
+      }
+
+      if (targetFormKey != null) {
+        final field = _findFieldByKey(targetFormKey);
+        if (field != null &&
+            (field.type == FType.image || field.type == FType.video)) {
+          if (val is List) {
+            imageFiles[targetFormKey] = val.map((e) => e.toString()).toList();
+          } else if (val is String && val.isNotEmpty) {
+            imageFiles[targetFormKey] = [val];
+          }
+        }
+      }
+    });
+
+    imageFiles.refresh();
+    debugPrint(
+      '📸 Media pre-fill complete. Fields populated: ${imageFiles.keys.length}',
+    );
   }
 
   Future<void> fetchDropdownList() async {
@@ -689,27 +770,24 @@ class InspectionFormController extends GetxController {
 
       debugPrint('💾 Draft saved successfully to local storage');
 
-      Get.rawSnackbar(
-        titleText: const Text(
+      // Always clear existing snackbars
+      Get.closeAllSnackbars();
+
+      // Simple delay to ensure GetX clears the overlay before showing new one
+      Future.delayed(const Duration(milliseconds: 100), () {
+        Get.snackbar(
           'Data Saved',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        messageText: const Text(
           'Your data has been saved as Draft',
-          style: TextStyle(color: Colors.white, fontSize: 14),
-        ),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.shade700,
-        margin: const EdgeInsets.all(12),
-        borderRadius: 12,
-        duration: const Duration(seconds: 3),
-        icon: const Icon(Icons.save_rounded, color: Colors.white, size: 28),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      );
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade700,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+          borderRadius: 12,
+          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+          shouldIconPulse: false,
+        );
+      });
     } catch (e) {
       debugPrint('Save draft error: $e');
       Get.snackbar(
@@ -990,24 +1068,25 @@ class InspectionFormController extends GetxController {
         payload,
       );
 
-      // Clear local draft on success
       await _storage.remove('draft_$appointmentId');
       await _storage.remove('draft_images_$appointmentId');
 
-      Get.snackbar(
-        'Submitted ✓',
-        response['message'] ?? 'Inspection submitted successfully!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.shade700,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(12),
-        borderRadius: 12,
-        duration: const Duration(seconds: 3),
-        icon: const Padding(
-          padding: EdgeInsets.only(left: 12),
-          child: Icon(Icons.check_circle, color: Colors.white, size: 28),
-        ),
-      );
+      // Clear existing snackbars for consistency
+      Get.closeAllSnackbars();
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        Get.snackbar(
+          'Submitted ✓',
+          response['message'] ?? 'Inspection submitted successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade700,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+          borderRadius: 12,
+          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
+        );
+      });
 
       Future.delayed(const Duration(seconds: 1), () => Get.back());
     } catch (e) {
