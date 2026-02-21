@@ -9,22 +9,22 @@ plugins {
 }
 
 android {
-    namespace = "com.example.otobix_inspection_app"
+    namespace = "com.otobix.inspectionapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "28.0.12674087"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
-        applicationId = "com.example.otobix_inspection_app"
+        applicationId = "com.otobix.inspectionapp"
         minSdk = flutter.minSdkVersion.toInt()
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

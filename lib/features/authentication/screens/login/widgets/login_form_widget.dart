@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
+import '../../../../../../personalization/controllers/environment_controller.dart';
+import '../../../../../../utils/constants/colors.dart';
 
 import '../../../../../../common/widgets/buttons/primary_button.dart';
 import '../../../../../../utils/constants/sizes.dart';
@@ -15,6 +17,7 @@ class LoginFormWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(LoginController());
+    final envController = Get.find<EnvironmentController>();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: TSizes.xl),
       child: Form(
@@ -75,7 +78,73 @@ class LoginFormWidget extends StatelessWidget {
                 hintText: 'Enter your phone number',
               ),
             ),
-            const SizedBox(height: TSizes.sm),
+            const SizedBox(height: TSizes.spaceBtwInputFields),
+
+            /// -- Environment Toggle (Prod/Dev)
+            Obx(
+              () => Container(
+                margin: const EdgeInsets.only(bottom: TSizes.spaceBtwSections),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      envController.isProduction
+                          ? TColors.success.withValues(alpha: 0.1)
+                          : TColors.info.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        envController.isProduction
+                            ? TColors.success.withValues(alpha: 0.3)
+                            : TColors.info.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          envController.isProduction
+                              ? Iconsax.shield_tick
+                              : Iconsax.setting,
+                          color:
+                              envController.isProduction
+                                  ? TColors.success
+                                  : TColors.info,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          envController.isProduction
+                              ? "Production Mode"
+                              : "Development Mode",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color:
+                                envController.isProduction
+                                    ? TColors.success
+                                    : TColors.info,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: envController.isProduction,
+                      onChanged: (value) => envController.toggleEnvironment(),
+                      activeColor: TColors.success,
+                      activeTrackColor: TColors.success.withValues(alpha: 0.4),
+                      inactiveThumbColor: TColors.info,
+                      inactiveTrackColor: TColors.info.withValues(alpha: 0.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
             /// -- LOGIN BTN
             Obx(

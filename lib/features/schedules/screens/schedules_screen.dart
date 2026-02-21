@@ -11,6 +11,7 @@ import '../../car_details/screens/car_details_screen.dart';
 import '../../inspection_form/screens/inspection_form_screen.dart';
 import '../controllers/schedule_controller.dart';
 import '../models/schedule_model.dart';
+import '../../dashboard/course/screens/dashboard/coursesDashboard.dart';
 
 class SchedulesScreen extends StatelessWidget {
   final String statusFilter;
@@ -372,10 +373,10 @@ class _ScheduleCard extends StatelessWidget {
                 // Car Registration + Priority
                 Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 8,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
@@ -387,16 +388,17 @@ class _ScheduleCard extends StatelessWidget {
                           children: [
                             const Icon(
                               Icons.directions_car,
-                              size: 16,
+                              size: 14,
                               color: TColors.dark,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 schedule.carRegistrationNumber,
                                 style: txtTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 1,
+                                  letterSpacing: 0.5,
+                                  fontSize: 12,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -565,36 +567,40 @@ class _ScheduleCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Inspection Date & Time',
-                            style: txtTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            schedule.formattedInspectionDate,
-                            style: txtTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF4A90D9),
-                            ),
-                          ),
-                          if (schedule.inspectionDateTime != null) ...[
-                            const SizedBox(height: 2),
-                            _CountdownText(
-                              targetDate: schedule.inspectionDateTime!,
-                              style: txtTheme.labelSmall?.copyWith(
-                                color: const Color(0xFF4A90D9),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 10,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Inspection Date & Time',
+                              style: txtTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                                fontSize: 11,
                               ),
                             ),
+                            const SizedBox(height: 2),
+                            Text(
+                              schedule.formattedInspectionDate,
+                              style: txtTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF4A90D9),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (schedule.inspectionDateTime != null) ...[
+                              const SizedBox(height: 2),
+                              _CountdownText(
+                                targetDate: schedule.inspectionDateTime!,
+                                style: txtTheme.labelSmall?.copyWith(
+                                  color: const Color(0xFF4A90D9),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -690,7 +696,7 @@ class _ScheduleCard extends StatelessWidget {
 
           // ── Bottom Action Bar ──
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color:
                   dark
@@ -702,15 +708,18 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // ── Left Group: Workflow Actions ──
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: _buildLeftActions(context, controller),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _buildLeftActions(context, controller),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 // ── Right Group: Call & SMS ──
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -775,26 +784,38 @@ class _ScheduleCard extends StatelessWidget {
       );
       items.add(const SizedBox(width: 12));
 
-      // Re-Schedule
-      items.add(
-        _actionIcon(
-          icon: Icons.event_repeat_rounded,
-          color: const Color(0xFFFF9800),
-          tooltip: 'Re-Schedule',
-          onTap: () => _showRescheduleFlow(context, controller),
-        ),
-      );
-      items.add(const SizedBox(width: 12));
+      if (isRunning) {
+        // Revert to Scheduled
+        items.add(
+          _actionIcon(
+            icon: Icons.settings_backup_restore_rounded,
+            color: const Color(0xFF2196F3),
+            tooltip: 'Revert to Scheduled',
+            onTap: () => _showRevertDialog(context, controller),
+          ),
+        );
+      } else {
+        // Re-Schedule
+        items.add(
+          _actionIcon(
+            icon: Icons.event_repeat_rounded,
+            color: const Color(0xFFFF9800),
+            tooltip: 'Re-Schedule',
+            onTap: () => _showRescheduleFlow(context, controller),
+          ),
+        );
+        items.add(const SizedBox(width: 12));
 
-      // Cancel
-      items.add(
-        _actionIcon(
-          icon: Icons.cancel_rounded,
-          color: const Color(0xFFF44336),
-          tooltip: 'Cancel',
-          onTap: () => _showCancelDialog(context, controller),
-        ),
-      );
+        // Cancel
+        items.add(
+          _actionIcon(
+            icon: Icons.cancel_rounded,
+            color: const Color(0xFFF44336),
+            tooltip: 'Cancel',
+            onTap: () => _showCancelDialog(context, controller),
+          ),
+        );
+      }
     } else if (status == InspectionStatuses.inspected ||
         status == 'Completed' ||
         status == 'Approved') {
@@ -1008,7 +1029,7 @@ class _ScheduleCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (reasonController.text.trim().isEmpty) {
                           TLoaders.warningSnackBar(
                             title: 'Reason Required',
@@ -1017,14 +1038,132 @@ class _ScheduleCard extends StatelessWidget {
                           return;
                         }
                         Get.back();
-                        controller.updateTelecallingStatus(
-                          telecallingId: schedule.id,
-                          status: InspectionStatuses.cancel,
-                          remarks: reasonController.text.trim(),
-                        );
+                        try {
+                          await controller.updateTelecallingStatus(
+                            telecallingId: schedule.id,
+                            status: InspectionStatuses.cancel,
+                            remarks: reasonController.text.trim(),
+                          );
+                          // Redirect back to main dashboard
+                          Get.offAll(() => const CoursesDashboard());
+                        } catch (e) {
+                          // Error handled in controller
+                        }
                       },
                       child: const Text(
                         'Confirm Cancel',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRevertDialog(BuildContext context, ScheduleController controller) {
+    final dark = THelperFunctions.isDarkMode(context);
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: dark ? const Color(0xFF1E1E2E) : Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.settings_backup_restore_rounded,
+                  color: Color(0xFF2196F3),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Confirm Revert',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to move this inspection to Schedule?',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Get.back(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'No, Keep it',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Get.back();
+                        try {
+                          await controller.updateTelecallingStatus(
+                            telecallingId: schedule.id,
+                            status: InspectionStatuses.scheduled,
+                            dateTime:
+                                schedule.inspectionDateTime?.toIso8601String(),
+                            remarks: 'Reverted from Running to Scheduled',
+                          );
+                          // Redirect back to main dashboard
+                          Get.offAll(() => const CoursesDashboard());
+                        } catch (e) {
+                          // Error handled in controller
+                        }
+                      },
+                      child: const Text(
+                        'Yes, Revert',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1289,7 +1428,7 @@ class _ScheduleCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (reasonController.text.trim().isEmpty) {
                           TLoaders.warningSnackBar(
                             title: 'Reason Required',
@@ -1298,12 +1437,18 @@ class _ScheduleCard extends StatelessWidget {
                           return;
                         }
                         Get.back();
-                        controller.updateTelecallingStatus(
-                          telecallingId: schedule.id,
-                          status: InspectionStatuses.reScheduled,
-                          dateTime: isoDate,
-                          remarks: reasonController.text.trim(),
-                        );
+                        try {
+                          await controller.updateTelecallingStatus(
+                            telecallingId: schedule.id,
+                            status: InspectionStatuses.reScheduled,
+                            dateTime: isoDate,
+                            remarks: reasonController.text.trim(),
+                          );
+                          // Redirect back to main dashboard
+                          Get.offAll(() => const CoursesDashboard());
+                        } catch (e) {
+                          // Error handled in controller
+                        }
                       },
                       child: const Text(
                         'Confirm',
@@ -1450,43 +1595,40 @@ class _CountdownText extends StatefulWidget {
 }
 
 class _CountdownTextState extends State<_CountdownText> {
-  late Timer _timer;
+  Timer? _timer;
   String _timeString = '';
 
   @override
   void initState() {
     super.initState();
-    _calculateTime();
+    _updateTime();
+    _startTimer();
+  }
+
+  void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _calculateTime();
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      _updateTime();
     });
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  void _calculateTime() {
+  void _updateTime() {
     final now = DateTime.now();
     final diff = widget.targetDate.difference(now);
 
     if (diff.isNegative) {
-      final absoluteDiff = diff.abs();
-      final hours = absoluteDiff.inHours;
-      final minutes = absoluteDiff.inMinutes.remainder(60);
-      final seconds = absoluteDiff.inSeconds.remainder(60);
-
-      final h = hours.toString().padLeft(2, '0');
-      final m = minutes.toString().padLeft(2, '0');
-      final s = seconds.toString().padLeft(2, '0');
-
-      if (mounted) {
-        setState(() {
-          _timeString = "Started $h:$m:$s ago";
-        });
+      final newTimeString = "OVERDUE";
+      if (newTimeString != _timeString) {
+        if (mounted) {
+          setState(() {
+            _timeString = newTimeString;
+          });
+        }
       }
+      _timer?.cancel();
     } else {
       final hours = diff.inHours;
       final minutes = diff.inMinutes.remainder(60);
@@ -1496,16 +1638,46 @@ class _CountdownTextState extends State<_CountdownText> {
       final m = minutes.toString().padLeft(2, '0');
       final s = seconds.toString().padLeft(2, '0');
 
-      if (mounted) {
-        setState(() {
-          _timeString = "Starts in $h:$m:$s";
-        });
+      final newTimeString = "Starts in $h:$m:$s";
+      if (newTimeString != _timeString) {
+        if (mounted) {
+          setState(() {
+            _timeString = newTimeString;
+          });
+        }
       }
     }
   }
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_timeString.isEmpty) return const SizedBox.shrink();
+
+    if (_timeString == 'OVERDUE') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+        ),
+        child: Text(
+          'OVERDUE',
+          style: widget.style?.copyWith(
+            color: Colors.red,
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      );
+    }
+
     return Text(_timeString, style: widget.style);
   }
 }

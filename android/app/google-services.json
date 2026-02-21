@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:682675089378:android:9d2ffd958d37e615f5d3bb",
         "android_client_info": {
-          "package_name": "com.example.otobix_inspection_app"
+          "package_name": "com.otobix.inspectionapp"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "682675089378-jttk67iffsimbo6t15cbr2uusbk0jllf.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.otobix_inspection_app",
+            "package_name": "com.otobix.inspectionapp",
             "certificate_hash": "965daac7dc9259ad4bb8fd20e0899155a4dccc67"
           }
         },
@@ -42,7 +42,7 @@
               "client_id": "682675089378-kq81i5hh18q0mf83mn7lo8651eikfbjj.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.otobixInspectionApp"
+                "bundle_id": "com.otobix.inspectionapp"
               }
             }
           ]

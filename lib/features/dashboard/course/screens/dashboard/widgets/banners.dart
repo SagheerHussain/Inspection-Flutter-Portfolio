@@ -29,11 +29,7 @@ class DashboardBanners extends StatelessWidget {
                 if (Get.isRegistered<DashboardSearchController>()) {
                   Get.find<DashboardSearchController>().clearSearch();
                 }
-                Get.to(
-                  () => const SchedulesScreen(
-                    statusFilter: InspectionStatuses.scheduled,
-                  ),
-                );
+                Get.to(() => const SchedulesScreen(statusFilter: 'Upcoming'));
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -266,53 +262,59 @@ class _BannerTimer extends StatelessWidget {
         ),
 
         // "Next Inspection in" Label
-        const Padding(
-          padding: EdgeInsets.only(left: 2, bottom: 4),
-          child: Text(
-            "Next Inspection in",
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.2,
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              time == 'OVERDUE' ? "Inspection" : "Next Inspection in",
+              style: TextStyle(
+                color: dark ? Colors.white70 : Colors.black87,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ),
 
         // Timer Box
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          decoration: BoxDecoration(
-            color:
-                isExpired
-                    ? Colors.red.withValues(alpha: 0.9)
-                    : (dark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.4)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isExpired)
-                const _PulseDot()
-              else
-                const Icon(
-                  Icons.access_time_rounded,
-                  size: 10,
-                  color: Colors.white,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color:
+                  isExpired
+                      ? Colors.red.withValues(alpha: 0.9)
+                      : (dark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isExpired)
+                  const _PulseDot()
+                else
+                  const Icon(
+                    Icons.access_time_rounded,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                const SizedBox(width: 4),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
-              const SizedBox(width: 4),
-              Text(
-                time,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

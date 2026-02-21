@@ -17,6 +17,7 @@ import '../../../utils/exceptions/format_exceptions.dart';
 import '../../../utils/exceptions/platform_exceptions.dart';
 import '../../../utils/local_storage/storage_utility.dart';
 import '../../../utils/popups/loaders.dart';
+import '../../services/api/api_service.dart';
 import '../user_repository/user_repository.dart';
 
 /// -- README(Docs[6]) -- Bindings
@@ -55,6 +56,8 @@ class AuthenticationRepository extends GetxController {
 
   /// Function to Show Relevant Screen
   screenRedirect(User? user) async {
+    final engineerNumber = deviceStorage.read('INSPECTION_ENGINEER_NUMBER');
+
     if (user != null) {
       // Fetch User Record
       await UserController.instance.fetchUserRecord();
@@ -72,6 +75,11 @@ class AuthenticationRepository extends GetxController {
       } else {
         Get.offAll(() => VerifyEmailScreen(email: getUserEmail));
       }
+    } else if (engineerNumber != null && engineerNumber.toString().isNotEmpty) {
+      // Persistent Login for Custom Backend (If Firebase user is null)
+      final userId = deviceStorage.read('USER_ID') ?? 'engineer';
+      await TLocalStorage.init(userId);
+      Get.offAll(() => const CoursesDashboard());
     } else {
       Get.offAll(() => const LoginScreen());
     }
@@ -350,8 +358,13 @@ class AuthenticationRepository extends GetxController {
     try {
       await _auth.signOut();
       await GoogleSignIn().signOut();
-      // await FacebookAuth.instance.logOut();
-      // await FirebaseAuth.instance.signOut();
+
+      // Clear custom auth token and session data
+      await ApiService.clearToken();
+      await deviceStorage.remove('INSPECTION_ENGINEER_NUMBER');
+      await deviceStorage.remove('USER_ID');
+      await deviceStorage.remove('USER_ROLE');
+
       Get.offAll(() => const LoginScreen());
     } on FirebaseAuthException catch (e) {
       throw TFirebaseAuthException(e.code).message;

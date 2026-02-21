@@ -126,6 +126,46 @@ class ScheduleController extends GetxController {
                   .contains(query);
               return idMatch || phoneMatch || ownerMatch;
             }).toList();
+      } else if (statusFilter == 'Upcoming') {
+        // UPCOMING MODE: Fetch all three relevant statuses
+        final upcomingStatuses = [
+          InspectionStatuses.scheduled,
+          InspectionStatuses.reInspection,
+        ];
+
+        await Future.wait(
+          upcomingStatuses.map((status) async {
+            try {
+              final response = await ApiService.post(
+                ApiConstants.inspectionEngineerSchedulesUrl,
+                {
+                  "inspectionStatus": status,
+                  "inspectionEngineerNumber": engineerNumber,
+                },
+              );
+              final List<dynamic> dataList = response['data'] ?? [];
+              allCombinedRecords.addAll(
+                dataList.map((json) => ScheduleModel.fromJson(json)),
+              );
+            } catch (e) {
+              debugPrint('❌ Upcoming fetch error for $status: $e');
+            }
+          }),
+        );
+
+        _allFilteredRecords =
+            allCombinedRecords.where((record) {
+              if (record.inspectionStatus.toLowerCase() == 'pending')
+                return false;
+              return true;
+            }).toList();
+
+        // Ensure they are sorted by date
+        _allFilteredRecords.sort((a, b) {
+          final aDt = a.inspectionDateTime ?? DateTime(2099);
+          final bDt = b.inspectionDateTime ?? DateTime(2099);
+          return aDt.compareTo(bDt);
+        });
       } else {
         // STATUS MODE:
         final response =
@@ -181,7 +221,9 @@ class ScheduleController extends GetxController {
   /// Get display title based on status filter
   String get screenTitle {
     if (searchQuery.isNotEmpty) return 'Search Results';
-    if (statusFilter == InspectionStatuses.scheduled) return 'Schedules';
+    if (statusFilter == 'Upcoming' ||
+        statusFilter == InspectionStatuses.scheduled)
+      return 'Schedules';
     if (statusFilter == InspectionStatuses.running)
       return 'Running Inspections';
     if (statusFilter == InspectionStatuses.reInspection)
@@ -194,7 +236,9 @@ class ScheduleController extends GetxController {
   /// Get subtitle
   String get screenSubtitle {
     if (searchQuery.isNotEmpty) return 'matches found';
-    if (statusFilter == InspectionStatuses.scheduled) return 'inspection leads';
+    if (statusFilter == 'Upcoming' ||
+        statusFilter == InspectionStatuses.scheduled)
+      return 'inspection leads';
     if (statusFilter == InspectionStatuses.running) return 'active inspections';
     if (statusFilter == InspectionStatuses.reInspection)
       return 're-inspection records';

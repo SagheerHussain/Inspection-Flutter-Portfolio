@@ -12,6 +12,7 @@ import '../features/authentication/controllers/otp_controller.dart';
 import '../features/authentication/controllers/signup_controller.dart';
 import '../personalization/controllers/address_controller.dart';
 import '../personalization/controllers/notification_controller.dart';
+import '../personalization/controllers/environment_controller.dart';
 import '../personalization/controllers/user_controller.dart';
 import '../utils/helpers/network_manager.dart';
 
@@ -29,6 +30,7 @@ class GeneralBindings extends Bindings {
     Get.lazyPut(() => UserController());
     Get.lazyPut(() => CheckoutController());
     Get.lazyPut(() => AddressController());
+    Get.put(EnvironmentController());
 
     Get.lazyPut(() => OnBoardingController(), fenix: true);
 

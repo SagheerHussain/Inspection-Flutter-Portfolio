@@ -27,10 +27,18 @@ class LoginController extends GetxController {
 
   @override
   void onInit() {
-    // Pre-fill with saved credentials or default as requested
-    userName.text = localStorage.read('REMEMBER_ME_USERNAME') ?? 'inspection';
-    phoneNumber.text = localStorage.read('REMEMBER_ME_PHONE') ?? '9090909090';
-    password.text = localStorage.read('REMEMBER_ME_PASSWORD') ?? 'Admin@123';
+    // Pre-fill with saved credentials or default based on environment
+    final isProd = ApiConstants.isProduction;
+
+    userName.text =
+        localStorage.read('REMEMBER_ME_USERNAME') ??
+        (isProd ? 'Kazi Sohel Nawaz' : 'inspection');
+    phoneNumber.text =
+        localStorage.read('REMEMBER_ME_PHONE') ??
+        (isProd ? '9830300302' : '9090909090');
+    password.text =
+        localStorage.read('REMEMBER_ME_PASSWORD') ??
+        (isProd ? 'Kazi_S_N@1974#' : 'Admin@123');
     super.onInit();
   }
 

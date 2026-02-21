@@ -1,4 +1,4 @@
-package com.example.cwt_starter_template
+package com.otobix.inspectionapp
 
 import io.flutter.embedding.android.FlutterActivity
 

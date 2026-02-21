@@ -10,7 +10,6 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../../../../features/dashboard/course/screens/dashboard/widgets/search.dart';
-import '../images/t_rounded_image.dart';
 
 /// A reusable custom drawer widget with predefined settings for account details,
 /// menu items, and a "Become a driver" section. The drawer's content is set

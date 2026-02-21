@@ -39,8 +39,8 @@ class DashboardStatsController extends GetxController {
   final isReScheduledExpired = false.obs;
 
   Timer? _countdownTimer;
-  DateTime? _nextScheduledTime;
-  DateTime? _nextReScheduledTime;
+  DateTime? _nextScheduledTime; // Combined for main banner
+  DateTime? _nextReScheduledTime; // Specific for quick link
 
   @override
   void onInit() {
@@ -100,7 +100,11 @@ class DashboardStatsController extends GetxController {
       allRecords.assignAll(combined);
 
       // Update individual counts using constants
-      scheduledCount.value = results[InspectionStatuses.scheduled]?.length ?? 0;
+      // Update individual counts
+      scheduledCount.value =
+          (results[InspectionStatuses.scheduled]?.length ?? 0) +
+          (results[InspectionStatuses.reInspection]?.length ?? 0);
+
       runningCount.value = results[InspectionStatuses.running]?.length ?? 0;
       reScheduledCount.value =
           results[InspectionStatuses.reScheduled]?.length ?? 0;
@@ -127,101 +131,101 @@ class DashboardStatsController extends GetxController {
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
-      bool searchNeeded = false;
-      final isSchedExpired = isScheduledExpired.value;
-      final isReSchedExpired = isReScheduledExpired.value;
 
-      if (_nextScheduledTime != null &&
-          !isSchedExpired &&
-          now.isAfter(_nextScheduledTime!)) {
-        searchNeeded = true;
-      }
-      if (_nextReScheduledTime != null &&
-          !isReSchedExpired &&
-          now.isAfter(_nextReScheduledTime!)) {
-        searchNeeded = true;
-      }
-
-      if (searchNeeded) {
+      // Every minute (or when current next one passes), re-scan records
+      if (now.second == 0 ||
+          (_nextScheduledTime != null && now.isAfter(_nextScheduledTime!))) {
         _findNextInspections();
       }
       _updateAllCountdownDisplays();
     });
   }
 
-  /// Scans records to find next inspection for Scheduled and Re-Scheduled specifically
   void _findNextInspections() {
     final now = DateTime.now();
     DateTime? nextSched;
     DateTime? nextReSched;
 
-    // Fallback for overdue items if no future ones exist
-    DateTime? earliestPastSched;
-    DateTime? earliestPastReSched;
+    // We consider Scheduled and Re-Inspections for the main "Schedules" banner
+    final mainUpcomingStatuses = [
+      InspectionStatuses.scheduled,
+      InspectionStatuses.reInspection,
+    ];
 
     for (final record in allRecords) {
       final dt = record.inspectionDateTime;
       if (dt == null) continue;
-      final localDt = dt.toLocal();
 
-      if (record.inspectionStatus == InspectionStatuses.scheduled) {
-        if (localDt.isAfter(now)) {
-          // Future inspection - get the earliest one
-          if (nextSched == null || localDt.isBefore(nextSched)) {
-            nextSched = localDt;
-          }
-        } else {
-          // Past inspection - track the most recent past one as fallback
-          if (earliestPastSched == null || localDt.isAfter(earliestPastSched)) {
-            earliestPastSched = localDt;
-          }
+      // 1. Check for the main banner (Earliest upcoming OR most recent overdue)
+      if (mainUpcomingStatuses.contains(record.inspectionStatus)) {
+        if (nextSched == null || _isMoreUrgent(dt, nextSched, now)) {
+          nextSched = dt;
         }
-      } else if (record.inspectionStatus == InspectionStatuses.reScheduled) {
-        if (localDt.isAfter(now)) {
-          // Future inspection - get the earliest one
-          if (nextReSched == null || localDt.isBefore(nextReSched)) {
-            nextReSched = localDt;
-          }
-        } else {
-          // Past inspection - track the most recent past one as fallback
-          if (earliestPastReSched == null ||
-              localDt.isAfter(earliestPastReSched)) {
-            earliestPastReSched = localDt;
-          }
+      }
+
+      // 2. Check specifically for Re-Scheduled quick link
+      if (record.inspectionStatus == InspectionStatuses.reScheduled) {
+        if (nextReSched == null || _isMoreUrgent(dt, nextReSched, now)) {
+          nextReSched = dt;
         }
       }
     }
 
-    // Prioritize future inspections, fallback to past ones to show 00:00 logic
-    _nextScheduledTime = nextSched ?? earliestPastSched;
-    _nextReScheduledTime = nextReSched ?? earliestPastReSched;
+    _nextScheduledTime = nextSched;
+    _nextReScheduledTime = nextReSched;
 
-    // Badge stays visible as long as there is data (count > 0)
     hasScheduledCountdown.value =
         scheduledCount.value > 0 && _nextScheduledTime != null;
     hasReScheduledCountdown.value =
         reScheduledCount.value > 0 && _nextReScheduledTime != null;
   }
 
+  /// Helper to decide which date is "more urgent"
+  /// Priority: Overdue ones (closest to now) > Future ones (closest to now)
+  bool _isMoreUrgent(DateTime candidate, DateTime current, DateTime now) {
+    final candidateIsPast = candidate.isBefore(now);
+    final currentIsPast = current.isBefore(now);
+
+    if (candidateIsPast && !currentIsPast)
+      return true; // Overdue takes priority
+    if (!candidateIsPast && currentIsPast) return false;
+
+    if (candidateIsPast && currentIsPast) {
+      return candidate.isAfter(
+        current,
+      ); // For overdue, pick the most recent one
+    } else {
+      return candidate.isBefore(current); // For future, pick the earliest one
+    }
+  }
+
   void _updateAllCountdownDisplays() {
     final now = DateTime.now();
 
-    // Update Scheduled
+    // Update Main Scheduled Banner
     if (_nextScheduledTime != null) {
       final diff = _nextScheduledTime!.difference(now);
-      // Turn red/pulse if 1 hour or less remains
-      isScheduledExpired.value = diff.inSeconds <= 3600;
-      scheduledCountdownText.value = _formatDuration(diff);
+      final isOverdue = diff.isNegative;
+
+      isScheduledExpired.value = isOverdue || diff.inSeconds <= 3600;
+      scheduledCountdownText.value =
+          isOverdue ? 'OVERDUE' : _formatDuration(diff);
       scheduledCountdownDayLabel.value = _getDayLabel(_nextScheduledTime!);
+    } else {
+      scheduledCountdownText.value = '';
     }
 
-    // Update Re-Scheduled
+    // Update Re-Scheduled Quick Link
     if (_nextReScheduledTime != null) {
       final diff = _nextReScheduledTime!.difference(now);
-      // Turn red/pulse if 1 hour or less remains
-      isReScheduledExpired.value = diff.inSeconds <= 3600;
-      reScheduledCountdownText.value = _formatDuration(diff);
+      final isOverdue = diff.isNegative;
+
+      isReScheduledExpired.value = isOverdue || diff.inSeconds <= 3600;
+      reScheduledCountdownText.value =
+          isOverdue ? 'OVERDUE' : _formatDuration(diff);
       reScheduledCountdownDayLabel.value = _getDayLabel(_nextReScheduledTime!);
+    } else {
+      reScheduledCountdownText.value = '';
     }
   }
 

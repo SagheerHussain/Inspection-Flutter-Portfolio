@@ -146,7 +146,9 @@ class DashboardTopCourses extends StatelessWidget {
                                     bottom: 4,
                                   ),
                                   child: Text(
-                                    "Next Inspection in",
+                                    item.timerTextObs?.value == 'OVERDUE'
+                                        ? "Inspection"
+                                        : "Next Inspection in",
                                     style: const TextStyle(
                                       color: Colors.black87,
                                       fontSize: 9,
@@ -155,45 +157,45 @@ class DashboardTopCourses extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                Container(
-                                  width: 98,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        (item.isExpiredObs?.value ?? false)
-                                            ? Colors.red.withValues(alpha: 0.9)
-                                            : Colors.black.withValues(
-                                              alpha: 0.4,
-                                            ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (item.isExpiredObs?.value ?? false)
-                                        const _PulseDot()
-                                      else
-                                        const Icon(
-                                          Icons.access_time_rounded,
-                                          size: 10,
-                                          color: Colors.white,
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (item.isExpiredObs?.value ?? false)
+                                              ? Colors.red.withOpacity(0.9)
+                                              : Colors.black.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (item.isExpiredObs?.value ?? false)
+                                          const _PulseDot()
+                                        else
+                                          const Icon(
+                                            Icons.access_time_rounded,
+                                            size: 10,
+                                            color: Colors.white,
+                                          ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          item.timerTextObs?.value ?? '',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
                                         ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        item.timerTextObs?.value ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          fontFeatures: [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
