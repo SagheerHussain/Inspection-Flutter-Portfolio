@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Field type enum
-enum FType { text, dropdown, image, number, video }
+enum FType { text, dropdown, image, number, video, date }
 
 /// Single form field definition
 class F {
@@ -55,7 +55,19 @@ class F {
       maxLines = 1,
       minImages = 0,
       maxImages = 0,
-      maxDuration = null;
+       maxDuration = null;
+
+  const F.date(
+    this.key,
+    this.label, {
+    this.optional = false,
+  }) : type = FType.date,
+       options = const [],
+       readonly = false,
+       maxLines = 1,
+       minImages = 0,
+       maxImages = 0,
+       maxDuration = null;
 
   const F.video(
     this.key,
@@ -115,14 +127,14 @@ class InspectionFieldDefs {
         ]),
         F.img('rcTokenImages', 'RC Token Image', minImages: 2),
         F.drop('mismatchInRc', 'Mismatch in RC', ['No', 'Yes']),
-        F.text('registrationDate', 'Registration Date'),
-        F.text('fitnessValidity', 'Fitness Validity'),
+        F.date('registrationDate', 'Registration Date'),
+        F.date('fitnessValidity', 'Fitness Validity'),
         F.text('engineNumber', 'Engine Number'),
         F.text('chassisNumber', 'Chassis Number'),
         F.text('make', 'Make'),
         F.text('model', 'Model'),
         F.text('variant', 'Variant'),
-        F.text('yearMonthOfManufacture', 'Vehicle Manufacture'),
+        F.date('yearMonthOfManufacture', 'Vehicle Manufacture'),
         F.drop('fuelType', 'Fuel Type', [
           'Petrol',
           'Diesel',
@@ -149,7 +161,7 @@ class InspectionFieldDefs {
           'Expired',
           'Lifetime',
         ]),
-        F.text('taxValidTill', 'Tax Valid Till'),
+        F.date('taxValidTill', 'Tax Valid Till'),
         F.img('roadTaxImages', 'Road Tax Image', minImages: 1),
         F.text('hypothecationDetails', 'Hypothecation Details'),
         F.text('hypothecatedTo', 'Hypothecated To'),
@@ -160,11 +172,11 @@ class InspectionFieldDefs {
           'Not Available',
           'Policy Not Available',
         ]),
-        F.text('insuranceValidity', 'Insurance Validity'),
+        F.date('insuranceValidity', 'Insurance Validity'),
         F.text('insurer', 'Insured By'),
         F.text('insurancePolicyNumber', 'Policy Number'),
         F.img('insuranceImages', 'Insurance Image'),
-        F.text('pucValidity', 'PUC Validity'),
+        F.date('pucValidity', 'PUC Validity'),
         F.text('pucNumber', 'PUC Number'),
         F.img('pucImages', 'PUC Image'),
         F.drop('rcStatus', 'RC Status', ['Active', 'Inactive', 'Suspended']),
@@ -425,7 +437,7 @@ class InspectionFieldDefs {
           'Repaint',
           'Replaced',
         ]),
-        F.img('bootDoorImages', 'Boot Door Image'),
+        F.img('bootDoorImages', 'Boot Door Image', optional: true),
         F.img('rearWithBootDoorOpenImages', 'Rear With Boot Door Open Image'),
         F.drop('spareWheel', 'Spare Wheel', ['Available', 'Not Available']),
         F.img('spareWheelImages', 'Spare Wheel Image'),

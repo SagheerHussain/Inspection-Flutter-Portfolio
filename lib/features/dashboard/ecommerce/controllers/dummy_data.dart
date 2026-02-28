@@ -1,8 +1,7 @@
 import '../../../../personalization/models/address_model.dart';
 import '../../../../personalization/models/user_model.dart';
 import '../../../../utils/constants/image_strings.dart';
-import '../../../cart/models/cart_item_model.dart';
-import '../../../cart/models/cart_model.dart';
+
 import '../../../products/models/product_attribute_model.dart';
 import '../../../products/models/product_model.dart';
 import '../../../products/models/product_variation_model.dart';
@@ -87,32 +86,7 @@ class TDummyData {
     isEmailVerified: true, isProfileActive: true,
   );
 
-  /// -- Cart
-  static final CartModel cart = CartModel(
-    cartId: '001',
-    items: [
-      CartItemModel(
-        productId: '001',
-        variationId: '1',
-        quantity: 1,
-        title: products[0].title,
-        image: products[0].thumbnail,
-        brandName: products[0].brand!.name,
-        price: products[0].productVariations![0].price,
-        selectedVariation: products[0].productVariations![0].attributeValues,
-      ),
-      CartItemModel(
-        productId: '002',
-        variationId: '',
-        quantity: 1,
-        title: products[1].title,
-        image: products[1].thumbnail,
-        brandName: products[1].brand!.name,
-        price: products[1].price,
-        selectedVariation: products[1].productVariations != null ? products[1].productVariations![1].attributeValues : {},
-      ),
-    ],
-  );
+
 
   /// -- List of all Categories
   static final List<CategoryModel> categories = [

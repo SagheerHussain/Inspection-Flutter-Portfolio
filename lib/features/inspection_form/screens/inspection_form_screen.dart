@@ -10,6 +10,115 @@ import '../models/inspection_field_defs.dart';
 
 // ─── Custom accent color (replaces TColors.primary yellow) ───
 const Color _accent = Color(0xFF0D6EFD); // Vibrant royal blue
+
+// ─── Filled/Unfilled field styling helpers ───
+const Color _filledGreen = Color(0xFF10B981); // Emerald green for filled indicator
+const Color _filledBg = Color(0xFFF0FDF4);     // Very light mint green background
+const Color _filledBorder = Color(0xFF86EFAC);  // Soft green border
+const Color _emptyBg = Colors.white;
+
+/// Returns a decorated container wrapping a field, with a green left-border when filled.
+Widget _fieldWrapper({
+  required Widget child,
+  required bool isFilled,
+  double bottomMargin = 14,
+}) {
+  return Container(
+    margin: EdgeInsets.only(bottom: bottomMargin),
+    child: Stack(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: isFilled
+                ? Border.all(color: _filledBorder, width: 1)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: isFilled
+                    ? _filledGreen.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+        // Green left-bar indicator
+        if (isFilled)
+          Positioned(
+            left: 0,
+            top: 6,
+            bottom: 6,
+            child: Container(
+              width: 3.5,
+              decoration: BoxDecoration(
+                color: _filledGreen,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+/// Common InputDecoration for filled/unfilled state
+InputDecoration _styledDecoration({
+  required String label,
+  required bool isOptional,
+  required bool isFilled,
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+}) {
+  return InputDecoration(
+    label: RichText(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: isFilled ? const Color(0xFF047857) : Colors.grey.shade600,
+          fontSize: 13,
+          fontWeight: isFilled ? FontWeight.w600 : FontWeight.normal,
+        ),
+        children: [
+          if (!isOptional)
+            TextSpan(
+              text: isFilled ? ' ✓' : ' *',
+              style: TextStyle(
+                color: isFilled ? const Color(0xFF047857) : Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+        ],
+      ),
+    ),
+    filled: true,
+    fillColor: isFilled ? _filledBg : _emptyBg,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: isFilled ? _filledBorder : Colors.grey.shade200,
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: isFilled ? _filledBorder : Colors.grey.shade200,
+      ),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _accent, width: 1.5),
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+  );
+}
 const Color _headerGradientStart = Color(0xFF1A237E); // Deep indigo
 const Color _headerGradientEnd = Color(0xFF0D6EFD); // Royal blue
 
@@ -133,7 +242,7 @@ class _AppBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Get.back(),
+            onTap: () => Navigator.of(context).pop(),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -299,7 +408,7 @@ class _ProgressBar extends StatelessWidget {
 // ═══════════════════════════════════════════════
 // ─── SECTION PAGE ───
 // ═══════════════════════════════════════════════
-class _SectionPage extends StatelessWidget {
+class _SectionPage extends StatefulWidget {
   final FormSectionDef section;
   final InspectionFormController controller;
   final int sectionIndex;
@@ -311,19 +420,69 @@ class _SectionPage extends StatelessWidget {
   });
 
   @override
+  State<_SectionPage> createState() => _SectionPageState();
+}
+
+class _SectionPageState extends State<_SectionPage> {
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _fieldKeys = {};
+  Worker? _fieldNavWorker;
+  String? _highlightedFieldKey;
+
+  @override
+  void initState() {
+    super.initState();
+    // Build GlobalKeys for each field in this section
+    for (final field in widget.section.fields) {
+      _fieldKeys[field.key] = GlobalKey();
+    }
+    // Listen for targetFieldKey changes
+    _fieldNavWorker = ever(widget.controller.targetFieldKey, (String? key) {
+      if (key != null && _fieldKeys.containsKey(key)) {
+        _scrollToField(key);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fieldNavWorker?.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToField(String fieldKey) {
+    final gKey = _fieldKeys[fieldKey];
+    if (gKey?.currentContext != null) {
+      Scrollable.ensureVisible(
+        gKey!.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.3, // 30% from top
+      );
+      // Trigger highlight animation
+      setState(() => _highlightedFieldKey = fieldKey);
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _highlightedFieldKey = null);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
         children: [
           _SectionHeader(
-            title: section.title,
-            icon: section.icon,
-            sectionNumber: sectionIndex + 1,
-            totalSections: controller.sectionCount,
+            title: widget.section.title,
+            icon: widget.section.icon,
+            sectionNumber: widget.sectionIndex + 1,
+            totalSections: widget.controller.sectionCount,
           ),
           const SizedBox(height: 20),
-          ...section.fields.map((field) {
+          ...widget.section.fields.map((field) {
             // Define fields that have dynamic visibility
             final visibilityParents = {
               'rcCondition': 'rcBookAvailability',
@@ -351,10 +510,11 @@ class _SectionPage extends StatelessWidget {
               'insuranceImages': 'insurance',
             };
 
+            Widget fieldWidget;
             if (visibilityParents.containsKey(field.key)) {
-              return Obx(() {
+              fieldWidget = Obx(() {
                 final parentKey = visibilityParents[field.key]!;
-                final parentVal = controller.getFieldValue(parentKey);
+                final parentVal = widget.controller.getFieldValue(parentKey);
 
                 if (field.key == 'rcCondition') {
                   if (parentVal != 'Original' && parentVal != 'Duplicate') {
@@ -369,7 +529,6 @@ class _SectionPage extends StatelessWidget {
                     return const SizedBox.shrink();
                   }
                 } else {
-                  // Media dependency (Not Applicable/Not Available/Policy Not Available check)
                   if (parentVal == 'Not Applicable' ||
                       parentVal == 'Not Available' ||
                       parentVal == 'Policy Not Available') {
@@ -379,9 +538,35 @@ class _SectionPage extends StatelessWidget {
 
                 return _buildField(field);
               });
+            } else {
+              fieldWidget = _buildField(field);
             }
 
-            return _buildField(field);
+            // Wrap with GlobalKey and highlight animation
+            final isHighlighted = _highlightedFieldKey == field.key;
+            return Container(
+              key: _fieldKeys[field.key],
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: isHighlighted
+                      ? Border.all(
+                          color: const Color(0xFF0D6EFD).withValues(alpha: 0.6),
+                          width: 2,
+                        )
+                      : null,
+                  color: isHighlighted
+                      ? const Color(0xFF0D6EFD).withValues(alpha: 0.05)
+                      : Colors.transparent,
+                ),
+                padding: isHighlighted
+                    ? const EdgeInsets.symmetric(horizontal: 4, vertical: 2)
+                    : EdgeInsets.zero,
+                child: fieldWidget,
+              ),
+            );
           }),
         ],
       ),
@@ -391,19 +576,21 @@ class _SectionPage extends StatelessWidget {
   Widget _buildField(F field) {
     switch (field.type) {
       case FType.text:
-        return _BoundTextField(controller: controller, field: field);
+        return _BoundTextField(controller: widget.controller, field: field);
       case FType.dropdown:
-        return _BoundDropdown(controller: controller, field: field);
+        return _BoundDropdown(controller: widget.controller, field: field);
       case FType.image:
-        return _BoundImagePicker(controller: controller, field: field);
+        return _BoundImagePicker(controller: widget.controller, field: field);
       case FType.number:
-        return _BoundNumberField(controller: controller, field: field);
+        return _BoundNumberField(controller: widget.controller, field: field);
       case FType.video:
         return _BoundImagePicker(
-          controller: controller,
+          controller: widget.controller,
           field: field,
           isVideo: true,
         );
+      case FType.date:
+        return _BoundDateField(controller: widget.controller, field: field);
     }
   }
 }
@@ -556,23 +743,17 @@ class _BoundTextFieldState extends State<_BoundTextField> {
 
       final isRegNumber = widget.field.key == 'registrationNumber';
 
+      final isFilled = value.isNotEmpty;
+
       return Container(
         margin: const EdgeInsets.only(bottom: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+              child: _fieldWrapper(
+                isFilled: isFilled,
+                bottomMargin: 0,
                 child: TextFormField(
                   controller: _textController,
                   maxLines: widget.field.maxLines,
@@ -584,53 +765,17 @@ class _BoundTextFieldState extends State<_BoundTextField> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
-                  decoration: InputDecoration(
-                    label: RichText(
-                      text: TextSpan(
-                        text: widget.field.label,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 13,
-                        ),
-                        children: [
-                          if (!widget.field.optional)
-                            const TextSpan(
-                              text: ' *',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _accent, width: 1.5),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    suffixIcon:
-                        widget.field.readonly
-                            ? Icon(
-                              Icons.lock_outline,
-                              size: 18,
-                              color: Colors.grey.shade400,
-                            )
-                            : null,
+                  decoration: _styledDecoration(
+                    label: widget.field.label,
+                    isOptional: widget.field.optional,
+                    isFilled: isFilled,
+                    suffixIcon: widget.field.readonly
+                        ? Icon(
+                          Icons.lock_outline,
+                          size: 18,
+                          color: Colors.grey.shade400,
+                        )
+                        : null,
                   ),
                 ),
               ),
@@ -727,6 +872,117 @@ class _SpinningIconState extends State<_SpinningIcon>
 }
 
 // ═══════════════════════════════════════════════
+// ─── DATE FIELD ───
+// ═══════════════════════════════════════════════
+class _BoundDateField extends StatelessWidget {
+  final InspectionFormController controller;
+  final F field;
+  const _BoundDateField({required this.controller, required this.field});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final rawValue = controller.getFieldValue(field.key);
+      String displayText = '';
+      DateTime? currentDate;
+
+      if (rawValue.isNotEmpty) {
+        // Try parsing as ISO date first
+        currentDate = DateTime.tryParse(rawValue);
+        if (currentDate != null) {
+          displayText =
+              '${currentDate.day.toString().padLeft(2, '0')}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.year}';
+        } else {
+          // Try parsing DD-MM-YYYY format
+          final parts = rawValue.split('-');
+          if (parts.length == 3) {
+            final d = int.tryParse(parts[0]);
+            final m = int.tryParse(parts[1]);
+            final y = int.tryParse(parts[2]);
+            if (d != null && m != null && y != null) {
+              currentDate = DateTime(y, m, d);
+              displayText = rawValue;
+            }
+          }
+          // Try MM-YYYY format
+          if (currentDate == null && parts.length == 2) {
+            final m = int.tryParse(parts[0]);
+            final y = int.tryParse(parts[1]);
+            if (m != null && y != null) {
+              currentDate = DateTime(y, m);
+              displayText = rawValue;
+            }
+          }
+          // Fall back to raw value
+          if (displayText.isEmpty) displayText = rawValue;
+        }
+      }
+
+      final isFilled = displayText.isNotEmpty;
+
+      return _fieldWrapper(
+        isFilled: isFilled,
+        child: Material(
+          color: isFilled ? _filledBg : _emptyBg,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: currentDate ?? now,
+                firstDate: DateTime(1990),
+                lastDate: DateTime(2040),
+                builder: (ctx, child) {
+                  return Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: _accent,
+                        onPrimary: Colors.white,
+                        surface: Colors.white,
+                        onSurface: Color(0xFF1E293B),
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+
+              if (picked != null) {
+                controller.updateField(field.key, picked.toIso8601String());
+              }
+            },
+            child: InputDecorator(
+              decoration: _styledDecoration(
+                label: field.label,
+                isOptional: field.optional,
+                isFilled: isFilled,
+                suffixIcon: Icon(
+                  Icons.calendar_today_rounded,
+                  color: isFilled ? _filledGreen : _accent,
+                  size: 20,
+                ),
+              ),
+              child: Text(
+                displayText.isNotEmpty ? displayText : 'Select date',
+                style: TextStyle(
+                  color: displayText.isNotEmpty
+                      ? const Color(0xFF1E293B)
+                      : Colors.grey.shade400,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
 // ─── NUMBER FIELD ───
 // ═══════════════════════════════════════════════
 class _BoundNumberField extends StatefulWidget {
@@ -763,18 +1019,10 @@ class _BoundNumberFieldState extends State<_BoundNumberField> {
         _textController.text = displayVal;
       }
 
-      return Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      final isFilled = displayVal.isNotEmpty;
+
+      return _fieldWrapper(
+        isFilled: isFilled,
         child: TextFormField(
           controller: _textController,
           keyboardType: TextInputType.number,
@@ -787,46 +1035,14 @@ class _BoundNumberFieldState extends State<_BoundNumberField> {
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
-          decoration: InputDecoration(
-            label: RichText(
-              text: TextSpan(
-                text: widget.field.label,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                children: [
-                  if (!widget.field.optional)
-                    const TextSpan(
-                      text: ' *',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _accent, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+          decoration: _styledDecoration(
+            label: widget.field.label,
+            isOptional: widget.field.optional,
+            isFilled: isFilled,
             prefixIcon: Icon(
               Icons.numbers_rounded,
               size: 18,
-              color: _accent.withValues(alpha: 0.6),
+              color: isFilled ? _filledGreen.withValues(alpha: 0.7) : _accent.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -862,68 +1078,26 @@ class _BoundDropdownState extends State<_BoundDropdown> {
       final selectedValue =
           (value.isNotEmpty && options.contains(value)) ? value : null;
 
-      return Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      final isFilled = selectedValue != null && selectedValue.isNotEmpty;
+
+      return _fieldWrapper(
+        isFilled: isFilled,
         child: DropdownButtonFormField<String>(
           value: selectedValue,
           isExpanded: true,
-          decoration: InputDecoration(
-            label: RichText(
-              text: TextSpan(
-                text: widget.field.label,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                children: [
-                  if (!widget.field.optional)
-                    const TextSpan(
-                      text: ' *',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            floatingLabelStyle: const TextStyle(
-              color: Color(0xFF0D6EFD),
-              fontWeight: FontWeight.bold,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF0D6EFD),
-                width: 1.5,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+          decoration: _styledDecoration(
+            label: widget.field.label,
+            isOptional: widget.field.optional,
+            isFilled: isFilled,
             prefixIcon: Icon(
               Icons.list_rounded,
               size: 18,
-              color: _accent.withValues(alpha: 0.6),
+              color: isFilled ? _filledGreen.withValues(alpha: 0.7) : _accent.withValues(alpha: 0.6),
+            ),
+          ).copyWith(
+            floatingLabelStyle: TextStyle(
+              color: isFilled ? _filledGreen : const Color(0xFF0D6EFD),
+              fontWeight: FontWeight.bold,
             ),
           ),
           dropdownColor: Colors.white,
@@ -934,7 +1108,7 @@ class _BoundDropdownState extends State<_BoundDropdown> {
           ),
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: _accent.withValues(alpha: 0.7),
+            color: isFilled ? _filledGreen.withValues(alpha: 0.7) : _accent.withValues(alpha: 0.7),
           ),
           items:
               options
@@ -1238,8 +1412,11 @@ class _ImageThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Get.dialog(
-          Dialog.fullscreen(
+        showDialog(
+          context: context,
+          barrierColor: Colors.black87,
+          useSafeArea: false,
+          builder: (dialogCtx) => Dialog.fullscreen(
             backgroundColor: Colors.black,
             child: Stack(
               children: [
@@ -1280,16 +1457,52 @@ class _ImageThumbnail extends StatelessWidget {
                             ),
                   ),
                 ),
+                // Close button (top-right)
                 Positioned(
-                  top: 40,
-                  right: 20,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 30,
+                  top: MediaQuery.of(dialogCtx).padding.top + 8,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(dialogCtx).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
-                    onPressed: () => Get.back(),
+                  ),
+                ),
+                // Back button (top-left)
+                Positioned(
+                  top: MediaQuery.of(dialogCtx).padding.top + 8,
+                  left: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(dialogCtx).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1533,7 +1746,9 @@ class _VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Get.to(() => _VideoPreviewScreen(videoPath: path)),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => _VideoPreviewScreen(videoPath: path)),
+      ),
       child: Container(
         width: 100,
         margin: const EdgeInsets.only(right: 8),
@@ -1645,6 +1860,10 @@ class _VideoPreviewScreenState extends State<_VideoPreviewScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text('Video Preview'),
       ),
       body: Center(
@@ -1746,7 +1965,7 @@ class _Footer extends StatelessWidget {
                   isEnabled
                       ? () {
                         if (isFirst) {
-                          Get.back();
+                          Navigator.of(context).pop();
                         } else {
                           controller.previousSection();
                         }

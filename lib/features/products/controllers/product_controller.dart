@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/constants/sizes.dart';
-import '../../cart/controllers/cart_controller.dart';
 import '../../dashboard/ecommerce/controllers/dummy_data.dart';
 import '../models/product_model.dart';
 import '../models/product_variation_model.dart';
@@ -28,19 +27,7 @@ class ProductController extends GetxController {
 
   /// -- Initialize already added Item's Count in the cart.
   void initializeAlreadyAddedProductCount(ProductModel product) {
-    // If product has no variations then calculate cartEntries and display total number.
-    // Else make default entries to 0 and show cartEntries when variation is selected.
-    if (product.productVariations == null || product.productVariations!.isEmpty) {
-      cartQuantity.value = CartController.instance.calculateSingleProductCartEntries(product.id, '');
-    } else {
-      // Get selected Variation if any...
-      final variationId = selectedVariation.value.id;
-      if (variationId.isNotEmpty) {
-        cartQuantity.value = CartController.instance.calculateSingleProductCartEntries(product.id, variationId);
-      } else {
-        cartQuantity.value = 0;
-      }
-    }
+    cartQuantity.value = 0;
   }
 
   /// -- Get All Images from product and Variations
@@ -168,7 +155,7 @@ class ProductController extends GetxController {
 
     // Show selected variation quantity already in the cart.
     if (selectedVariation.id.isNotEmpty) {
-      cartQuantity.value = CartController.instance.calculateSingleProductCartEntries(product.id, selectedVariation.id);
+      cartQuantity.value = 0;
     }
 
     this.selectedVariation.value = selectedVariation;
@@ -209,22 +196,7 @@ class ProductController extends GetxController {
 
   /// -- Add selected variation to cart
   void addProductToCart(ProductModel product) {
-    // Product do not have any variations, Simply add to cart
-    if (product.productVariations == null) {
-      CartController.instance.addMultipleItemsToCart(product, ProductVariationModel.empty(), cartQuantity.value);
-      Get.back();
-    } else {
-      final variation = selectedVariation.value;
-      if (variation.id.isEmpty) {
-        Get.snackbar(
-            'Select Variation', 'To add items in the cart you first have to select a Variation of this product.',
-            snackPosition: SnackPosition.BOTTOM);
-        return;
-      } else {
-        CartController.instance.addMultipleItemsToCart(product, variation, cartQuantity.value);
-        Get.back();
-      }
-    }
+    Get.snackbar('Cart', 'Cart feature is not available.', snackPosition: SnackPosition.BOTTOM);
   }
 
   /// --------------------------- Favourites -------------------------------///

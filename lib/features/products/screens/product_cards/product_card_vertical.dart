@@ -12,7 +12,7 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/enums.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/helpers/helper_functions.dart';
-import '../../../cart/controllers/cart_controller.dart';
+
 import '../../controllers/product_controller.dart';
 import '../../models/product_model.dart';
 import '../../models/product_variation_model.dart';
@@ -26,7 +26,7 @@ class TProductCardVertical extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cartController = CartController.instance;
+    final productController = ProductController.instance;
     final salePercentage = ProductController.instance.calculateSalePercentage(product.price, product.salePrice);
     final dark = THelperFunctions.isDarkMode(context);
     return GestureDetector(
@@ -128,14 +128,14 @@ class TProductCardVertical extends StatelessWidget {
                     // If the product have variations then show the product Details for variation selection.
                     // ELse add product to the cart.
                     if (product.productVariations == null) {
-                      cartController.addSingleItemToCart(product, ProductVariationModel.empty());
+                      productController.addProductToCart(product);
                     } else {
                       Get.to(() => ProductDetailScreen(product: product));
                     }
                   },
                   child: Obx(
                     () {
-                      final productQuantityInCart = cartController.calculateSingleProductCartEntries(product.id, '');
+                      final productQuantityInCart = 0;
 
                       return AnimatedContainer(
                         curve: Curves.easeInOutCubicEmphasized,

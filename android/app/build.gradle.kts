@@ -11,7 +11,6 @@ plugins {
 android {
     namespace = "com.otobix.inspectionapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.0.12674087"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true

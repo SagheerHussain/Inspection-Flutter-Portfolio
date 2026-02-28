@@ -5,7 +5,6 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/helpers/helper_functions.dart';
-import '../../../../cart/screens/add_remove_cart_button.dart';
 import '../../../controllers/product_controller.dart';
 import '../../../models/product_model.dart';
 
@@ -36,12 +35,32 @@ class TBottomAddToCart extends StatelessWidget {
         () => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Add OR Remove Cart Product Icon Buttons
-            TProductQuantityWithAddRemoveButton(
-              quantity: productController.cartQuantity.value,
-              add: () => productController.cartQuantity.value += 1,
-              // Disable remove when cart count is less then 1
-              remove: () => productController.cartQuantity.value < 1 ? null : productController.cartQuantity.value -= 1,
+            // Quantity controls
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => productController.cartQuantity.value < 1
+                      ? null
+                      : productController.cartQuantity.value -= 1,
+                  icon: const Icon(Iconsax.minus, color: TColors.white),
+                  style: IconButton.styleFrom(
+                    backgroundColor: TColors.darkGrey,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(TSizes.sm)),
+                  ),
+                ),
+                const SizedBox(width: TSizes.spaceBtwItems),
+                Text(productController.cartQuantity.value.toString(),
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(width: TSizes.spaceBtwItems),
+                IconButton(
+                  onPressed: () => productController.cartQuantity.value += 1,
+                  icon: const Icon(Iconsax.add, color: TColors.white),
+                  style: IconButton.styleFrom(
+                    backgroundColor: TColors.dashboardAppbarBackground,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(TSizes.sm)),
+                  ),
+                ),
+              ],
             ),
             // Add to cart button
             ElevatedButton(

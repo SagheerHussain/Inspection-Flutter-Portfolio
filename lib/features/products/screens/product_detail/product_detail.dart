@@ -11,7 +11,7 @@ import 'package:readmore/readmore.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../../../utils/device/device_utility.dart';
-import '../../../checkout/screens/checkout.dart';
+
 import '../../models/product_model.dart';
 
 class ProductDetailScreen extends StatelessWidget {
@@ -51,7 +51,7 @@ class ProductDetailScreen extends StatelessWidget {
                   /// -- Checkout Button
                   SizedBox(
                     width: TDeviceUtils.getScreenWidth(context),
-                    child: ElevatedButton(child: const Text('Checkout'), onPressed: () => Get.to(() => const CheckoutScreen())),
+                    child: ElevatedButton(child: const Text('Buy Now'), onPressed: () {}),
                   ),
                   const SizedBox(height: TSizes.spaceBtwSections),
 

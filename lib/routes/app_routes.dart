@@ -11,11 +11,8 @@ import '../features/authentication/screens/phone_number/otp/phone_otp_screen.dar
 import '../features/authentication/screens/phone_number/phone_number_screen.dart';
 import '../features/authentication/screens/welcome/welcome_screen.dart';
 import '../features/dashboard/course/screens/dashboard/coursesDashboard.dart';
-import '../features/favourites/favourite.dart';
 import '../personalization/screens/notification/notification_detail_screen.dart';
 import '../personalization/screens/notification/notification_screen.dart';
-import '../features/cart/screens/cart.dart';
-import '../features/checkout/screens/checkout.dart';
 
 import '../personalization/screens/profile/update_profile_screen.dart';
 
@@ -36,12 +33,7 @@ class AppRoutes {
       page: () => const ReAuthenticatePhoneOtpScreen(),
     ),
     GetPage(name: TRoutes.profileScreen, page: () => const ProfileScreen()),
-    GetPage(name: TRoutes.cartScreen, page: () => const CartScreen()),
-    GetPage(name: TRoutes.checkoutScreen, page: () => const CheckoutScreen()),
-    GetPage(
-      name: TRoutes.favouritesScreen,
-      page: () => const FavouriteScreen(),
-    ),
+
     GetPage(
       name: TRoutes.schedules,
       page: () => const SchedulesScreen(),

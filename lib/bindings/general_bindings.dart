@@ -1,5 +1,3 @@
-import 'package:cwt_starter_template/features/cart/controllers/cart_controller.dart';
-import 'package:cwt_starter_template/features/checkout/controllers/checkout_controller.dart';
 import 'package:cwt_starter_template/features/products/controllers/product_controller.dart';
 import 'package:cwt_starter_template/personalization/controllers/theme_controller.dart';
 import 'package:get/get.dart';
@@ -24,11 +22,9 @@ class GeneralBindings extends Bindings {
 
     /// -- Repository
     Get.lazyPut(() => AuthenticationRepository(), fenix: true);
-    Get.put(CartController());
     Get.put(ThemeController());
     Get.put(ProductController());
     Get.lazyPut(() => UserController());
-    Get.lazyPut(() => CheckoutController());
     Get.lazyPut(() => AddressController());
     Get.put(EnvironmentController());
 

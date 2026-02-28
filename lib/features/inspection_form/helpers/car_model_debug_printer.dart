@@ -458,6 +458,7 @@ void printCarModelDebug(CarModel m) {
   p('lhsTailLampImages', m.lhsTailLampImages, 'LHS Tail Lamp Image');
   p('rhsTailLampImages', m.rhsTailLampImages, 'RHS Tail Lamp Image');
   p('rearWindshieldImages', m.rearWindshieldImages, 'Rear Windshield Image');
+  p('bootDoorImages', m.bootDoorImages, 'Boot Door Image', 'NEW: bootDoorImages field');
   p('spareTyreImages', m.spareTyreImages, 'Spare Tyre Image');
   p('bootFloorImages', m.bootFloorImages, 'Boot Floor Image');
   p(

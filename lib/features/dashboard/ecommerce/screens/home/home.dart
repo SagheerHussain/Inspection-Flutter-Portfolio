@@ -12,7 +12,7 @@ import '../../../../../utils/constants/image_strings.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/device/device_utility.dart';
-import '../../../../cart/controllers/cart_controller.dart';
+
 import '../../../../products/controllers/product_controller.dart';
 import '../../../../products/screens/product_cards/product_card_vertical.dart';
 import '../../controllers/home_controller.dart';
@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
-    Get.put(CartController());
+
     Get.put(ProductController());
     final featuredProducts = controller.getFeaturedProducts();
     final popularProducts = controller.getPopularProducts();

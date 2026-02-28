@@ -221,212 +221,280 @@ class _ScheduleCard extends StatelessWidget {
     }
   }
 
+  /// Capitalize each word's first letter
+  String _titleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final txtTheme = Theme.of(context).textTheme;
     final statusColor = _statusColor(schedule.inspectionStatus);
+    final priorityColor = _priorityColor(schedule.priority);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF1A1F36) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color:
                 dark
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : const Color(0xFF6366F1).withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
+          if (!dark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
         ],
       ),
       child: Column(
         children: [
-          // ── Top Header Bar ──
+          // ═══════════════════════════════════════════════
+          // ROW 1: Appointment ID · City · Status  (chip style)
+          // ═══════════════════════════════════════════════
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: dark ? 0.30 : 0.18),
+              gradient: LinearGradient(
+                colors: dark
+                    ? [
+                        statusColor.withValues(alpha: 0.20),
+                        statusColor.withValues(alpha: 0.08),
+                      ]
+                    : [
+                        statusColor.withValues(alpha: 0.10),
+                        statusColor.withValues(alpha: 0.04),
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        dark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.tag, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        schedule.appointmentId,
-                        style: txtTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                // Appointment ID chip
+                _headerChip(
+                  icon: Icons.tag_rounded,
+                  label: schedule.appointmentId,
+                  bgColor: dark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.white,
+                  iconColor: const Color(0xFF6366F1),
+                  textStyle: txtTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: dark ? Colors.white : const Color(0xFF1E293B),
                   ),
                 ),
                 const SizedBox(width: 8),
 
-                // City Badge
+                // City chip
                 if (schedule.city.isNotEmpty)
                   Flexible(
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                    child: _headerChip(
+                      icon: Icons.location_city_rounded,
+                      label: schedule.city.toUpperCase(),
+                      bgColor: dark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.white,
+                      iconColor: const Color(0xFF0EA5E9),
+                      textStyle: txtTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: dark ? Colors.white70 : const Color(0xFF475569),
+                        fontSize: 10,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.location_city,
-                            size: 12,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              schedule.city,
-                              style: txtTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
-                                fontSize: 11,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                      flexible: true,
                     ),
                   ),
 
-                // Status Badge
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            schedule.inspectionStatus,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                const Spacer(),
+
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        statusColor.withValues(alpha: 0.25),
+                        statusColor.withValues(alpha: 0.15),
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        schedule.inspectionStatus,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Card Body ──
+          // ═══════════════════════════════════════════════
+          // CARD BODY
+          // ═══════════════════════════════════════════════
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Car Registration + Priority
+                // ── ROW 2: Owner Name (Title Case) + Phone ──
                 Row(
                   children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
+                    // Gradient avatar
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        decoration: BoxDecoration(
-                          color: TColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.directions_car,
-                              size: 14,
-                              color: TColors.dark,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                schedule.carRegistrationNumber,
-                                style: txtTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          schedule.ownerName.isNotEmpty
+                              ? schedule.ownerName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _titleCase(schedule.ownerName),
+                            style: txtTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: -0.2,
+                              color: dark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(
+                                  Icons.phone_rounded,
+                                  size: 11,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  schedule.customerContactNumber.isNotEmpty
+                                      ? schedule.customerContactNumber
+                                      : 'No phone number',
+                                  style: txtTheme.bodySmall?.copyWith(
+                                    color: dark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Priority badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
+                        color: priorityColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _priorityColor(
-                            schedule.priority,
-                          ).withValues(alpha: 0.5),
+                          color: priorityColor.withValues(alpha: 0.3),
+                          width: 0.5,
                         ),
-                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         schedule.priority,
                         style: TextStyle(
-                          color: _priorityColor(schedule.priority),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          color: priorityColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -434,166 +502,155 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // Owner Name
-                Row(
+                // ── ROW 3: Make · Model · Variant as chips + Reg plate ──
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: const Color(
-                        0xFF7C4DFF,
-                      ).withValues(alpha: 0.1),
-                      child: Text(
-                        schedule.ownerName.isNotEmpty
-                            ? schedule.ownerName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: Color(0xFF7C4DFF),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                    if (schedule.make.isNotEmpty)
+                      _vehicleChip(
+                        icon: Icons.factory_rounded,
+                        label: schedule.make,
+                        color: const Color(0xFF6366F1),
+                      ),
+                    if (schedule.model.isNotEmpty)
+                      _vehicleChip(
+                        icon: Icons.directions_car_rounded,
+                        label: schedule.model,
+                        color: const Color(0xFF0EA5E9),
+                      ),
+                    if (schedule.variant.isNotEmpty)
+                      _vehicleChip(
+                        icon: Icons.tune_rounded,
+                        label: schedule.variant,
+                        color: const Color(0xFF8B5CF6),
+                      ),
+                    // Registration number as subtle inline label
+                    if (schedule.carRegistrationNumber.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: dark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: dark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : const Color(0xFFE2E8F0),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.confirmation_number_outlined,
+                              size: 11,
+                              color: dark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              schedule.carRegistrationNumber,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: dark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            schedule.ownerName,
-                            style: txtTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.phone_rounded,
-                                size: 13,
-                                color: Colors.grey.shade500,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                schedule.customerContactNumber.isNotEmpty
-                                    ? schedule.customerContactNumber
-                                    : 'No phone number',
-                                style: txtTheme.bodySmall?.copyWith(
-                                  color: Colors.grey,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-                // Car Details
+                // ── ROW 4: Inspection Date & Time with countdown ──
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color:
-                        dark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : const Color(0xFFF8F9FB),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      _infoRow(
-                        Icons.branding_watermark_rounded,
-                        'Make',
-                        schedule.make,
-                        txtTheme,
-                      ),
-                      const SizedBox(height: 6),
-                      _infoRow(
-                        Icons.model_training_rounded,
-                        'Model',
-                        schedule.model,
-                        txtTheme,
-                      ),
-                      if (schedule.variant.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        _infoRow(
-                          Icons.tune_rounded,
-                          'Variant',
-                          schedule.variant,
-                          txtTheme,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Inspection Date & Time
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        const Color(
-                          0xFF4A90D9,
-                        ).withValues(alpha: dark ? 0.15 : 0.08),
-                        const Color(
-                          0xFF4A90D9,
-                        ).withValues(alpha: dark ? 0.05 : 0.02),
-                      ],
+                      colors: dark
+                          ? [
+                              const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                              const Color(0xFF6366F1).withValues(alpha: 0.06),
+                            ]
+                          : [
+                              const Color(0xFF3B82F6).withValues(alpha: 0.06),
+                              const Color(0xFF6366F1).withValues(alpha: 0.03),
+                            ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withValues(alpha: dark ? 0.15 : 0.1),
+                      width: 0.5,
+                    ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF4A90D9,
-                          ).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF6366F1)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.schedule_rounded,
-                          color: Color(0xFF4A90D9),
-                          size: 20,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Inspection Date & Time',
-                              style: txtTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
-                                fontSize: 11,
+                              style: txtTheme.labelSmall?.copyWith(
+                                color: dark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 3),
                             Text(
                               schedule.formattedInspectionDate,
                               style: txtTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF4A90D9),
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF3B82F6),
+                                fontSize: 14,
+                                letterSpacing: -0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             if (schedule.inspectionDateTime != null) ...[
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 4),
                               _CountdownText(
                                 targetDate: schedule.inspectionDateTime!,
                                 style: txtTheme.labelSmall?.copyWith(
-                                  color: const Color(0xFF4A90D9),
+                                  color: const Color(0xFF3B82F6),
                                   fontWeight: FontWeight.w800,
                                   fontSize: 10,
                                 ),
@@ -607,63 +664,79 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Inspection Address with Directions
+                // ── ROW 5: Map / Directions ──
                 if (schedule.inspectionAddress.isNotEmpty)
                   GestureDetector(
                     onTap: () => _openDirections(schedule.inspectionAddress),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            const Color(
-                              0xFF4CAF50,
-                            ).withValues(alpha: dark ? 0.15 : 0.08),
-                            const Color(
-                              0xFF4CAF50,
-                            ).withValues(alpha: dark ? 0.05 : 0.02),
-                          ],
+                          colors: dark
+                              ? [
+                                  const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  const Color(0xFF059669).withValues(alpha: 0.06),
+                                ]
+                              : [
+                                  const Color(0xFF10B981).withValues(alpha: 0.06),
+                                  const Color(0xFF059669).withValues(alpha: 0.03),
+                                ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                          color: const Color(0xFF10B981).withValues(alpha: dark ? 0.15 : 0.12),
+                          width: 0.5,
                         ),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF4CAF50,
-                              ).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.location_on_rounded,
-                              color: Color(0xFF4CAF50),
-                              size: 20,
+                              color: Colors.white,
+                              size: 18,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Tap for directions',
-                                  style: txtTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF4CAF50),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
+                                  style: txtTheme.labelSmall?.copyWith(
+                                    color: const Color(0xFF10B981),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 3),
                                 Text(
                                   schedule.inspectionAddress,
                                   style: txtTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: dark ? Colors.white : const Color(0xFF1E293B),
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -671,18 +744,16 @@ class _ScheduleCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF4CAF50,
-                              ).withValues(alpha: 0.2),
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.directions_rounded,
-                              color: Color(0xFF4CAF50),
+                              color: Color(0xFF10B981),
                               size: 18,
                             ),
                           ),
@@ -694,17 +765,27 @@ class _ScheduleCard extends StatelessWidget {
             ),
           ),
 
-          // ── Bottom Action Bar ──
+          // ═══════════════════════════════════════════════
+          // ROW 6: Bottom Action Bar
+          // ═══════════════════════════════════════════════
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color:
                   dark
                       ? Colors.white.withValues(alpha: 0.03)
-                      : const Color(0xFFFAFAFA),
+                      : const Color(0xFFF8FAFC),
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : const Color(0xFFE2E8F0),
+                  width: 0.5,
+                ),
               ),
             ),
             child: Row(
@@ -726,6 +807,83 @@ class _ScheduleCard extends StatelessWidget {
                   children: _buildRightActions(),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reusable header chip for Top Row
+  Widget _headerChip({
+    required IconData icon,
+    required String label,
+    required Color bgColor,
+    required Color iconColor,
+    TextStyle? textStyle,
+    bool flexible = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: iconColor),
+          const SizedBox(width: 5),
+          if (flexible)
+            Flexible(
+              child: Text(
+                label,
+                style: textStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            )
+          else
+            Text(label, style: textStyle),
+        ],
+      ),
+    );
+  }
+
+  /// Vehicle detail chip (Make / Model / Variant)
+  Widget _vehicleChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: dark ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.1,
             ),
           ),
         ],

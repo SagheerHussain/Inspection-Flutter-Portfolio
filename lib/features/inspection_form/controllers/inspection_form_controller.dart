@@ -62,6 +62,9 @@ class InspectionFormController extends GetxController {
   // Tabs / Sections
   final currentSectionIndex = 0.obs;
   final pageController = PageController();
+
+  // Field navigation: when set, the UI will scroll to this field key
+  final targetFieldKey = RxnString();
   final _storage = GetStorage();
   final _picker = ImagePicker();
 
@@ -141,6 +144,9 @@ class InspectionFormController extends GetxController {
           // Store original data snapshot for preview dialog
           _originalData = Map<String, dynamic>.from(carData);
 
+          // Reverse-map API keys → form keys
+          _normalizeCarDataToFormKeys(carData);
+
           // Pre-fill the form with fetched data
           inspectionData.value = InspectionFormModel.fromJson(carData);
 
@@ -191,6 +197,9 @@ class InspectionFormController extends GetxController {
               '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
             );
 
+            // Reverse-map API keys → form keys
+            _normalizeCarDataToFormKeys(carData);
+
             // Pre-fill the form with the existing data
             inspectionData.value = InspectionFormModel.fromJson(carData);
             _preFillMedia(carData);
@@ -216,6 +225,44 @@ class InspectionFormController extends GetxController {
       }
 
       // ── STANDARD FLOW (Scheduled / Running without Re-Inspection / etc.) ──
+      // PRIORITY: Cars collection API > Local Draft > New empty form
+
+      // 1. Try fetching from cars API FIRST (always use server data if it exists)
+      try {
+        final response = await ApiService.get(
+          ApiConstants.carDetailsUrl(appointmentId),
+        );
+
+        final carData = response['carDetails'];
+        if (carData != null && carData['_id'] != null) {
+          debugPrint('✅ Car record found in DB for $appointmentId — using server data');
+
+          // Reverse-map API keys → form keys so all fields populate correctly
+          _normalizeCarDataToFormKeys(carData);
+
+          inspectionData.value = InspectionFormModel.fromJson(carData);
+
+          // Pre-fill media from the API response
+          _preFillMedia(carData);
+
+          Get.snackbar(
+            'Data Loaded',
+            'Inspection data loaded from server.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.blue.shade700,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(12),
+            borderRadius: 12,
+            duration: const Duration(seconds: 2),
+          );
+          isLoading.value = false;
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Car details fetch failed: $e — falling back to draft/new');
+      }
+
+      // 2. No car record found — try local draft
       final draftKey = 'draft_$appointmentId';
       final localDraft = _storage.read(draftKey);
       if (localDraft != null && localDraft is Map) {
@@ -248,23 +295,233 @@ class InspectionFormController extends GetxController {
         return;
       }
 
-      // Try fetching from API
-      final response = await ApiService.get(
-        ApiConstants.carDetailsUrl(appointmentId),
-      );
-
-      final carData = response['carDetails'];
-      if (carData != null) {
-        inspectionData.value = InspectionFormModel.fromJson(carData);
-      } else {
-        _initializeNewInspection();
-      }
+      // 3. No car record and no draft — initialize empty form
+      _initializeNewInspection();
     } catch (e) {
       debugPrint('Fetch failed, initializing new: $e');
       _initializeNewInspection();
     } finally {
       isLoading.value = false;
     }
+  }
+
+   /// Reverse-maps API/CarModel JSON keys → Form field keys.
+  /// The CarModel.toJson() outputs keys that differ from the form field keys.
+  /// This method copies values from API keys to the form keys so
+  /// InspectionFormModel.fromJson() + getFieldValue() can find them.
+  void _normalizeCarDataToFormKeys(Map<String, dynamic> carData) {
+    int mapped = 0;
+
+    // Helper: parse a date value from various formats (ISO string, MongoDB $date, etc.)
+    // and return a human-readable string
+    String? _formatDate(dynamic val, {bool monthYearOnly = false}) {
+      if (val == null) return null;
+      DateTime? dt;
+
+      if (val is String && val.isNotEmpty && val != 'N/A') {
+        dt = DateTime.tryParse(val);
+      } else if (val is Map) {
+        // MongoDB $date format: {"$date": "2024-03-15T00:00:00.000Z"} or {"$date": {"$numberLong": "..."}}
+        final dateVal = val['\$date'];
+        if (dateVal is String) {
+          dt = DateTime.tryParse(dateVal);
+        } else if (dateVal is Map && dateVal['\$numberLong'] != null) {
+          final ms = int.tryParse(dateVal['\$numberLong'].toString());
+          if (ms != null) dt = DateTime.fromMillisecondsSinceEpoch(ms);
+        }
+      }
+
+      if (dt == null) return null;
+
+      if (monthYearOnly) {
+        return '${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+      }
+      return '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+    }
+
+    // Helper: normalize a date field in carData to DD-MM-YYYY format
+    void normDate(String key, {bool monthYearOnly = false}) {
+      final val = carData[key];
+      if (val == null || val.toString().isEmpty || val.toString() == 'N/A') return;
+
+      // Skip if already in DD-MM-YYYY format
+      final str = val.toString();
+      if (RegExp(r'^\d{2}-\d{2}-\d{4}$').hasMatch(str)) return;
+      if (monthYearOnly && RegExp(r'^\d{2}-\d{4}$').hasMatch(str)) return;
+
+      final formatted = _formatDate(val, monthYearOnly: monthYearOnly);
+      if (formatted != null) {
+        carData[key] = formatted;
+        mapped++;
+        debugPrint('📅 Formatted date [$key]: $str → $formatted');
+      }
+    }
+
+    // Helper: copy value from apiKey to formKey if formKey doesn't already have a value
+    void map(String apiKey, String formKey, {bool isList = false}) {
+      final apiVal = carData[apiKey];
+      final formVal = carData[formKey];
+
+      // Skip if form key already has a value
+      if (formVal != null && formVal.toString().isNotEmpty && formVal.toString() != '0' && formVal.toString() != 'N/A') {
+        return;
+      }
+
+      if (apiVal == null || apiVal.toString().isEmpty || apiVal.toString() == 'N/A') return;
+
+      if (isList && apiVal is List && apiVal.isNotEmpty) {
+        // DropdownList arrays → take first element for single-value form fields
+        carData[formKey] = apiVal.first.toString();
+        mapped++;
+      } else if (!isList) {
+        carData[formKey] = apiVal;
+        mapped++;
+      }
+    }
+
+    // ═════════════════════════════════════════════
+    // DATE FIELD RENAMES (API key → Form key)
+    // ═════════════════════════════════════════════
+    map('fitnessTill', 'fitnessValidity');
+    map('yearAndMonthOfManufacture', 'yearMonthOfManufacture');
+    map('yearMonthOfManufacture', 'yearMonthOfManufacture');
+
+    // Date fields are now FType.date with a date picker.
+    // The _BoundDateField widget handles ISO → DD-MM-YYYY display.
+    // No need to pre-format date strings.
+
+    // ═════════════════════════════════════════════
+    // STRING FIELD RENAMES
+    // ═════════════════════════════════════════════
+    map('ieName', 'emailAddress');
+    map('inspectionCity', 'city');
+    map('policyNumber', 'insurancePolicyNumber');
+    map('airConditioningManual', 'acType');
+    map('airConditioningClimateControl', 'acCooling');
+    map('commentsOnAC', 'commentsOnAC');
+    map('odometerReadingBeforeTestDrive', 'odometerReadingInKms');
+    map('driverAirbag', 'airbagFeaturesDriverSide');
+    map('coDriverAirbag', 'airbagFeaturesCoDriverSide');
+
+    // ═════════════════════════════════════════════
+    // DROPDOWN LIST → SINGLE VALUE CONVERSIONS
+    // The API stores these as arrays (XDropdownList),
+    // but the form expects a single string value.
+    // ═════════════════════════════════════════════
+    map('rcBookAvailabilityDropdownList', 'rcBookAvailability', isList: true);
+    map('mismatchInRcDropdownList', 'mismatchInRc', isList: true);
+    map('insuranceDropdownList', 'insurance', isList: true);
+    map('mismatchInInsuranceDropdownList', 'mismatchInInsurance', isList: true);
+    map('additionalDetailsDropdownList', 'additionalDetails', isList: true);
+    map('bonnetDropdownList', 'bonnet', isList: true);
+    map('frontWindshieldDropdownList', 'frontWindshield', isList: true);
+    map('roofDropdownList', 'roof', isList: true);
+    map('frontBumperDropdownList', 'frontBumper', isList: true);
+    map('lhsHeadlampDropdownList', 'lhsHeadlamp', isList: true);
+    map('lhsFoglampDropdownList', 'lhsFoglamp', isList: true);
+    map('rhsHeadlampDropdownList', 'rhsHeadlamp', isList: true);
+    map('rhsFoglampDropdownList', 'rhsFoglamp', isList: true);
+    map('lhsFenderDropdownList', 'lhsFender', isList: true);
+    map('lhsOrvmDropdownList', 'lhsOrvm', isList: true);
+    map('lhsAPillarDropdownList', 'lhsAPillar', isList: true);
+    map('lhsBPillarDropdownList', 'lhsBPillar', isList: true);
+    map('lhsCPillarDropdownList', 'lhsCPillar', isList: true);
+    map('lhsFrontWheelDropdownList', 'lhsFrontAlloy', isList: true);
+    map('lhsFrontTyreDropdownList', 'lhsFrontTyre', isList: true);
+    map('lhsRearWheelDropdownList', 'lhsRearAlloy', isList: true);
+    map('lhsRearTyreDropdownList', 'lhsRearTyre', isList: true);
+    map('lhsFrontDoorDropdownList', 'lhsFrontDoor', isList: true);
+    map('lhsRearDoorDropdownList', 'lhsRearDoor', isList: true);
+    map('lhsRunningBorderDropdownList', 'lhsRunningBorder', isList: true);
+    map('lhsQuarterPanelDropdownList', 'lhsQuarterPanel', isList: true);
+    map('rearBumperDropdownList', 'rearBumper', isList: true);
+    map('lhsTailLampDropdownList', 'lhsTailLamp', isList: true);
+    map('rhsTailLampDropdownList', 'rhsTailLamp', isList: true);
+    map('rearWindshieldDropdownList', 'rearWindshield', isList: true);
+    map('bootDoorDropdownList', 'bootDoor', isList: true);
+    map('spareTyreDropdownList', 'spareTyre', isList: true);
+    map('bootFloorDropdownList', 'bootFloor', isList: true);
+    map('rhsRearWheelDropdownList', 'rhsRearAlloy', isList: true);
+    map('rhsRearTyreDropdownList', 'rhsRearTyre', isList: true);
+    map('rhsFrontWheelDropdownList', 'rhsFrontAlloy', isList: true);
+    map('rhsFrontTyreDropdownList', 'rhsFrontTyre', isList: true);
+    map('rhsQuarterPanelDropdownList', 'rhsQuarterPanel', isList: true);
+    map('rhsAPillarDropdownList', 'rhsAPillar', isList: true);
+    map('rhsBPillarDropdownList', 'rhsBPillar', isList: true);
+    map('rhsCPillarDropdownList', 'rhsCPillar', isList: true);
+    map('rhsRunningBorderDropdownList', 'rhsRunningBorder', isList: true);
+    map('rhsRearDoorDropdownList', 'rhsRearDoor', isList: true);
+    map('rhsFrontDoorDropdownList', 'rhsFrontDoor', isList: true);
+    map('rhsOrvmDropdownList', 'rhsOrvm', isList: true);
+    map('rhsFenderDropdownList', 'rhsFender', isList: true);
+    map('commentsOnExteriorDropdownList', 'comments', isList: true);
+    map('upperCrossMemberDropdownList', 'upperCrossMember', isList: true);
+    map('radiatorSupportDropdownList', 'radiatorSupport', isList: true);
+    map('headlightSupportDropdownList', 'headlightSupport', isList: true);
+    map('lowerCrossMemberDropdownList', 'lowerCrossMember', isList: true);
+    map('lhsApronDropdownList', 'lhsApron', isList: true);
+    map('rhsApronDropdownList', 'rhsApron', isList: true);
+    map('firewallDropdownList', 'firewall', isList: true);
+    map('cowlTopDropdownList', 'cowlTop', isList: true);
+    map('engineDropdownList', 'engine', isList: true);
+    map('batteryDropdownList', 'battery', isList: true);
+    map('coolantDropdownList', 'coolant', isList: true);
+    map('engineOilLevelDipstickDropdownList', 'engineOilLevelDipstick', isList: true);
+    map('engineOilDropdownList', 'engineOil', isList: true);
+    map('engineMountDropdownList', 'engineMount', isList: true);
+    map('enginePermisableBlowByDropdownList', 'enginePermisableBlowBy', isList: true);
+    map('exhaustSmokeDropdownList', 'exhaustSmoke', isList: true);
+    map('clutchDropdownList', 'clutch', isList: true);
+    map('gearShiftDropdownList', 'gearShift', isList: true);
+    map('commentsOnEngineDropdownList', 'commentsOnEngine', isList: true);
+    map('commentsOnEngineOilDropdownList', 'commentsOnEngineOil', isList: true);
+    map('commentsOnTowingDropdownList', 'commentsOnTowing', isList: true);
+    map('commentsOnTransmissionDropdownList', 'commentsOnTransmission', isList: true);
+    map('commentsOnRadiatorDropdownList', 'commentsOnRadiator', isList: true);
+    map('commentsOnOthersDropdownList', 'commentsOnOthers', isList: true);
+    map('steeringDropdownList', 'steering', isList: true);
+    map('brakesDropdownList', 'brakes', isList: true);
+    map('suspensionDropdownList', 'suspension', isList: true);
+    map('rearWiperWasherDropdownList', 'rearWiperWasher', isList: true);
+    map('rearDefoggerDropdownList', 'rearDefogger', isList: true);
+    map('infotainmentSystemDropdownList', 'infotainmentSystem', isList: true);
+    map('rhsFrontDoorFeaturesDropdownList', 'powerWindowConditionRhsFront', isList: true);
+    map('lhsFrontDoorFeaturesDropdownList', 'powerWindowConditionLhsFront', isList: true);
+    map('rhsRearDoorFeaturesDropdownList', 'powerWindowConditionRhsRear', isList: true);
+    map('lhsRearDoorFeaturesDropdownList', 'powerWindowConditionLhsRear', isList: true);
+    map('commentOnInteriorDropdownList', 'commentOnInterior', isList: true);
+    map('sunroofDropdownList', 'sunroof', isList: true);
+    map('reverseCameraDropdownList', 'reverseCamera', isList: true);
+    map('acTypeDropdownList', 'acType');
+    map('acCoolingDropdownList', 'acCooling');
+    map('frontWiperAndWasherDropdownList', 'frontWiperAndWasher', isList: true);
+    map('lhsRearFogLampDropdownList', 'lhsRearFogLamp', isList: true);
+    map('rhsRearFogLampDropdownList', 'rhsRearFogLamp', isList: true);
+    map('spareWheelDropdownList', 'spareWheel', isList: true);
+    map('lhsSideMemberDropdownList', 'lhsSideMember', isList: true);
+    map('rhsSideMemberDropdownList', 'rhsSideMember', isList: true);
+    map('transmissionTypeDropdownList', 'transmissionType', isList: true);
+    map('driveTrainDropdownList', 'driveTrain', isList: true);
+    map('commentsOnClusterMeterDropdownList', 'commentsOnClusterMeter', isList: true);
+    map('dashboardDropdownList', 'dashboard', isList: true);
+    map('driverSeatDropdownList', 'driverSeat', isList: true);
+    map('coDriverSeatDropdownList', 'coDriverSeat', isList: true);
+    map('frontCentreArmRestDropdownList', 'frontCentreArmRest', isList: true);
+    map('rearSeatsDropdownList', 'rearSeats', isList: true);
+    map('thirdRowSeatsDropdownList', 'thirdRowSeats', isList: true);
+
+    // Seats Upholstery reverse logic (leatherSeats/fabricSeats → seatsUpholstery)
+    if ((carData['seatsUpholstery'] == null || carData['seatsUpholstery'].toString().isEmpty || carData['seatsUpholstery'] == 'N/A')) {
+      if (carData['leatherSeats'] == 'Yes') {
+        carData['seatsUpholstery'] = 'Leather';
+        mapped++;
+      } else if (carData['fabricSeats'] == 'Yes') {
+        carData['seatsUpholstery'] = 'Fabric';
+        mapped++;
+      }
+    }
+
+    debugPrint('🔄 Reverse-mapping complete: $mapped fields normalized from API → form keys');
   }
 
   /// Extracts image/video URLs from API response and populates imageFiles
@@ -831,6 +1088,31 @@ class InspectionFormController extends GetxController {
     pageController.jumpToPage(index);
   }
 
+  /// Navigate to a specific field by its key.
+  /// Finds which section it belongs to, jumps to that section,
+  /// and broadcasts the field key so the UI can scroll to it.
+  void navigateToField(String fieldKey) {
+    for (int i = 0; i < InspectionFieldDefs.sections.length; i++) {
+      final section = InspectionFieldDefs.sections[i];
+      for (final field in section.fields) {
+        if (field.key == fieldKey) {
+          // Jump to the section
+          jumpToSection(i);
+          // Broadcast the target field key after a short delay
+          // so the page has time to build
+          Future.delayed(const Duration(milliseconds: 350), () {
+            targetFieldKey.value = fieldKey;
+            // Clear after another delay so it doesn't retrigger
+            Future.delayed(const Duration(milliseconds: 500), () {
+              targetFieldKey.value = null;
+            });
+          });
+          return;
+        }
+      }
+    }
+  }
+
   // ─── Save Draft (Local) ───
   Future<void> saveInspection() async {
     final data = inspectionData.value;
@@ -911,7 +1193,7 @@ class InspectionFormController extends GetxController {
     if (data == null) return;
 
     // Validate ALL required fields across every section
-    final missingBySection = <String, List<String>>{};
+    final missingBySection = <String, List<Map<String, String>>>{};
     for (final section in InspectionFieldDefs.sections) {
       for (final field in section.fields) {
         // 1. Skip if field should technically be hidden (Optional/Dynamic logic)
@@ -973,7 +1255,7 @@ class InspectionFormController extends GetxController {
           if (imgs.length < minReq) {
             String label = field.label;
             if (minReq > 1) label += ' (At least $minReq photos)';
-            missingBySection.putIfAbsent(section.title, () => []).add(label);
+            missingBySection.putIfAbsent(section.title, () => []).add({'key': field.key, 'label': label});
           }
         } else {
           final val = getFieldValue(field.key);
@@ -981,7 +1263,7 @@ class InspectionFormController extends GetxController {
             if (field.type == FType.number && val == '0') continue;
             missingBySection
                 .putIfAbsent(section.title, () => [])
-                .add(field.label);
+                .add({'key': field.key, 'label': field.label});
           }
         }
       }
@@ -1068,34 +1350,49 @@ class InspectionFormController extends GetxController {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              // Field list
+                              // Field list — tappable to navigate
                               ...entry.value
                                   .take(5)
                                   .map(
-                                    (f) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 8,
-                                        bottom: 3,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.circle,
-                                            size: 5,
-                                            color: Colors.red.shade300,
+                                    (f) => Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          Navigator.of(Get.context!).pop();
+                                          navigateToField(f['key']!);
+                                        },
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              f,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade700,
-                                                height: 1.4,
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.circle,
+                                                size: 5,
+                                                color: Colors.red.shade300,
                                               ),
-                                            ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  f['label']!,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade700,
+                                                    height: 1.4,
+                                                  ),
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.arrow_forward_ios_rounded,
+                                                size: 10,
+                                                color: const Color(0xFF0D6EFD).withValues(alpha: 0.5),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1166,10 +1463,21 @@ class InspectionFormController extends GetxController {
 
     // ══════════════════════════════════════════════════════════
     // STANDARD FLOW: Build CarModel, print debug, then submit to API
+    // Check if record already exists — UPDATE instead of ADD
     // ══════════════════════════════════════════════════════════
     isSubmitting.value = true;
     try {
-      // 1. Build the CarModel from form data
+      // 1. Dump date field values for debugging
+      final dateKeys = ['registrationDate', 'fitnessValidity', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity'];
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('📅 DATE FIELD VALUES BEFORE BUILD:');
+      for (final k in dateKeys) {
+        final v = data.data[k];
+        debugPrint('  $k = ${v == null ? "NULL" : "\"$v\" (${v.runtimeType})"}');
+      }
+      debugPrint('═══════════════════════════════════════════════');
+
+      // 2. Build the CarModel from form data
       final carModel = _buildCarModelFromForm(data);
 
       // 2. Print all fields to debug console for verification
@@ -1178,13 +1486,13 @@ class InspectionFormController extends GetxController {
       // 3. Convert CarModel to JSON payload
       final payload = carModel.toJson();
 
-      // Ensure no IDs are passed for the "add" API (reserved for update later)
-      payload.remove('_id');
-      payload.remove('id');
-      payload.remove('objectId');
-      debugPrint(
-        '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
-      );
+      // 🔍 DEBUG: Trace bootDoorImages through the pipeline
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('🔍 BOOT DOOR IMAGES DEBUG:');
+      debugPrint('  imageFiles[bootDoorImages] = ${imageFiles['bootDoorImages']}');
+      debugPrint('  carModel.bootDoorImages = ${carModel.bootDoorImages}');
+      debugPrint('  payload[bootDoorImages] (from toJson) = ${payload['bootDoorImages']}');
+      debugPrint('═══════════════════════════════════════════════');
 
       // Add image URLs from Cloudinary uploads
       imageFiles.forEach((key, paths) {
@@ -1198,18 +1506,69 @@ class InspectionFormController extends GetxController {
         }
       });
 
+      // 🔍 DEBUG: bootDoorImages after imageFiles overlay
+      debugPrint('🔍 payload[bootDoorImages] (after overlay) = ${payload['bootDoorImages']}');
+
       // Ensure timestamp is set
       payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
 
-      debugPrint('📡 Submitting inspection to API...');
-      debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-      debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
+      // Debug: dump date values in payload
+      debugPrint('📅 DATE VALUES IN PAYLOAD:');
+      for (final k in ['registrationDate', 'fitnessTill', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity', 'fitnessValidity', 'yearAndMonthOfManufacture']) {
+        debugPrint('  payload[$k] = ${payload[k]}');
+      }
 
-      // 4. POST to the API endpoint
-      final response = await ApiService.post(
-        ApiConstants.inspectionSubmitUrl,
-        payload,
-      );
+      // ── Check if a car record already exists for this appointmentId ──
+      String? existingCarId;
+      try {
+        debugPrint('🔍 Checking if car record already exists for appointmentId: $appointmentId');
+        final existingResponse = await ApiService.get(
+          ApiConstants.carDetailsUrl(appointmentId),
+        );
+        final existingCar = existingResponse['carDetails'];
+        if (existingCar != null && existingCar['_id'] != null) {
+          existingCarId = existingCar['_id'].toString();
+          debugPrint('✅ Existing car record found: $existingCarId — will UPDATE instead of ADD');
+        }
+      } catch (e) {
+        debugPrint('ℹ️ No existing car record found (or check failed): $e — will ADD new record');
+      }
+
+      Map<String, dynamic> response;
+
+      if (existingCarId != null) {
+        // ── UPDATE existing record ──
+        payload['carId'] = existingCarId;
+        // Keep _id for the update API
+        payload.remove('objectId');
+
+        debugPrint('📡 Updating existing car record via PUT...');
+        debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+        debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+        debugPrint('🔑 carId: $existingCarId');
+
+        response = await ApiService.put(
+          ApiConstants.carUpdateUrl,
+          payload,
+        );
+      } else {
+        // ── ADD new record ──
+        payload.remove('_id');
+        payload.remove('id');
+        payload.remove('objectId');
+        debugPrint(
+          '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
+        );
+
+        debugPrint('📡 Submitting new inspection to API...');
+        debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+        debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
+
+        response = await ApiService.post(
+          ApiConstants.inspectionSubmitUrl,
+          payload,
+        );
+      }
 
       debugPrint('✅ API Response: $response');
 
@@ -1217,12 +1576,61 @@ class InspectionFormController extends GetxController {
       await _storage.remove('draft_$appointmentId');
       await _storage.remove('draft_images_$appointmentId');
 
-      // 6. Show stunning success dialog
+      // 6. Update telecalling status to 'Inspected'
+      try {
+        if (schedule != null) {
+          debugPrint('🔄 Updating telecalling status to Inspected...');
+          debugPrint('🔑 telecallingId: ${schedule!.id}');
+          debugPrint('📋 appointmentId: $appointmentId');
+
+          final storage = GetStorage();
+          final userId = storage.read('USER_ID') ?? '';
+          final userRole = storage.read('USER_ROLE') ?? 'Inspection Engineer';
+
+          final statusBody = {
+            'telecallingId': schedule!.id,
+            'changedBy': userId,
+            'source': userRole,
+            'inspectionStatus': 'Inspected',
+            'remarks': schedule!.remarks ?? '',
+          };
+
+          if (schedule!.inspectionDateTime != null) {
+            statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
+          }
+
+          debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+          debugPrint('📦 Body: $statusBody');
+
+          final statusResponse = await ApiService.put(
+            ApiConstants.updateTelecallingUrl,
+            statusBody,
+          );
+          debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+
+          // Refresh schedule list in background (non-blocking)
+          try {
+            if (Get.isRegistered<ScheduleController>()) {
+              Get.find<ScheduleController>().refreshSchedules();
+            }
+          } catch (_) {}
+        } else {
+          debugPrint('⚠️ schedule is null — cannot update telecalling status');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to update telecalling status: $e');
+        // Don't block success if this fails — the car submission already succeeded
+      }
+
+      // 7. Show stunning success dialog
       try {
         Get.closeAllSnackbars();
       } catch (_) {}
       _showSuccessDialog(
-        response['message'] ?? 'Inspection submitted successfully!',
+        response['message'] ??
+            (existingCarId != null
+                ? 'Inspection updated successfully!'
+                : 'Inspection submitted successfully!'),
       );
     } catch (e) {
       debugPrint('❌ Submit error: $e');
@@ -1895,15 +2303,43 @@ class InspectionFormController extends GetxController {
 
       // 6. Update telecalling status to 'Inspected'
       try {
-        if (Get.isRegistered<ScheduleController>()) {
-          final scheduleCtrl = Get.find<ScheduleController>();
-          await scheduleCtrl.updateTelecallingStatus(
-            telecallingId: schedule!.id,
-            status: 'Inspected',
-            dateTime: schedule!.inspectionDateTime?.toIso8601String(),
-            remarks: schedule!.remarks,
+        if (schedule != null) {
+          debugPrint('🔄 Updating telecalling status to Inspected (Re-Inspection)...');
+          debugPrint('🔑 telecallingId: ${schedule!.id}');
+
+          final storage = GetStorage();
+          final userId = storage.read('USER_ID') ?? '';
+          final userRole = storage.read('USER_ROLE') ?? 'Inspection Engineer';
+
+          final statusBody = {
+            'telecallingId': schedule!.id,
+            'changedBy': userId,
+            'source': userRole,
+            'inspectionStatus': 'Inspected',
+            'remarks': schedule!.remarks ?? '',
+          };
+
+          if (schedule!.inspectionDateTime != null) {
+            statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
+          }
+
+          debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+          debugPrint('📦 Body: $statusBody');
+
+          final statusResponse = await ApiService.put(
+            ApiConstants.updateTelecallingUrl,
+            statusBody,
           );
-          debugPrint('✅ Telecalling status updated to Inspected');
+          debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+
+          // Refresh schedule list in background (non-blocking)
+          try {
+            if (Get.isRegistered<ScheduleController>()) {
+              Get.find<ScheduleController>().refreshSchedules();
+            }
+          } catch (_) {}
+        } else {
+          debugPrint('⚠️ schedule is null — cannot update telecalling status (Re-Inspection)');
         }
       } catch (e) {
         debugPrint('⚠️ Failed to update telecalling status: $e');

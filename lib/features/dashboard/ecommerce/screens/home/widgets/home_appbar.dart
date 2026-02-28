@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../../../../personalization/screens/profile/profile_screen.dart';
 import '../../../../../../utils/constants/colors.dart';
 import '../../../../../../utils/constants/text_strings.dart';
-import '../../../../../cart/screens/cart_menu_icon.dart';
 
 class THomeAppBar extends StatelessWidget {
   const THomeAppBar({
@@ -25,7 +24,7 @@ class THomeAppBar extends StatelessWidget {
           ],
         ),
       ),
-      actions: const [TCartCounterIcon(iconColor: TColors.white, counterBgColor: TColors.black, counterTextColor: TColors.white)],
+      actions: const [],
     );
   }
 }
