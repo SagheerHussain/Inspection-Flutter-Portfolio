@@ -67,6 +67,13 @@ class ApiConstants {
   static String carDetailsUrl(String appointmentId) =>
       '${baseUrl}car/details/carId?appointmentId=$appointmentId';
 
+  /// Re-Inspection: Fetch car details by carId with empty appointmentId
+  static String carDetailsForReInspectionUrl(String carId) =>
+      '${baseUrl}car/details/$carId?appointmentId=';
+
+  /// Re-Inspection: Update existing car record
+  static String get carUpdateUrl => '${baseUrl}car/update';
+
   // ──────────────────────────────────────────
   // INSPECTION SUBMISSION ENDPOINTS (Dev)
   // ──────────────────────────────────────────

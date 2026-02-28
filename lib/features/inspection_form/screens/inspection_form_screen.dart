@@ -585,10 +585,25 @@ class _BoundTextFieldState extends State<_BoundTextField> {
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
-                    labelText: widget.field.label,
-                    labelStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
+                    label: RichText(
+                      text: TextSpan(
+                        text: widget.field.label,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                        children: [
+                          if (!widget.field.optional)
+                            const TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -620,7 +635,7 @@ class _BoundTextFieldState extends State<_BoundTextField> {
                 ),
               ),
             ),
-            if (isRegNumber)
+            if (isRegNumber && !widget.controller.isReInspection)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: SizedBox(
@@ -773,8 +788,23 @@ class _BoundNumberFieldState extends State<_BoundNumberField> {
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
-            labelText: widget.field.label,
-            labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            label: RichText(
+              text: TextSpan(
+                text: widget.field.label,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                children: [
+                  if (!widget.field.optional)
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -848,8 +878,23 @@ class _BoundDropdownState extends State<_BoundDropdown> {
           value: selectedValue,
           isExpanded: true,
           decoration: InputDecoration(
-            labelText: widget.field.label,
-            labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            label: RichText(
+              text: TextSpan(
+                text: widget.field.label,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                children: [
+                  if (!widget.field.optional)
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             floatingLabelStyle: const TextStyle(
               color: Color(0xFF0D6EFD),
               fontWeight: FontWeight.bold,
@@ -942,12 +987,25 @@ class _BoundImagePicker extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    field.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                  child: RichText(
+                    text: TextSpan(
+                      text: field.label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                      children: [
+                        if (!field.optional)
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

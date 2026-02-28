@@ -10,7 +10,12 @@ import '../../../utils/constants/api_constants.dart';
 import '../../../utils/popups/exports.dart';
 import '../models/inspection_field_defs.dart';
 import '../models/inspection_form_model.dart';
+import '../models/car_model.dart';
+import '../helpers/car_model_mapper.dart';
+import '../helpers/car_model_debug_printer.dart';
 import '../../schedules/models/schedule_model.dart';
+import '../../dashboard/course/screens/dashboard/coursesDashboard.dart';
+import '../../schedules/controllers/schedule_controller.dart';
 
 class InspectionFormController extends GetxController {
   final String appointmentId;
@@ -23,6 +28,26 @@ class InspectionFormController extends GetxController {
   final isSubmitting = false.obs;
   final isSaving = false.obs;
   final isFetchingDetails = false.obs;
+
+  // ── Re-Inspection state ──
+  /// Tracks whether this lead originated from a Re-Inspection
+  /// (set during data fetch — covers both direct Re-Inspection and Running leads that were Re-Inspected)
+  bool _isReInspectionOrigin = false;
+
+  /// True when the inspection should use the Re-Inspection update flow
+  bool get isReInspection {
+    if (_isReInspectionOrigin) return true;
+    final s =
+        schedule?.inspectionStatus.toLowerCase().replaceAll('-', '') ?? '';
+    return s == 'reinspected' || s == 'reinspection';
+  }
+
+  /// Stores the original data snapshot fetched from the API for Re-Inspection
+  /// (used for the preview dialog diff)
+  Map<String, dynamic> _originalData = {};
+
+  /// The carId (_id) from the car details API response for Re-Inspection update
+  String? _reInspectionCarId;
 
   // Helper to find field definition by key
   F? _findFieldByKey(String key) {
@@ -93,44 +118,134 @@ class InspectionFormController extends GetxController {
   Future<void> fetchInspectionData() async {
     isLoading.value = true;
     try {
-      final isReinspection =
-          schedule?.inspectionStatus == 'Re-Inspection' ||
-          schedule?.inspectionStatus == 'Reinspection';
+      // ── RE-INSPECTION FLOW ──
+      if (isReInspection) {
+        debugPrint(
+          '🔄 Re-Inspection flow detected. Fetching from car/details with empty appointmentId...',
+        );
 
-      // Only check local draft if NOT a re-inspection
-      // For re-inspection, we always want the latest data from the prescribed API
-      if (!isReinspection) {
-        final draftKey = 'draft_$appointmentId';
-        final localDraft = _storage.read(draftKey);
-        if (localDraft != null && localDraft is Map) {
-          inspectionData.value = InspectionFormModel.fromJson(
-            Map<String, dynamic>.from(localDraft),
-          );
-          // Restore image paths from draft
-          final imgKey = 'draft_images_$appointmentId';
-          final savedImages = _storage.read(imgKey);
-          if (savedImages != null && savedImages is Map) {
-            for (final entry in savedImages.entries) {
-              final list = entry.value;
-              if (list is List) {
-                imageFiles[entry.key.toString()] =
-                    list.map((e) => e.toString()).toList();
-              }
-            }
-          }
+        // Fetch data strictly from car/details/{carId}?appointmentId=""
+        final response = await ApiService.get(
+          ApiConstants.carDetailsUrl(appointmentId),
+        );
+
+        final carData = response['carDetails'];
+        if (carData != null) {
+          // Mark this as a Re-Inspection origin
+          _isReInspectionOrigin = true;
+
+          // Store the carId for later update call
+          _reInspectionCarId = carData['_id']?.toString();
+          debugPrint('🔑 Re-Inspection carId: $_reInspectionCarId');
+
+          // Store original data snapshot for preview dialog
+          _originalData = Map<String, dynamic>.from(carData);
+
+          // Pre-fill the form with fetched data
+          inspectionData.value = InspectionFormModel.fromJson(carData);
+
+          // Pre-fill media from the API response
+          _preFillMedia(carData);
+
           Get.snackbar(
-            'Draft Loaded',
-            'Continuing from your saved progress.',
+            'Re-Inspection Data Loaded',
+            'Previous inspection data pre-filled. Update fields as needed.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.blue.shade700,
             colorText: Colors.white,
             margin: const EdgeInsets.all(12),
             borderRadius: 12,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
           );
-          isLoading.value = false;
-          return;
+        } else {
+          debugPrint(
+            '⚠️ No car details found for Re-Inspection. Initializing empty form.',
+          );
+          _initializeNewInspection();
         }
+
+        isLoading.value = false;
+        return;
+      }
+
+      // ── RUNNING LEADS: Check for Re-Inspection Origin FIRST ──
+      // Must check API BEFORE draft to detect if this Running lead was Re-Inspected
+      final normalizedStatus =
+          schedule?.inspectionStatus.toLowerCase().replaceAll('-', '') ?? '';
+
+      if (normalizedStatus == 'running') {
+        debugPrint(
+          '🏃 Running lead detected. Checking for Re-Inspection origin...',
+        );
+        try {
+          final response = await ApiService.get(
+            ApiConstants.carDetailsUrl(appointmentId),
+          );
+          final carData = response['carDetails'];
+          if (carData != null && carData['_id'] != null) {
+            debugPrint('🔄 Detected Re-Inspection origin for Running lead');
+            _isReInspectionOrigin = true;
+            _reInspectionCarId = carData['_id']?.toString();
+            _originalData = Map<String, dynamic>.from(carData);
+            debugPrint(
+              '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
+            );
+
+            // Pre-fill the form with the existing data
+            inspectionData.value = InspectionFormModel.fromJson(carData);
+            _preFillMedia(carData);
+
+            Get.snackbar(
+              'Re-Inspection Data Loaded',
+              'Previous inspection data pre-filled. Update fields as needed.',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.blue.shade700,
+              colorText: Colors.white,
+              margin: const EdgeInsets.all(12),
+              borderRadius: 12,
+              duration: const Duration(seconds: 3),
+            );
+
+            isLoading.value = false;
+            return;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Re-Inspection check failed for Running lead: $e');
+          // Fall through to standard flow
+        }
+      }
+
+      // ── STANDARD FLOW (Scheduled / Running without Re-Inspection / etc.) ──
+      final draftKey = 'draft_$appointmentId';
+      final localDraft = _storage.read(draftKey);
+      if (localDraft != null && localDraft is Map) {
+        inspectionData.value = InspectionFormModel.fromJson(
+          Map<String, dynamic>.from(localDraft),
+        );
+        // Restore image paths from draft
+        final imgKey = 'draft_images_$appointmentId';
+        final savedImages = _storage.read(imgKey);
+        if (savedImages != null && savedImages is Map) {
+          for (final entry in savedImages.entries) {
+            final list = entry.value;
+            if (list is List) {
+              imageFiles[entry.key.toString()] =
+                  list.map((e) => e.toString()).toList();
+            }
+          }
+        }
+        Get.snackbar(
+          'Draft Loaded',
+          'Continuing from your saved progress.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.blue.shade700,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+          borderRadius: 12,
+          duration: const Duration(seconds: 2),
+        );
+        isLoading.value = false;
+        return;
       }
 
       // Try fetching from API
@@ -141,20 +256,6 @@ class InspectionFormController extends GetxController {
       final carData = response['carDetails'];
       if (carData != null) {
         inspectionData.value = InspectionFormModel.fromJson(carData);
-
-        // For Re-Inspection, we must populate imageFiles from the API response
-        if (isReinspection) {
-          _preFillMedia(carData);
-          Get.snackbar(
-            'Success',
-            'Re-Inspection data pre-filled successfully.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green.shade700,
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(12),
-            borderRadius: 12,
-          );
-        }
       } else {
         _initializeNewInspection();
       }
@@ -1055,55 +1156,1213 @@ class InspectionFormController extends GetxController {
       return;
     }
 
-    // Build and submit payload
+    // ══════════════════════════════════════════════════════════
+    // RE-INSPECTION FLOW: Show Preview Dialog first
+    // ══════════════════════════════════════════════════════════
+    if (isReInspection) {
+      _showReInspectionPreviewDialog(data);
+      return;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // STANDARD FLOW: Build CarModel, print debug, then submit to API
+    // ══════════════════════════════════════════════════════════
     isSubmitting.value = true;
     try {
-      final payload = _buildFullPayload(data);
+      // 1. Build the CarModel from form data
+      final carModel = _buildCarModelFromForm(data);
 
-      debugPrint('📡 Submitting inspection payload...');
+      // 2. Print all fields to debug console for verification
+      _printCarModelDebug(carModel);
+
+      // 3. Convert CarModel to JSON payload
+      final payload = carModel.toJson();
+
+      // Ensure no IDs are passed for the "add" API (reserved for update later)
+      payload.remove('_id');
+      payload.remove('id');
+      payload.remove('objectId');
+      debugPrint(
+        '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
+      );
+
+      // Add image URLs from Cloudinary uploads
+      imageFiles.forEach((key, paths) {
+        if (paths.isNotEmpty) {
+          final resolvedUrls =
+              paths.map((p) {
+                final cloudData = mediaCloudinaryData[p];
+                return cloudData?['url'] ?? p;
+              }).toList();
+          payload[key] = resolvedUrls;
+        }
+      });
+
+      // Ensure timestamp is set
+      payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
+
+      debugPrint('📡 Submitting inspection to API...');
       debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+      debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
 
+      // 4. POST to the API endpoint
       final response = await ApiService.post(
         ApiConstants.inspectionSubmitUrl,
         payload,
       );
 
+      debugPrint('✅ API Response: $response');
+
+      // 5. Clear local draft on success
       await _storage.remove('draft_$appointmentId');
       await _storage.remove('draft_images_$appointmentId');
 
-      // Clear existing snackbars for consistency
-      Get.closeAllSnackbars();
-
-      Future.delayed(const Duration(milliseconds: 100), () {
-        Get.snackbar(
-          'Submitted ✓',
-          response['message'] ?? 'Inspection submitted successfully!',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.shade700,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(12),
-          borderRadius: 12,
-          duration: const Duration(seconds: 3),
-          icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
-        );
-      });
-
-      Future.delayed(const Duration(seconds: 1), () => Get.back());
+      // 6. Show stunning success dialog
+      try {
+        Get.closeAllSnackbars();
+      } catch (_) {}
+      _showSuccessDialog(
+        response['message'] ?? 'Inspection submitted successfully!',
+      );
     } catch (e) {
       debugPrint('❌ Submit error: $e');
-      Get.snackbar(
-        'Submission Failed',
-        '$e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade700,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(12),
-        borderRadius: 12,
-        duration: const Duration(seconds: 4),
-      );
+      try {
+        Get.closeAllSnackbars();
+      } catch (_) {}
+      _showErrorDialog(e.toString());
     } finally {
       isSubmitting.value = false;
     }
+  }
+
+  // ─── Re-Inspection Preview Dialog ───
+  void _showReInspectionPreviewDialog(InspectionFormModel data) {
+    // Build the current data map from form
+    final currentData = Map<String, dynamic>.from(data.data);
+
+    // Resolve image URLs
+    imageFiles.forEach((key, paths) {
+      if (paths.isNotEmpty) {
+        final resolvedUrls =
+            paths.map((p) {
+              final cloudData = mediaCloudinaryData[p];
+              return cloudData?['url'] ?? p;
+            }).toList();
+        currentData[key] = resolvedUrls;
+      }
+    });
+
+    // Build changed fields list for display
+    final List<Map<String, dynamic>> changedFields = [];
+
+    // Compare currentData with _originalData
+    final allKeys = <String>{..._originalData.keys, ...currentData.keys};
+
+    // Skip internal/system keys
+    const skipKeys = {
+      '_id',
+      'id',
+      '__v',
+      'createdAt',
+      'updatedAt',
+      'timestamp',
+      'objectId',
+    };
+
+    for (final key in allKeys) {
+      if (skipKeys.contains(key)) continue;
+
+      final oldVal = _originalData[key];
+      final newVal = currentData[key];
+
+      // Normalize for comparison
+      final oldStr = _normalizeValue(oldVal);
+      final newStr = _normalizeValue(newVal);
+
+      if (oldStr != newStr) {
+        // Try to find a human-readable label
+        String label = key;
+        final field = _findFieldByKey(key);
+        if (field != null) label = field.label;
+
+        // Detect if this is an image/media field
+        final bool isImage = _isImageField(key, oldVal, newVal);
+
+        if (isImage) {
+          changedFields.add({
+            'key': key,
+            'label': label,
+            'old': oldStr.isEmpty ? '(empty)' : oldStr,
+            'new': newStr.isEmpty ? '(empty)' : newStr,
+            'isImage': true,
+            'oldImages': _extractImageUrls(oldVal),
+            'newImages': _extractImageUrls(newVal),
+          });
+        } else {
+          changedFields.add({
+            'key': key,
+            'label': label,
+            'old': oldStr.isEmpty ? '(empty)' : oldStr,
+            'new': newStr.isEmpty ? '(empty)' : newStr,
+            'isImage': false,
+          });
+        }
+      }
+    }
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1A237E), Color(0xFF0D6EFD)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.preview_rounded,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Re-Inspection Preview',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    changedFields.isEmpty
+                        ? 'No changes detected'
+                        : '${changedFields.length} field(s) changed',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Body (scrollable list of changes)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child:
+                  changedFields.isEmpty
+                      ? const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'All fields match the previous inspection. You can still submit to confirm.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      )
+                      : ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        itemCount: changedFields.length,
+                        separatorBuilder:
+                            (_, __) =>
+                                Divider(color: Colors.grey.shade200, height: 1),
+                        itemBuilder: (context, index) {
+                          final change = changedFields[index];
+                          final bool isImageField = change['isImage'] == true;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  change['label'],
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A237E),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+
+                                if (isImageField) ...[
+                                  // ── Image thumbnails row ──
+                                  _buildImageComparisonRow(
+                                    'Before',
+                                    Colors.red,
+                                    change['oldImages'] as List<String>,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildImageComparisonRow(
+                                    'After',
+                                    Colors.green,
+                                    change['newImages'] as List<String>,
+                                  ),
+                                ] else ...[
+                                  // ── Text values ──
+                                  // Previous value
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.shade50,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Before',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _truncate(
+                                            change['old'].toString(),
+                                            100,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  // New value
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade50,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'After',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _truncate(
+                                            change['new'].toString(),
+                                            100,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF1B5E20),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+            ),
+
+            // Buttons
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  // Back button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(Get.context!).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      child: Text(
+                        'Back',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Confirm button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(Get.context!).pop();
+                        _submitReInspection(data);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D6EFD),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  /// Normalize any value to a comparable string
+  String _normalizeValue(dynamic val) {
+    if (val == null) return '';
+    if (val is List) {
+      if (val.isEmpty) return '';
+      return val.map((e) => e.toString()).join(', ');
+    }
+    final str = val.toString().trim();
+    if (str == '0' || str == 'null' || str == '[]') return '';
+    return str;
+  }
+
+  /// Truncate long strings for display
+  String _truncate(String s, int maxLen) {
+    if (s.length <= maxLen) return s;
+    return '${s.substring(0, maxLen)}...';
+  }
+
+  /// Check if a field contains image data
+  bool _isImageField(String key, dynamic oldVal, dynamic newVal) {
+    // Check by key naming convention
+    if (key.toLowerCase().endsWith('images') ||
+        key.toLowerCase().endsWith('image') ||
+        key.toLowerCase().endsWith('video') ||
+        key.toLowerCase().contains('photo')) {
+      return true;
+    }
+
+    // Check by value content
+    bool hasUrl(dynamic val) {
+      if (val == null) return false;
+      if (val is String)
+        return val.startsWith('http') || val.startsWith('/data/');
+      if (val is List) {
+        return val.any(
+          (e) =>
+              e.toString().startsWith('http') ||
+              e.toString().startsWith('/data/'),
+        );
+      }
+      return false;
+    }
+
+    return hasUrl(oldVal) || hasUrl(newVal);
+  }
+
+  /// Extract image URLs from a dynamic value into a flat list
+  List<String> _extractImageUrls(dynamic val) {
+    if (val == null) return [];
+    if (val is String) {
+      if (val.isEmpty) return [];
+      if (val.startsWith('http') || val.startsWith('/data/')) return [val];
+      return [];
+    }
+    if (val is List) {
+      return val.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    }
+    return [];
+  }
+
+  /// Build a row showing label + thumbnail images
+  Widget _buildImageComparisonRow(
+    String label,
+    Color color,
+    List<String> imageUrls,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child:
+              imageUrls.isEmpty
+                  ? Text(
+                    '(no images)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  )
+                  : Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children:
+                        imageUrls.map((url) {
+                          return GestureDetector(
+                            onTap: () => _showImagePreview(url),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.4),
+                                  width: 1.5,
+                                ),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: _buildThumbnail(url),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+        ),
+      ],
+    );
+  }
+
+  /// Build a thumbnail widget from a URL or local path
+  Widget _buildThumbnail(String url) {
+    if (url.startsWith('http')) {
+      // Network image
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: 48,
+        height: 48,
+        errorBuilder:
+            (_, __, ___) => Container(
+              color: Colors.grey.shade200,
+              child: Icon(
+                Icons.broken_image_rounded,
+                size: 20,
+                color: Colors.grey.shade400,
+              ),
+            ),
+        loadingBuilder: (_, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Colors.grey.shade400),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // Local file path
+      final file = File(url);
+      if (file.existsSync()) {
+        return Image.file(file, fit: BoxFit.cover, width: 48, height: 48);
+      }
+      return Container(
+        color: Colors.grey.shade200,
+        child: Icon(Icons.image_rounded, size: 20, color: Colors.grey.shade400),
+      );
+    }
+  }
+
+  /// Show full-screen image preview with Close button
+  void _showImagePreview(String url) {
+    Get.dialog(
+      Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Image viewer
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child:
+                    url.startsWith('http')
+                        ? Image.network(
+                          url,
+                          fit: BoxFit.contain,
+                          errorBuilder:
+                              (_, __, ___) => Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image_rounded,
+                                    size: 64,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Failed to load image',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          loadingBuilder: (_, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                        : File(url).existsSync()
+                        ? Image.file(File(url), fit: BoxFit.contain)
+                        : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image_rounded,
+                              size: 64,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'File not found',
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+              ),
+            ),
+
+            // Close button at top
+            Positioned(
+              top: MediaQuery.of(Get.context!).padding.top + 8,
+              right: 12,
+              child: GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      barrierColor: Colors.transparent,
+    );
+  }
+
+  /// Submit the Re-Inspection via PUT car/update
+  Future<void> _submitReInspection(InspectionFormModel data) async {
+    isSubmitting.value = true;
+    try {
+      // 1. Build the CarModel from form data
+      final carModel = _buildCarModelFromForm(data);
+
+      // 2. Print all fields to debug console for verification
+      _printCarModelDebug(carModel);
+
+      // 3. Convert CarModel to JSON payload
+      final payload = carModel.toJson();
+
+      // Add image URLs from Cloudinary uploads
+      imageFiles.forEach((key, paths) {
+        if (paths.isNotEmpty) {
+          final resolvedUrls =
+              paths.map((p) {
+                final cloudData = mediaCloudinaryData[p];
+                return cloudData?['url'] ?? p;
+              }).toList();
+          payload[key] = resolvedUrls;
+        }
+      });
+
+      // Ensure timestamp is set
+      payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
+
+      // For Re-Inspection: include carId and use PUT
+      if (_reInspectionCarId != null) {
+        payload['carId'] = _reInspectionCarId;
+      }
+
+      // Set status to Inspected on successful Re-Inspection submit
+      payload['inspectionStatus'] = 'Inspected';
+
+      // Keep the _id for the update API
+      // Remove objectId only
+      payload.remove('objectId');
+
+      debugPrint('📡 Submitting Re-Inspection update via PUT...');
+      debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+      debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+      debugPrint('🔑 carId: ${payload['carId']}');
+
+      // 4. PUT to the update API
+      final response = await ApiService.put(ApiConstants.carUpdateUrl, payload);
+
+      debugPrint('✅ API Response: $response');
+
+      // 5. Clear local draft on success
+      await _storage.remove('draft_$appointmentId');
+      await _storage.remove('draft_images_$appointmentId');
+
+      // 6. Update telecalling status to 'Inspected'
+      try {
+        if (Get.isRegistered<ScheduleController>()) {
+          final scheduleCtrl = Get.find<ScheduleController>();
+          await scheduleCtrl.updateTelecallingStatus(
+            telecallingId: schedule!.id,
+            status: 'Inspected',
+            dateTime: schedule!.inspectionDateTime?.toIso8601String(),
+            remarks: schedule!.remarks,
+          );
+          debugPrint('✅ Telecalling status updated to Inspected');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to update telecalling status: $e');
+        // Don't block success if this fails — the car update already succeeded
+      }
+
+      // 7. Show success dialog
+      try {
+        Get.closeAllSnackbars();
+      } catch (_) {}
+      _showSuccessDialog(
+        response['message'] ?? 'Re-Inspection updated successfully!',
+      );
+    } catch (e) {
+      debugPrint('❌ Re-Inspection submit error: $e');
+      try {
+        Get.closeAllSnackbars();
+      } catch (_) {}
+      _showErrorDialog(e.toString());
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  // ─── Premium Success Dialog ───
+  void _showSuccessDialog(String message) {
+    Get.dialog(
+      TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: value,
+            child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
+          );
+        },
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 24,
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Animated success icon ──
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF00C853),
+                        const Color(0xFF00E676),
+                        const Color(0xFF69F0AE),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00C853).withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        spreadRadius: 4,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 52,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Decorative sparkles ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildSparkle(8, const Color(0xFFFFD54F)),
+                    const SizedBox(width: 6),
+                    _buildSparkle(5, const Color(0xFF69F0AE)),
+                    const SizedBox(width: 6),
+                    _buildSparkle(10, const Color(0xFF42A5F5)),
+                    const SizedBox(width: 6),
+                    _buildSparkle(6, const Color(0xFFFF7043)),
+                    const SizedBox(width: 6),
+                    _buildSparkle(8, const Color(0xFFAB47BC)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // ── Title ──
+                const Text(
+                  'Form Submitted\nSuccessfully! 🎉',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A237E),
+                    height: 1.3,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── Message ──
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // ── Appointment reference ──
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D6EFD).withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF0D6EFD).withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 16,
+                        color: const Color(0xFF0D6EFD),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'ID: $appointmentId',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0D6EFD),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // ── Gradient "Done" Button ──
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A237E), Color(0xFF0D6EFD)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF0D6EFD,
+                          ).withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back(); // Close dialog
+                        Get.back(); // Navigate back to schedules
+                        // Navigate completely back to dashboard
+                        Get.offAll(() => const CoursesDashboard());
+
+                        // Refresh schedule controller if it exists
+                        try {
+                          if (Get.isRegistered<ScheduleController>()) {
+                            Get.find<ScheduleController>().fetchSchedules();
+                          }
+                        } catch (_) {}
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.done_all_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Done',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+    );
+  }
+
+  // ─── Premium Error Dialog ───
+  void _showErrorDialog(String message) {
+    Get.dialog(
+      TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: value,
+            child: Opacity(
+              opacity: value.clamp(0.0, 1.0),
+              child: Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                elevation: 24,
+                backgroundColor: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Animated error icon ──
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFD32F2F),
+                              Color(0xFFF44336),
+                              Color(0xFFFF5252),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFD32F2F,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.error_outline_rounded,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── Title ──
+                      const Text(
+                        'Submission Error',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A237E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Error Message Box ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.red.shade100),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Error Details:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFD32F2F),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _humanizeError(message),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.red.shade900,
+                                fontWeight: FontWeight.w600,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // ── Action Buttons ──
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1A237E), Color(0xFF0D6EFD)],
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Close',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+    );
+  }
+
+  /// Converts technical error messages into something more readable
+  String _humanizeError(String error) {
+    String clean = error;
+
+    // Remove common technical prefixes
+    final prefixes = [
+      'Exception: ',
+      'HttpException: ',
+      'SocketException: ',
+      'LateInitializationError: ',
+      'TypeError: ',
+      'HandshakeException: ',
+      'ClientException: ',
+    ];
+
+    for (var prefix in prefixes) {
+      if (clean.contains(prefix)) {
+        clean = clean.replaceFirst(prefix, '');
+      }
+    }
+
+    // Handle specific common scenarios
+    if (clean.contains('is not a subtype of type')) {
+      return 'Data processing error. Please contact support.';
+    }
+    if (clean.contains('Failed host lookup') ||
+        clean.contains('Connection refused')) {
+      return 'Network error. Please check your internet connection.';
+    }
+    if (clean.contains('404')) {
+      return 'Server endpoint not found. Please update the app.';
+    }
+    if (clean.contains('401') || clean.contains('403')) {
+      return 'Session expired. Please log in again.';
+    }
+    if (clean.contains('500')) {
+      return 'Server error. Our team has been notified.';
+    }
+    if (clean.contains('Field \'_controller@')) {
+      return 'UI Synchronization error. Please try again.';
+    }
+
+    return clean.trim();
+  }
+
+  /// Small decorative sparkle dot
+  Widget _buildSparkle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4),
+        ],
+      ),
+    );
+  }
+
+  // ─── CarModel Mapping Helpers ───
+  CarModel _buildCarModelFromForm(InspectionFormModel data) {
+    return buildCarModelFromForm(
+      data,
+      Map<String, List<String>>.from(imageFiles),
+      Map<String, Map<String, String>>.from(mediaCloudinaryData),
+      appointmentId,
+    );
+  }
+
+  void _printCarModelDebug(CarModel model) {
+    printCarModelDebug(model);
   }
 
   // ─── Auto Fetch Vehicle Details ───
@@ -1362,32 +2621,5 @@ class InspectionFormController extends GetxController {
         '📢 No fields were updated (all fields may already have data).',
       );
     }
-  }
-
-  Map<String, dynamic> _buildFullPayload(InspectionFormModel data) {
-    final payload = <String, dynamic>{};
-
-    // Copy all form data values
-    data.data.forEach((key, value) {
-      if (value != null && value.toString().isNotEmpty) {
-        payload[key] = value;
-      }
-    });
-
-    // Add image paths (as arrays — in production these would be Cloudinary URLs)
-    imageFiles.forEach((key, paths) {
-      if (paths.isNotEmpty) {
-        payload[key] = paths;
-      }
-    });
-
-    // Ensure core identification fields
-    payload['appointmentId'] = appointmentId;
-    payload['make'] = data.make;
-    payload['model'] = data.model;
-    payload['variant'] = data.variant;
-    payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
-
-    return payload;
   }
 }

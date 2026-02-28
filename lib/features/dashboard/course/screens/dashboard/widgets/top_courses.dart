@@ -37,7 +37,7 @@ class DashboardTopCourses extends StatelessWidget {
         isExpiredObs: stats.isReScheduledExpired,
       ),
       _QuickLinkItem(
-        title: "Re-Inspected",
+        title: "Re-Inspection",
         countObs: stats.reInspectionCount,
         icon: Icons.replay_circle_filled_rounded,
         iconColor: const Color(0xFF00BFA5),

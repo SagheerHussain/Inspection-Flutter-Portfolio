@@ -66,6 +66,10 @@ class DashboardStatsController extends GetxController {
         InspectionStatuses.running,
         InspectionStatuses.reScheduled,
         InspectionStatuses.reInspection,
+        'Reinspection', // Variant 1
+        'Re-Inspected', // Variant 2 (from user database)
+        'Reinspected', // Variant 3
+        'Rescheduled', // Fallback for variant naming
         InspectionStatuses.inspected,
         InspectionStatuses.cancel,
       ];
@@ -99,19 +103,29 @@ class DashboardStatsController extends GetxController {
 
       allRecords.assignAll(combined);
 
-      // Update individual counts using constants
-      // Update individual counts
-      scheduledCount.value =
-          (results[InspectionStatuses.scheduled]?.length ?? 0) +
-          (results[InspectionStatuses.reInspection]?.length ?? 0);
+      // Build a local map for robust counting
+      final Map<String, int> counts = {};
+      for (var status in statuses) {
+        var normalizedStatus = status.toLowerCase().replaceAll('-', '');
 
-      runningCount.value = results[InspectionStatuses.running]?.length ?? 0;
-      reScheduledCount.value =
-          results[InspectionStatuses.reScheduled]?.length ?? 0;
-      reInspectionCount.value =
-          results[InspectionStatuses.reInspection]?.length ?? 0;
-      inspectedCount.value = results[InspectionStatuses.inspected]?.length ?? 0;
-      canceledCount.value = results[InspectionStatuses.cancel]?.length ?? 0;
+        // Map 'reinspected' variants to 'reinspection' key so they appear in the same card
+        if (normalizedStatus == 'reinspected')
+          normalizedStatus = 'reinspection';
+        if (normalizedStatus == 'rescheduled')
+          normalizedStatus = 'rescheduled'; // ensures consistency
+
+        // Sum up counts for variants
+        counts[normalizedStatus] =
+            (counts[normalizedStatus] ?? 0) + (results[status]?.length ?? 0);
+      }
+
+      // Update individual counts (1:1 mapping as requested)
+      scheduledCount.value = counts['scheduled'] ?? 0;
+      runningCount.value = counts['running'] ?? 0;
+      reScheduledCount.value = counts['rescheduled'] ?? 0;
+      reInspectionCount.value = counts['reinspection'] ?? 0;
+      inspectedCount.value = counts['inspected'] ?? 0;
+      canceledCount.value = counts['cancel'] ?? 0;
 
       _startCountdown();
     } catch (e) {
@@ -146,11 +160,8 @@ class DashboardStatsController extends GetxController {
     DateTime? nextSched;
     DateTime? nextReSched;
 
-    // We consider Scheduled and Re-Inspections for the main "Schedules" banner
-    final mainUpcomingStatuses = [
-      InspectionStatuses.scheduled,
-      InspectionStatuses.reInspection,
-    ];
+    // We only consider "Scheduled" for the main "Schedules" banner countdown
+    final mainUpcomingStatuses = [InspectionStatuses.scheduled];
 
     for (final record in allRecords) {
       final dt = record.inspectionDateTime;

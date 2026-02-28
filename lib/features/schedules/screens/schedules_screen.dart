@@ -741,10 +741,13 @@ class _ScheduleCard extends StatelessWidget {
     final status = schedule.inspectionStatus;
     final List<Widget> items = [];
 
-    final isScheduled = status == InspectionStatuses.scheduled;
-    final isRescheduled = status == InspectionStatuses.reScheduled;
-    final isRunning = status == InspectionStatuses.running;
-    final isReinspection = status == InspectionStatuses.reInspection;
+    final normalizedStatus = status.toLowerCase().replaceAll('-', '');
+
+    final isScheduled = normalizedStatus == 'scheduled';
+    final isRescheduled = normalizedStatus == 'rescheduled';
+    final isRunning = normalizedStatus == 'running';
+    final isReinspection =
+        normalizedStatus == 'reinspection' || normalizedStatus == 'reinspected';
 
     if (isScheduled || isRescheduled || isRunning || isReinspection) {
       // Primary Action (Play / Resume)
@@ -830,22 +833,34 @@ class _ScheduleCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: TColors.primary.withValues(alpha: 0.1),
+              color: const Color.fromARGB(
+                255,
+                2,
+                217,
+                255,
+              ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: TColors.primary.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: const Color.fromARGB(
+                  255,
+                  2,
+                  217,
+                  255,
+                ).withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.description_rounded,
                   size: 14,
-                  color: TColors.primary,
+                  color: Color.fromARGB(255, 2, 217, 255),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'View Details',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: TColors.primary,
+                    color: const Color.fromARGB(255, 34, 34, 34),
                     fontWeight: FontWeight.bold,
                   ),
                 ),

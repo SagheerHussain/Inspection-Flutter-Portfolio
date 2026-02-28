@@ -127,11 +127,8 @@ class ScheduleController extends GetxController {
               return idMatch || phoneMatch || ownerMatch;
             }).toList();
       } else if (statusFilter == 'Upcoming') {
-        // UPCOMING MODE: Fetch all three relevant statuses
-        final upcomingStatuses = [
-          InspectionStatuses.scheduled,
-          InspectionStatuses.reInspection,
-        ];
+        // UPCOMING MODE: Fetch strictly Scheduled status
+        final upcomingStatuses = [InspectionStatuses.scheduled];
 
         await Future.wait(
           upcomingStatuses.map((status) async {
@@ -167,23 +164,57 @@ class ScheduleController extends GetxController {
           return aDt.compareTo(bDt);
         });
       } else {
-        // STATUS MODE:
-        final response =
-            await ApiService.post(ApiConstants.inspectionEngineerSchedulesUrl, {
-              "inspectionStatus": statusFilter,
-              "inspectionEngineerNumber": engineerNumber,
-            });
-        final List<dynamic> dataList = response['data'] ?? [];
-        final allRecords =
-            dataList.map((json) => ScheduleModel.fromJson(json)).toList();
+        // STATUS MODE: Fetch single status (with fallback for Re- variants)
+        final List<String> statusVariants = [statusFilter];
+        if (statusFilter == InspectionStatuses.reInspection) {
+          statusVariants.add('Reinspection');
+          statusVariants.add('Re-Inspected');
+          statusVariants.add('Reinspected');
+        } else if (statusFilter == InspectionStatuses.reScheduled) {
+          statusVariants.add('Rescheduled');
+        }
+
+        await Future.wait(
+          statusVariants.map((status) async {
+            try {
+              final response = await ApiService.post(
+                ApiConstants.inspectionEngineerSchedulesUrl,
+                {
+                  "inspectionStatus": status,
+                  "inspectionEngineerNumber": engineerNumber,
+                },
+              );
+              final List<dynamic> dataList = response['data'] ?? [];
+              allCombinedRecords.addAll(
+                dataList.map((json) => ScheduleModel.fromJson(json)),
+              );
+            } catch (e) {
+              debugPrint('❌ Status fetch error for $status: $e');
+            }
+          }),
+        );
 
         _allFilteredRecords =
-            allRecords.where((record) {
+            allCombinedRecords.where((record) {
               // Exclude 'Pending' unless specific requirement
               if (record.inspectionStatus.toLowerCase() == 'pending')
                 return false;
-              return record.inspectionStatus.toLowerCase() ==
-                  statusFilter.toLowerCase();
+
+              // Robust matching: compare normalized strings (lowercase, no hyphens)
+              var normalizedRecordStatus = record.inspectionStatus
+                  .toLowerCase()
+                  .replaceAll('-', '');
+              var normalizedFilterStatus = statusFilter
+                  .toLowerCase()
+                  .replaceAll('-', '');
+
+              // Unified mapping for Re-Inspection variants
+              if (normalizedRecordStatus == 'reinspected')
+                normalizedRecordStatus = 'reinspection';
+              if (normalizedFilterStatus == 'reinspected')
+                normalizedFilterStatus = 'reinspection';
+
+              return normalizedRecordStatus == normalizedFilterStatus;
             }).toList();
       }
 
@@ -226,8 +257,7 @@ class ScheduleController extends GetxController {
       return 'Schedules';
     if (statusFilter == InspectionStatuses.running)
       return 'Running Inspections';
-    if (statusFilter == InspectionStatuses.reInspection)
-      return 'Re-Inspections';
+    if (statusFilter == InspectionStatuses.reInspection) return 'Re-Inspection';
     if (statusFilter == InspectionStatuses.inspected) return 'Inspected';
     if (statusFilter == InspectionStatuses.cancel) return 'Canceled';
     return 'Records';
