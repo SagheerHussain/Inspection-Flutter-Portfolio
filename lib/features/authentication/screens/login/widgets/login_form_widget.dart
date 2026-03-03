@@ -1,4 +1,4 @@
-import 'package:cwt_starter_template/utils/validators/validation.dart';
+import 'package:inspection_app/utils/validators/validation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';

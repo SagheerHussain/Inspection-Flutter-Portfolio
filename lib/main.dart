@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
@@ -36,6 +37,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ).then((_) => Get.put(AuthenticationRepository()));
+
+  /// -- Initialize OneSignal Notifications
+  await NotificationService.instance.init();
 
   /// -- Main App Starts here (app.dart) ...
   runApp(const App());

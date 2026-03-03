@@ -1,4 +1,6 @@
-import 'package:cwt_starter_template/utils/popups/exports.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
+
+import '../../../utils/popups/exports.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -100,6 +102,27 @@ class LoginController extends GetxController {
       localStorage.write('INSPECTION_ENGINEER_NUMBER', userPhone);
       localStorage.write('USER_ID', response['user']?['_id'] ?? '');
       localStorage.write('USER_ROLE', userType);
+
+      // Link device to user in OneSignal with MongoDB user ID
+      final mongoUserId = response['user']?['_id']?.toString() ?? '';
+      debugPrint(
+        '🔑 LoginController: API user._id = "${response['user']?['_id']}"',
+      );
+      debugPrint('🔑 LoginController: mongoUserId = "$mongoUserId"');
+      debugPrint(
+        '🔑 LoginController: mongoUserId.isEmpty = ${mongoUserId.isEmpty}',
+      );
+      if (mongoUserId.isNotEmpty) {
+        debugPrint(
+          '🔑 LoginController: Calling NotificationService.login("$mongoUserId")...',
+        );
+        await NotificationService.instance.login(mongoUserId);
+        debugPrint('🔑 LoginController: NotificationService.login() completed');
+      } else {
+        debugPrint(
+          '⚠️ LoginController: mongoUserId is EMPTY — skipping OneSignal login!',
+        );
+      }
 
       // Remove Loader
       TFullScreenLoader.stopLoading();

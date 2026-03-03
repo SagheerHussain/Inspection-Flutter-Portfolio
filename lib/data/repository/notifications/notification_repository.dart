@@ -5,8 +5,10 @@ import '../../abstract/base_repository.dart';
 import '../../services/notifications/notification_model.dart';
 import '../authentication_repository/authentication_repository.dart';
 
-class NotificationRepository extends TBaseRepositoryController<NotificationModel> {
-  static NotificationRepository get instance => Get.isRegistered() ? Get.find() : Get.put(NotificationRepository());
+class NotificationRepository
+    extends TBaseRepositoryController<NotificationModel> {
+  static NotificationRepository get instance =>
+      Get.isRegistered() ? Get.find() : Get.put(NotificationRepository());
 
   @override
   Future<String> addItem(NotificationModel item) async {
@@ -19,26 +21,34 @@ class NotificationRepository extends TBaseRepositoryController<NotificationModel
     final String currentUserId = AuthenticationRepository.instance.getUserID;
     if (currentUserId.isEmpty) return [];
 
-    final snapshot = await db
-        .collection("Notifications")
-        .where('recipientIds', arrayContains: currentUserId)
-        .orderBy('createdAt', descending: true)
-        .get();
+    final snapshot =
+        await db
+            .collection("Notifications")
+            .where('recipientIds', arrayContains: currentUserId)
+            .orderBy('createdAt', descending: true)
+            .get();
 
-    final result = snapshot.docs.map((e) => NotificationModel.fromDocSnapshot(e)).toList();
+    final result =
+        snapshot.docs.map((e) => NotificationModel.fromDocSnapshot(e)).toList();
     return result;
   }
 
   Stream<List<NotificationModel>> fetchAllItemsAsStream() {
     final String currentUserId = AuthenticationRepository.instance.getUserID;
-    if (currentUserId.isEmpty) return const Stream.empty(); // Return an empty stream if user ID is empty
+    if (currentUserId.isEmpty)
+      return const Stream.empty(); // Return an empty stream if user ID is empty
 
     return db
         .collection("Notifications")
         .where('recipientIds', arrayContains: currentUserId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => NotificationModel.fromDocSnapshot(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => NotificationModel.fromDocSnapshot(doc))
+                  .toList(),
+        );
   }
 
   @override
@@ -59,7 +69,9 @@ class NotificationRepository extends TBaseRepositoryController<NotificationModel
 
     if (currentUserId.isEmpty) {
       // Return an empty query by using a condition that will always be false
-      return db.collection('Notifications').where('recipientIds', isEqualTo: '__invalid__');
+      return db
+          .collection('Notifications')
+          .where('recipientIds', isEqualTo: '__invalid__');
     }
 
     return db
@@ -84,20 +96,26 @@ class NotificationRepository extends TBaseRepositoryController<NotificationModel
     await db.collection("Notifications").doc(item.id).delete();
   }
 
-  Future<void> markNotificationAsSeen(String notificationId, String userId) async {
+  Future<void> markNotificationAsSeen(
+    String notificationId,
+    String userId,
+  ) async {
     try {
       // Reference to the notification document
-      final notificationRef = db.collection("Notifications").doc(notificationId);
+      final notificationRef = db
+          .collection("Notifications")
+          .doc(notificationId);
 
       // Update the 'seenBy' field for the specific user
       await notificationRef.update({
         'seenBy.$userId': true,
-        'seenAt': FieldValue.serverTimestamp(), // Optionally, update the 'seenAt' timestamp
+        'seenAt':
+            FieldValue.serverTimestamp(), // Optionally, update the 'seenAt' timestamp
       });
 
-      print('Notification marked as seen by user $userId');
+      // print('Notification marked as seen by user $userId');
     } catch (e) {
-      print('Error marking notification as seen: $e');
+      // print('Error marking notification as seen: $e');
       throw Exception('Failed to mark notification as seen');
     }
   }

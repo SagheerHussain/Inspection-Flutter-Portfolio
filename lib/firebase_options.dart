@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -46,34 +49,20 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDwIuo2QJnQ4CjbdZKGyex0FpA_sT6MpuA',
-    appId: '1:682675089378:web:7f9abd7597169227f5d3bb',
-    messagingSenderId: '682675089378',
-    projectId: 'cwt-starter-template',
-    authDomain: 'cwt-starter-template.firebaseapp.com',
-    storageBucket: 'cwt-starter-template.firebasestorage.app',
-    measurementId: 'G-LYRP4TRSDN',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBJNqbp7eASRcDoYZzRdwAQ_e22bQW3Ne4',
-    appId: '1:682675089378:android:9d2ffd958d37e615f5d3bb',
-    messagingSenderId: '682675089378',
-    projectId: 'cwt-starter-template',
-    storageBucket: 'cwt-starter-template.firebasestorage.app',
+    apiKey: 'AIzaSyBOCTtoWbgDuXaVZFyrTBXlN1_oTj8x6DE',
+    appId: '1:845981097587:android:3d0be95962d2d8b0b49406',
+    messagingSenderId: '845981097587',
+    projectId: 'otobix-auction-app-final',
+    storageBucket: 'otobix-auction-app-final.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB5PFyV8Bt4uYFK0dDZhABPEjJqM9ifBCE',
-    appId: '1:682675089378:ios:3e2c89a3d89c6759f5d3bb',
-    messagingSenderId: '682675089378',
-    projectId: 'cwt-starter-template',
-    storageBucket: 'cwt-starter-template.firebasestorage.app',
-    androidClientId:
-        '682675089378-jttk67iffsimbo6t15cbr2uusbk0jllf.apps.googleusercontent.com',
-    iosClientId:
-        '682675089378-kq81i5hh18q0mf83mn7lo8651eikfbjj.apps.googleusercontent.com',
+    apiKey: 'AIzaSyBB-wjIKLovgSWFDpEoMHsgXPN3RyBr9wM',
+    appId: '1:845981097587:ios:c192b2c384eead19b49406',
+    messagingSenderId: '845981097587',
+    projectId: 'otobix-auction-app-final',
+    storageBucket: 'otobix-auction-app-final.firebasestorage.app',
     iosBundleId: 'com.otobix.inspectionapp',
   );
 }

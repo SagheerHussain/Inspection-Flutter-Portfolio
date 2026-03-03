@@ -1828,7 +1828,7 @@ class _VideoPreviewScreenState extends State<_VideoPreviewScreen> {
       } else {
         final file = File(widget.videoPath);
         if (!file.existsSync()) {
-          debugPrint('❌ Video file does NOT exist: ${widget.videoPath}');
+           // debugPrint('❌ Video file does NOT exist: ${widget.videoPath}');
           if (mounted) setState(() => _isError = true);
           return;
         }
@@ -1841,7 +1841,7 @@ class _VideoPreviewScreenState extends State<_VideoPreviewScreen> {
         _controller.setLooping(true);
       }
     } catch (e) {
-      debugPrint('❌ Video player error: $e');
+       // debugPrint('❌ Video player error: $e');
       if (mounted) setState(() => _isError = true);
     }
   }

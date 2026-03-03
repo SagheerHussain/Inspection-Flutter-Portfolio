@@ -55,19 +55,16 @@ class F {
       maxLines = 1,
       minImages = 0,
       maxImages = 0,
-       maxDuration = null;
+      maxDuration = null;
 
-  const F.date(
-    this.key,
-    this.label, {
-    this.optional = false,
-  }) : type = FType.date,
-       options = const [],
-       readonly = false,
-       maxLines = 1,
-       minImages = 0,
-       maxImages = 0,
-       maxDuration = null;
+  const F.date(this.key, this.label, {this.optional = false})
+    : type = FType.date,
+      options = const [],
+      readonly = false,
+      maxLines = 1,
+      minImages = 0,
+      maxImages = 0,
+      maxDuration = null;
 
   const F.video(
     this.key,
@@ -437,8 +434,8 @@ class InspectionFieldDefs {
           'Repaint',
           'Replaced',
         ]),
-        F.img('bootDoorImages', 'Boot Door Image', optional: true),
-        F.img('rearWithBootDoorOpenImages', 'Rear With Boot Door Open Image'),
+        // F.img('bootDoorImages', 'Boot Door Image', optional: true),
+        F.img('rearWithBootDoorOpenImages', 'Boot Door Open Image'),
         F.drop('spareWheel', 'Spare Wheel', ['Available', 'Not Available']),
         F.img('spareWheelImages', 'Spare Wheel Image'),
         F.drop('spareTyre', 'Spare Tyre', [

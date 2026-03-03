@@ -36,7 +36,11 @@ class UserRepository extends GetxController {
   /// Function to fetch user details based on user ID.
   Future<UserModel> fetchUserDetails() async {
     try {
-      final documentSnapshot = await _db.collection("Users").doc(AuthenticationRepository.instance.getUserID).get();
+      final documentSnapshot =
+          await _db
+              .collection("Users")
+              .doc(AuthenticationRepository.instance.getUserID)
+              .get();
       if (documentSnapshot.exists) {
         return UserModel.fromDocSnapshot(documentSnapshot);
       } else {
@@ -74,7 +78,10 @@ class UserRepository extends GetxController {
   /// Function to update user data in Firestore.
   Future<void> updateUserDetails(UserModel updatedUser) async {
     try {
-      await _db.collection("Users").doc(updatedUser.id).update(updatedUser.toJson());
+      await _db
+          .collection("Users")
+          .doc(updatedUser.id)
+          .update(updatedUser.toJson());
     } on FirebaseException catch (e) {
       throw TFirebaseException(e.code).message;
     } on FormatException catch (_) {
@@ -89,7 +96,10 @@ class UserRepository extends GetxController {
   /// Update any field in specific Users Collection
   Future<void> updateSingleField(Map<String, dynamic> json) async {
     try {
-      await _db.collection("Users").doc(AuthenticationRepository.instance.getUserID).update(json);
+      await _db
+          .collection("Users")
+          .doc(AuthenticationRepository.instance.getUserID)
+          .update(json);
     } on FirebaseException catch (e) {
       throw TFirebaseException(e.code).message;
     } on FormatException catch (_) {

@@ -58,14 +58,20 @@ class UserModel {
     String firstName = nameParts[0].toLowerCase();
     String lastName = nameParts.length > 1 ? nameParts[1].toLowerCase() : "";
 
-    String camelCaseUsername = "$firstName$lastName"; // Combine first and last name
-    String usernameWithPrefix = "cwt_$camelCaseUsername"; // Add "cwt_" prefix
+    String camelCaseUsername =
+        "$firstName$lastName"; // Combine first and last name
+    String usernameWithPrefix =
+        "otobix_$camelCaseUsername"; // Add "otobix_" prefix
     return usernameWithPrefix;
   }
 
   /// Static function to create an empty user model.
-  static UserModel empty() =>
-      UserModel(id: '', email: '', isEmailVerified: false, isProfileActive: false); // Default createdAt to current time
+  static UserModel empty() => UserModel(
+    id: '',
+    email: '',
+    isEmailVerified: false,
+    isProfileActive: false,
+  ); // Default createdAt to current time
 
   /// Convert model to JSON structure for storing data in Firebase.
   Map<String, dynamic> toJson() {
@@ -86,7 +92,9 @@ class UserModel {
   }
 
   // Factory method to create UserModel from Firestore document snapshot
-  factory UserModel.fromDocSnapshot(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory UserModel.fromDocSnapshot(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data()!;
     return UserModel.fromJson(doc.id, data);
   }
@@ -103,21 +111,40 @@ class UserModel {
       id: id,
       fullName: data.containsKey('fullName') ? data['fullName'] ?? '' : '',
       email: data.containsKey('email') ? data['email'] ?? '' : '',
-      phoneNumber: data.containsKey('phoneNumber') ? data['phoneNumber'] ?? '' : '',
-      profilePicture: data.containsKey('profilePicture') ? data['profilePicture'] ?? '' : '',
-      role: data.containsKey('role')
-          ? (data['role'] ?? AppRole.user) == AppRole.admin.name.toString()
-          ? AppRole.admin
-          : AppRole.user
-          : AppRole.user,
-      createdAt: data.containsKey('createdAt') ? data['createdAt']?.toDate() ?? DateTime.now() : DateTime.now(),
-      updatedAt: data.containsKey('updatedAt') ? data['updatedAt']?.toDate() ?? DateTime.now() : DateTime.now(),
-      deviceToken: data.containsKey('deviceToken') ? data['deviceToken'] ?? '' : '',
-      isEmailVerified: data.containsKey('isEmailVerified') ? data['isEmailVerified'] ?? false : false,
-      isProfileActive: data.containsKey('isProfileActive') ? data['isProfileActive'] ?? false : false,
-      verificationStatus: data.containsKey('verificationStatus')
-          ? _mapVerificationStringToEnum(data['verificationStatus'] ?? '')
-          : VerificationStatus.pending,
+      phoneNumber:
+          data.containsKey('phoneNumber') ? data['phoneNumber'] ?? '' : '',
+      profilePicture:
+          data.containsKey('profilePicture')
+              ? data['profilePicture'] ?? ''
+              : '',
+      role:
+          data.containsKey('role')
+              ? (data['role'] ?? AppRole.user) == AppRole.admin.name.toString()
+                  ? AppRole.admin
+                  : AppRole.user
+              : AppRole.user,
+      createdAt:
+          data.containsKey('createdAt')
+              ? data['createdAt']?.toDate() ?? DateTime.now()
+              : DateTime.now(),
+      updatedAt:
+          data.containsKey('updatedAt')
+              ? data['updatedAt']?.toDate() ?? DateTime.now()
+              : DateTime.now(),
+      deviceToken:
+          data.containsKey('deviceToken') ? data['deviceToken'] ?? '' : '',
+      isEmailVerified:
+          data.containsKey('isEmailVerified')
+              ? data['isEmailVerified'] ?? false
+              : false,
+      isProfileActive:
+          data.containsKey('isProfileActive')
+              ? data['isProfileActive'] ?? false
+              : false,
+      verificationStatus:
+          data.containsKey('verificationStatus')
+              ? _mapVerificationStringToEnum(data['verificationStatus'] ?? '')
+              : VerificationStatus.pending,
     );
   }
 

@@ -1,7 +1,7 @@
-import 'package:cwt_starter_template/features/dashboard/ecommerce/screens/home/widgets/header_categories.dart';
-import 'package:cwt_starter_template/features/dashboard/ecommerce/screens/home/widgets/header_search_container.dart';
-import 'package:cwt_starter_template/features/dashboard/ecommerce/screens/home/widgets/home_appbar.dart';
-import 'package:cwt_starter_template/features/dashboard/ecommerce/screens/home/widgets/promo_slider.dart';
+import 'package:inspection_app/features/dashboard/ecommerce/screens/home/widgets/header_categories.dart';
+import 'package:inspection_app/features/dashboard/ecommerce/screens/home/widgets/header_search_container.dart';
+import 'package:inspection_app/features/dashboard/ecommerce/screens/home/widgets/home_appbar.dart';
+import 'package:inspection_app/features/dashboard/ecommerce/screens/home/widgets/promo_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

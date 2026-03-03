@@ -1,4 +1,4 @@
-import 'package:cwt_starter_template/common/widgets/appbar/home_appbar.dart';
+import 'package:inspection_app/common/widgets/appbar/home_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

@@ -9,7 +9,8 @@ import '../../utils/popups/loaders.dart';
 import 'notification_controller.dart';
 
 class CreateNotificationController extends GetxController {
-  static CreateNotificationController get instance => Get.isRegistered() ? Get.find() : Get.put(CreateNotificationController());
+  static CreateNotificationController get instance =>
+      Get.isRegistered() ? Get.find() : Get.put(CreateNotificationController());
 
   final isLoading = false.obs;
 
@@ -36,8 +37,9 @@ class CreateNotificationController extends GetxController {
       // Map Data
       final newRecord = NotificationModel(
         id: '',
-        title: "Welcome to Coding with T!",
-        body: "Your account has been successfully created. Start exploring our features and enjoy your app development journey with us.",
+        title: "Welcome to OtoBix Inspection App!",
+        body:
+            "Your account has been successfully created. Start exploring our features and manage your vehicle inspections effortlessly.",
         senderId: userController.user.value.id,
         recipientIds: [user.id],
         type: 'Account',

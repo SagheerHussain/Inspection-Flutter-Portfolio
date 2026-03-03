@@ -26,7 +26,10 @@ class ReAuthLoginForm extends StatelessWidget {
                 TextFormField(
                   controller: controller.verifyEmail,
                   validator: TValidator.validateEmail,
-                  decoration: InputDecoration(prefixIcon: const Icon(Iconsax.direct_right), labelText: TTexts.email),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Iconsax.direct_right),
+                    labelText: TTexts.email,
+                  ),
                 ),
                 const SizedBox(height: TSizes.spaceBtwInputFields),
 
@@ -35,12 +38,17 @@ class ReAuthLoginForm extends StatelessWidget {
                   () => TextFormField(
                     obscureText: controller.hidePassword.value,
                     controller: controller.verifyPassword,
-                    validator: (value) => TValidator.validateEmptyText('Password', value),
+                    validator:
+                        (value) =>
+                            TValidator.validateEmptyText('Password', value),
                     decoration: InputDecoration(
                       labelText: TTexts.password,
                       prefixIcon: const Icon(Iconsax.password_check),
                       suffixIcon: IconButton(
-                        onPressed: () => controller.hidePassword.value = !controller.hidePassword.value,
+                        onPressed:
+                            () =>
+                                controller.hidePassword.value =
+                                    !controller.hidePassword.value,
                         icon: const Icon(Iconsax.eye_slash),
                       ),
                     ),
@@ -51,7 +59,11 @@ class ReAuthLoginForm extends StatelessWidget {
                 /// LOGIN Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(onPressed: () => controller.reAuthenticateEmailAndPasswordUser(), child: const Text('Verify')),
+                  child: ElevatedButton(
+                    onPressed:
+                        () => controller.reAuthenticateEmailAndPasswordUser(),
+                    child: const Text('Verify'),
+                  ),
                 ),
               ],
             ),

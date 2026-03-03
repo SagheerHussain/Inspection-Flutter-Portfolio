@@ -1,8 +1,8 @@
-import 'package:cwt_starter_template/features/products/screens/product_detail/widgets/bottom_add_to_cart_widget.dart';
-import 'package:cwt_starter_template/features/products/screens/product_detail/widgets/product_attributes.dart';
-import 'package:cwt_starter_template/features/products/screens/product_detail/widgets/product_detail_image_slider.dart';
-import 'package:cwt_starter_template/features/products/screens/product_detail/widgets/product_meta_data.dart';
-import 'package:cwt_starter_template/features/products/screens/product_detail/widgets/rating_share_widget.dart';
+import 'package:inspection_app/features/products/screens/product_detail/widgets/bottom_add_to_cart_widget.dart';
+import 'package:inspection_app/features/products/screens/product_detail/widgets/product_attributes.dart';
+import 'package:inspection_app/features/products/screens/product_detail/widgets/product_detail_image_slider.dart';
+import 'package:inspection_app/features/products/screens/product_detail/widgets/product_meta_data.dart';
+import 'package:inspection_app/features/products/screens/product_detail/widgets/rating_share_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';

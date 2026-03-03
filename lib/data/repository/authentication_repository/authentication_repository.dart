@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
 
 import '../../../features/authentication/screens/login/login_screen.dart';
 import '../../../features/authentication/screens/signup/verify_email.dart';
@@ -79,6 +80,12 @@ class AuthenticationRepository extends GetxController {
       // Persistent Login for Custom Backend (If Firebase user is null)
       final userId = deviceStorage.read('USER_ID') ?? 'engineer';
       await TLocalStorage.init(userId);
+
+      // Re-link device to user in OneSignal on app restart
+      if (userId != 'engineer' && userId.toString().isNotEmpty) {
+        await NotificationService.instance.login(userId);
+      }
+
       Get.offAll(() => const CoursesDashboard());
     } else {
       Get.offAll(() => const LoginScreen());
@@ -223,7 +230,7 @@ class AuthenticationRepository extends GetxController {
     } on PlatformException catch (e) {
       throw TPlatformException(e.code).message;
     } catch (e) {
-      debugPrint('Something went wrong: $e');
+      // debugPrint('Something went wrong: $e');
       return null;
     }
   }
@@ -238,7 +245,7 @@ class AuthenticationRepository extends GetxController {
         forceResendingToken: _resendToken,
         timeout: const Duration(minutes: 2),
         verificationFailed: (e) async {
-          debugPrint('loginWithPhoneNo: verificationFailed => $e');
+          // debugPrint('loginWithPhoneNo: verificationFailed => $e');
           await FirebaseCrashlytics.instance.recordError(e, e.stackTrace);
 
           if (e.code == 'too-many-requests') {
@@ -261,13 +268,13 @@ class AuthenticationRepository extends GetxController {
           TLoaders.warningSnackBar(title: 'Oh Snap', message: e.message ?? '');
         },
         codeSent: (verificationId, resendToken) {
-          debugPrint('--------------- codeSent');
+          // debugPrint('--------------- codeSent');
           phoneNoVerificationId.value = verificationId;
           _resendToken = resendToken;
-          debugPrint('--------------- codeSent: $verificationId');
+          // debugPrint('--------------- codeSent: $verificationId');
         },
         verificationCompleted: (credential) async {
-          debugPrint('--------------- verificationCompleted');
+          // debugPrint('--------------- verificationCompleted');
           var signedInUser = await _auth.signInWithCredential(credential);
           isPhoneAutoVerified = signedInUser.user != null;
 
@@ -281,9 +288,9 @@ class AuthenticationRepository extends GetxController {
         },
         codeAutoRetrievalTimeout: (verificationId) {
           // phoneNoVerificationId.value = verificationId;
-          debugPrint(
-            '--------------- codeAutoRetrievalTimeout: $verificationId',
-          );
+          // debugPrint(
+          // '--------------- codeAutoRetrievalTimeout: $verificationId',
+          // );
         },
       );
       phoneNo.value = phoneNumber;

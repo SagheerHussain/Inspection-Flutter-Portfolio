@@ -1,4 +1,4 @@
-import 'package:cwt_starter_template/common/widgets/texts/t_brand_title_text.dart';
+import 'package:inspection_app/common/widgets/texts/t_brand_title_text.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 

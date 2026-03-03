@@ -6,7 +6,6 @@ import '../../../../../personalization/controllers/user_controller.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import 'profile_form.dart';
-import 'widgets/image_with_icon.dart';
 
 class UpdateProfileScreen extends StatelessWidget {
   const UpdateProfileScreen({super.key});
@@ -32,11 +31,7 @@ class UpdateProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(TSizes.defaultSpace),
           child: Column(
             children: [
-              /// -- IMAGE with ICON
-              InkWell(
-                onTap: () => controller.uploadUserProfilePicture(),
-                child: const ImageWithIcon(),
-              ),
+              // Profile image removed
               const SizedBox(height: 50),
 
               /// -- Form

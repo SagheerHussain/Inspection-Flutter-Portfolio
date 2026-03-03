@@ -104,7 +104,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-              debugPrint('❌ Search fetch error for $status: $e');
+               // debugPrint('❌ Search fetch error for $status: $e');
             }
           }),
         );
@@ -145,7 +145,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-              debugPrint('❌ Upcoming fetch error for $status: $e');
+               // debugPrint('❌ Upcoming fetch error for $status: $e');
             }
           }),
         );
@@ -189,7 +189,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-              debugPrint('❌ Status fetch error for $status: $e');
+               // debugPrint('❌ Status fetch error for $status: $e');
             }
           }),
         );
@@ -227,7 +227,7 @@ class ScheduleController extends GetxController {
         hasMoreData.value = false;
       }
     } catch (e) {
-      debugPrint('❌ Error fetching schedules: $e');
+       // debugPrint('❌ Error fetching schedules: $e');
       if (!loadMore) {
         Get.snackbar(
           'Error',
@@ -322,7 +322,7 @@ class ScheduleController extends GetxController {
         message: 'Inspection status updated to $status',
       );
     } catch (e) {
-      debugPrint('❌ Status Update Error: $e');
+       // debugPrint('❌ Status Update Error: $e');
       TLoaders.errorSnackBar(title: 'Update Failed', message: e.toString());
       rethrow;
     }

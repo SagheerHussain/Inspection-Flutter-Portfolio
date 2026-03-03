@@ -1,6 +1,5 @@
-import 'package:cwt_starter_template/common/widgets/images/t_rounded_image.dart';
-import 'package:cwt_starter_template/personalization/controllers/theme_controller.dart';
-import 'package:cwt_starter_template/personalization/controllers/user_controller.dart';
+import '../../controllers/theme_controller.dart';
+import '../../controllers/user_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
@@ -9,9 +8,6 @@ import '../../../../../common/widgets/buttons/primary_button.dart';
 import '../../../../../data/repository/authentication_repository/authentication_repository.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
-import '../../../common/widgets/shimmers/shimmer.dart';
-import '../../../utils/constants/colors.dart';
-import '../../../utils/constants/image_strings.dart';
 import 'update_profile_screen.dart';
 import 'widgets/profile_menu.dart';
 
@@ -22,7 +18,6 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // final dark = THelperFunctions.isDarkMode(context);
     final themeController = ThemeController.instance;
-    final userController = UserController.instance;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -51,57 +46,8 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(TSizes.defaultSpace),
           child: Column(
             children: [
-              /// -- IMAGE with ICON
-              // const ImageWithIcon(),
-              Stack(
-                children: [
-                  Obx(() {
-                    final networkImage =
-                        userController.user.value.profilePicture;
-                    final image =
-                        networkImage.isNotEmpty
-                            ? networkImage
-                            : TImages.tProfileImage;
-                    return userController.imageUploading.value
-                        ? const TShimmerEffect(
-                          width: 80,
-                          height: 80,
-                          radius: 100,
-                        )
-                        : TRoundedImage(
-                          width: 80,
-                          height: 80,
-                          isNetworkImage: networkImage.isNotEmpty,
-                          fit: BoxFit.fill,
-                          imageUrl: image,
-                          borderRadius: 50,
-                        );
-                  }),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap:
-                          userController.imageUploading.value
-                              ? () {}
-                              : () => userController.uploadUserProfilePicture(),
-                      child: Container(
-                        width: 25,
-                        height: 25,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: TColors.primary,
-                        ),
-                        child: Icon(
-                          LineAwesomeIcons.pencil_alt_solid,
-                          color: Colors.black,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              // Profile image removed
+              const SizedBox(height: 10),
               const SizedBox(height: 10),
               Text(
                 UserController.instance.user.value.fullName.isEmpty

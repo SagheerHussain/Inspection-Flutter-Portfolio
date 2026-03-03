@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:inspection_app/data/repository/authentication_repository/authentication_repository.dart';
 
 import '../../../data/repository/authentication_repository/authentication_repository.dart';
 import '../../../utils/constants/text_strings.dart';
@@ -31,7 +32,8 @@ class OTPController extends GetxController {
   }
 
   void init() {
-    phoneNumberWithCountryCode.value = Get.parameters['phoneNumberWithCountryCode'] ?? '';
+    phoneNumberWithCountryCode.value =
+        Get.parameters['phoneNumberWithCountryCode'] ?? '';
     phoneNumber.value = Get.parameters['phoneNumber'] ?? '';
     pinScreen = Get.parameters['pinScreen'] == 'true' ? true : false;
   }
@@ -60,14 +62,22 @@ class OTPController extends GetxController {
   Future<void> resendOTP() async {
     try {
       // Trigger the OTP resend logic
-      await AuthenticationRepository.instance.loginWithPhoneNo(phoneNumberWithCountryCode.value);
+      await AuthenticationRepository.instance.loginWithPhoneNo(
+        phoneNumberWithCountryCode.value,
+      );
 
       // Show success message if OTP is verified
-      TLoaders.successSnackBar(title: TTexts.otpSendTitle.tr, message: TTexts.otpSendMessage.tr);
+      TLoaders.successSnackBar(
+        title: TTexts.otpSendTitle.tr,
+        message: TTexts.otpSendMessage.tr,
+      );
 
       startTimer(); // Restart the timer
     } catch (e) {
-      TLoaders.errorSnackBar(title: TTexts.unableToSendOTP.tr, message: e.toString());
+      TLoaders.errorSnackBar(
+        title: TTexts.unableToSendOTP.tr,
+        message: e.toString(),
+      );
     }
   }
 

@@ -31,7 +31,7 @@ class OTPScreen extends StatelessWidget {
             ),
             const SizedBox(height: 40.0),
             const Text(
-              "${TTexts.tOtpMessage} support@codingwitht.com",
+              "${TTexts.tOtpMessage} support@otobix.com",
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20.0),

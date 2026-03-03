@@ -25,7 +25,10 @@ class VerifyEmailScreen extends StatelessWidget {
       /// If not verified we will always show this Verification screen.
       appBar: TAppBar(
         actions: [
-          IconButton(onPressed: () => AuthenticationRepository.instance.logout(), icon: const Icon(CupertinoIcons.clear))
+          IconButton(
+            onPressed: () => AuthenticationRepository.instance.logout(),
+            icon: const Icon(CupertinoIcons.clear),
+          ),
         ],
         showActions: true,
         showSkipButton: false,
@@ -45,26 +48,42 @@ class VerifyEmailScreen extends StatelessWidget {
               const SizedBox(height: TSizes.spaceBtwSections),
 
               /// Title, Email & SubTitle
-              Text(TTexts.confirmEmail, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
+              Text(
+                TTexts.confirmEmail,
+                style: Theme.of(context).textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: TSizes.spaceBtwItems),
-              Text(email ?? '', style: Theme.of(context).textTheme.labelLarge, textAlign: TextAlign.center),
+              Text(
+                email ?? '',
+                style: Theme.of(context).textTheme.labelLarge,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: TSizes.spaceBtwItems),
-              Text(TTexts.confirmEmailSubTitle, style: Theme.of(context).textTheme.labelMedium, textAlign: TextAlign.center),
+              Text(
+                TTexts.confirmEmailSubTitle,
+                style: Theme.of(context).textTheme.labelMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: TSizes.spaceBtwSections),
 
               /// Continue Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                    onPressed: () => controller.checkEmailVerificationStatus(), child: const Text(TTexts.tContinue)),
+                  onPressed: () => controller.checkEmailVerificationStatus(),
+                  child: const Text(TTexts.tContinue),
+                ),
               ),
               const SizedBox(height: TSizes.spaceBtwItems),
 
               /// Resend Email, You can also add timer
               SizedBox(
                 width: double.infinity,
-                child:
-                    TextButton(onPressed: () => controller.sendEmailVerification(), child: Text(TTexts.resendEmail)),
+                child: TextButton(
+                  onPressed: () => controller.sendEmailVerification(),
+                  child: Text(TTexts.resendEmail),
+                ),
               ),
             ],
           ),

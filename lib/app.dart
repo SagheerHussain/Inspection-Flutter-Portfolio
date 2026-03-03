@@ -1,7 +1,7 @@
-import 'package:cwt_starter_template/bindings/general_bindings.dart';
-import 'package:cwt_starter_template/routes/app_routes.dart';
-import 'package:cwt_starter_template/features/authentication/screens/login/login_screen.dart';
-import 'package:cwt_starter_template/utils/theme/theme.dart';
+import 'package:inspection_app/bindings/general_bindings.dart';
+import 'package:inspection_app/routes/app_routes.dart';
+import 'package:inspection_app/features/authentication/screens/login/login_screen.dart';
+import 'package:inspection_app/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

@@ -32,6 +32,15 @@
 	<string>This app needs microphone access to record engine sound in videos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to your photo library to select vehicle images.</string>
+	<!-- ===== Background modes for OneSignal ===== -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
+	<!-- ===== Tell App Store that app uses encryption ===== -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

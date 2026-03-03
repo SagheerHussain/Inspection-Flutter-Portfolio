@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
 
 import '../../../data/repository/authentication_repository/authentication_repository.dart';
-import '../../../data/services/notifications/notification_service.dart';
 import '../../../personalization/controllers/create_notification_controller.dart';
 import '../../../personalization/controllers/user_controller.dart';
 import '../../../personalization/models/user_model.dart';
@@ -23,7 +23,9 @@ class SignInController extends GetxController {
   /// Variables
   final localStorage = GetStorage();
   final phone = TextEditingController();
-  final selectedCountryCode = RxString('+225'); // Controller for selected country code
+  final selectedCountryCode = RxString(
+    '+225',
+  ); // Controller for selected country code
 
   GlobalKey<FormState> signInFormKey = GlobalKey<FormState>();
 
@@ -46,7 +48,10 @@ class SignInController extends GetxController {
       if (!signInFormKey.currentState!.validate()) return;
 
       // Show loading dialog
-      TFullScreenLoader.openLoadingDialog("Authenticating...", TImages.docerAnimation);
+      TFullScreenLoader.openLoadingDialog(
+        "Authenticating...",
+        TImages.docerAnimation,
+      );
 
       // Check internet connectivity
       if (!await _checkInternetConnectivity()) return;
@@ -58,14 +63,25 @@ class SignInController extends GetxController {
       );
 
       // Send OTP to phone number
-      await AuthenticationRepository.instance.loginWithPhoneNo(formattedPhoneNumber);
+      await AuthenticationRepository.instance.loginWithPhoneNo(
+        formattedPhoneNumber,
+      );
 
       // Redirect to OTP screen for verification
-      bool otpVerified = await Get.toNamed(TRoutes.otpVerification, parameters: {'phoneNumberWithCountryCode': formattedPhoneNumber, 'phoneNumber': phone.text.trim()});
+      bool otpVerified = await Get.toNamed(
+        TRoutes.otpVerification,
+        parameters: {
+          'phoneNumberWithCountryCode': formattedPhoneNumber,
+          'phoneNumber': phone.text.trim(),
+        },
+      );
 
       if (otpVerified) {
         // Show success message if OTP is verified
-        TLoaders.successSnackBar(title: TTexts.phoneVerifiedTitle, message: TTexts.phoneVerifiedMessage);
+        TLoaders.successSnackBar(
+          title: TTexts.phoneVerifiedTitle,
+          message: TTexts.phoneVerifiedMessage,
+        );
         // Register new user in the Firestore, if not already registered.
 
         Get.put(UserController());
@@ -74,8 +90,14 @@ class SignInController extends GetxController {
           await registerUserInTheDatabase(formattedPhoneNumber);
         }
 
+        // Link device to user in OneSignal
+        final userId = AuthenticationRepository.instance.getUserID;
+        await NotificationService.instance.login(userId);
+
         // Redirect to the appropriate screen
-        await AuthenticationRepository.instance.screenRedirect(FirebaseAuth.instance.currentUser);
+        await AuthenticationRepository.instance.screenRedirect(
+          FirebaseAuth.instance.currentUser,
+        );
       } else {
         // Stop loading dialog
         TFullScreenLoader.stopLoading();
@@ -83,7 +105,7 @@ class SignInController extends GetxController {
       }
     } catch (e) {
       TFullScreenLoader.stopLoading();
-      debugPrint('OTP VERIFIED: $e');
+      // debugPrint('OTP VERIFIED: $e');
       _handleException(e);
     }
   }
@@ -93,7 +115,10 @@ class SignInController extends GetxController {
     final isConnected = await NetworkManager.instance.isConnected();
     if (!isConnected) {
       TFullScreenLoader.stopLoading();
-      TLoaders.errorSnackBar(title: TTexts.noInternet.tr, message: TTexts.checkInternetConnection.tr);
+      TLoaders.errorSnackBar(
+        title: TTexts.noInternet.tr,
+        message: TTexts.checkInternetConnection.tr,
+      );
       return false;
     }
     return true;
@@ -107,8 +132,6 @@ class SignInController extends GetxController {
   }
 
   Future<void> registerUserInTheDatabase(String phoneNumber) async {
-    final token = await TNotificationService.getToken();
-
     // Save Authenticated user data in the Firebase Firestore
     final newUser = UserModel(
       id: AuthenticationRepository.instance.getUserID,
@@ -116,7 +139,7 @@ class SignInController extends GetxController {
       email: '',
       phoneNumber: phoneNumber,
       profilePicture: '',
-      deviceToken: token,
+      deviceToken: '',
       isEmailVerified: false,
       isProfileActive: false,
       updatedAt: DateTime.now(),
@@ -131,5 +154,4 @@ class SignInController extends GetxController {
     Get.put(CreateNotificationController());
     await CreateNotificationController.instance.createNotification();
   }
-
 }

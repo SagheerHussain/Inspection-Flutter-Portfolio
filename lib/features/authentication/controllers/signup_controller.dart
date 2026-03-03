@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
 
 import '../../../data/repository/authentication_repository/authentication_repository.dart';
-import '../../../data/services/notifications/notification_service.dart';
 import '../../../personalization/controllers/create_notification_controller.dart';
 import '../../../personalization/controllers/user_controller.dart';
 import '../../../personalization/models/user_model.dart';
@@ -40,7 +40,10 @@ class SignUpController extends GetxController {
   Future<void> signup() async {
     try {
       // Start Loading
-      TFullScreenLoader.openLoadingDialog('We are processing your information...', TImages.docerAnimation);
+      TFullScreenLoader.openLoadingDialog(
+        'We are processing your information...',
+        TImages.docerAnimation,
+      );
 
       // Check Internet Connectivity
       final isConnected = await NetworkManager.instance.isConnected();
@@ -56,9 +59,10 @@ class SignUpController extends GetxController {
       }
 
       // Register user in the Firebase Authentication & Save user data in the Firebase
-      await AuthenticationRepository.instance.registerWithEmailAndPassword(email.text.trim(), password.text.trim());
-
-      final token = await TNotificationService.getToken();
+      await AuthenticationRepository.instance.registerWithEmailAndPassword(
+        email.text.trim(),
+        password.text.trim(),
+      );
 
       // Save Authenticated user data in the Firebase Firestore
       final newUser = UserModel(
@@ -67,7 +71,7 @@ class SignUpController extends GetxController {
         email: email.text.trim(),
         phoneNumber: phoneNumber.text.trim(),
         profilePicture: '',
-        deviceToken: token,
+        deviceToken: '',
         isEmailVerified: false,
         isProfileActive: false,
         updatedAt: DateTime.now(),
@@ -81,11 +85,19 @@ class SignUpController extends GetxController {
       Get.put(CreateNotificationController());
       await CreateNotificationController.instance.createNotification();
 
+      // Link device to user in OneSignal
+      await NotificationService.instance.login(
+        AuthenticationRepository.instance.getUserID,
+      );
+
       // Remove Loader
       TFullScreenLoader.stopLoading();
 
       // Show Success Message
-      TLoaders.successSnackBar(title: 'Congratulations', message: 'Your account has been created! Verify email to continue.');
+      TLoaders.successSnackBar(
+        title: 'Congratulations',
+        message: 'Your account has been created! Verify email to continue.',
+      );
 
       // Move to Verify Email Screen
       Get.to(() => const VerifyEmailScreen());

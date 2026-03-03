@@ -1,13 +1,13 @@
-import 'package:cwt_starter_template/data/repository/authentication_repository/authentication_repository.dart';
-import 'package:cwt_starter_template/personalization/controllers/theme_controller.dart';
-import 'package:cwt_starter_template/personalization/screens/profile/update_profile_screen.dart';
+import '../../../data/repository/authentication_repository/authentication_repository.dart';
+import '../../../personalization/controllers/theme_controller.dart';
+import '../../../personalization/screens/profile/update_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../personalization/controllers/user_controller.dart';
 import '../../../utils/constants/colors.dart';
-import '../../../utils/constants/image_strings.dart';
 import '../../../utils/helpers/helper_functions.dart';
 import '../../../../features/dashboard/course/screens/dashboard/widgets/search.dart';
 
@@ -22,9 +22,6 @@ class TDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final userController = UserController.instance;
     final themeController = Get.put(ThemeController());
-    final networkImage = userController.user.value.profilePicture;
-    final image =
-        networkImage.isNotEmpty ? networkImage : TImages.tProfileImage;
     final dark = THelperFunctions.isDarkMode(context);
 
     return Drawer(
@@ -43,7 +40,10 @@ class TDrawer extends StatelessWidget {
               children: [
                 // Name
                 Text(
-                  userController.user.value.fullName,
+                  userController.user.value.fullName.isNotEmpty
+                      ? userController.user.value.fullName
+                      : (GetStorage().read('REMEMBER_ME_USERNAME') ?? "User")
+                          .toString(),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: dark ? Colors.white : TColors.textPrimary,

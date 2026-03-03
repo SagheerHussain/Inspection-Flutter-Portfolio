@@ -123,9 +123,9 @@ class InspectionFormController extends GetxController {
     try {
       // ── RE-INSPECTION FLOW ──
       if (isReInspection) {
-        debugPrint(
-          '🔄 Re-Inspection flow detected. Fetching from car/details with empty appointmentId...',
-        );
+         // debugPrint(
+          // '🔄 Re-Inspection flow detected. Fetching from car/details with empty appointmentId...',
+        // );
 
         // Fetch data strictly from car/details/{carId}?appointmentId=""
         final response = await ApiService.get(
@@ -139,7 +139,7 @@ class InspectionFormController extends GetxController {
 
           // Store the carId for later update call
           _reInspectionCarId = carData['_id']?.toString();
-          debugPrint('🔑 Re-Inspection carId: $_reInspectionCarId');
+           // debugPrint('🔑 Re-Inspection carId: $_reInspectionCarId');
 
           // Store original data snapshot for preview dialog
           _originalData = Map<String, dynamic>.from(carData);
@@ -164,9 +164,9 @@ class InspectionFormController extends GetxController {
             duration: const Duration(seconds: 3),
           );
         } else {
-          debugPrint(
-            '⚠️ No car details found for Re-Inspection. Initializing empty form.',
-          );
+           // debugPrint(
+            // '⚠️ No car details found for Re-Inspection. Initializing empty form.',
+          // );
           _initializeNewInspection();
         }
 
@@ -180,22 +180,22 @@ class InspectionFormController extends GetxController {
           schedule?.inspectionStatus.toLowerCase().replaceAll('-', '') ?? '';
 
       if (normalizedStatus == 'running') {
-        debugPrint(
-          '🏃 Running lead detected. Checking for Re-Inspection origin...',
-        );
+         // debugPrint(
+          // '🏃 Running lead detected. Checking for Re-Inspection origin...',
+        // );
         try {
           final response = await ApiService.get(
             ApiConstants.carDetailsUrl(appointmentId),
           );
           final carData = response['carDetails'];
           if (carData != null && carData['_id'] != null) {
-            debugPrint('🔄 Detected Re-Inspection origin for Running lead');
+             // debugPrint('🔄 Detected Re-Inspection origin for Running lead');
             _isReInspectionOrigin = true;
             _reInspectionCarId = carData['_id']?.toString();
             _originalData = Map<String, dynamic>.from(carData);
-            debugPrint(
-              '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
-            );
+             // debugPrint(
+              // '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
+            // );
 
             // Reverse-map API keys → form keys
             _normalizeCarDataToFormKeys(carData);
@@ -219,7 +219,7 @@ class InspectionFormController extends GetxController {
             return;
           }
         } catch (e) {
-          debugPrint('⚠️ Re-Inspection check failed for Running lead: $e');
+           // debugPrint('⚠️ Re-Inspection check failed for Running lead: $e');
           // Fall through to standard flow
         }
       }
@@ -235,7 +235,7 @@ class InspectionFormController extends GetxController {
 
         final carData = response['carDetails'];
         if (carData != null && carData['_id'] != null) {
-          debugPrint('✅ Car record found in DB for $appointmentId — using server data');
+           // debugPrint('✅ Car record found in DB for $appointmentId — using server data');
 
           // Reverse-map API keys → form keys so all fields populate correctly
           _normalizeCarDataToFormKeys(carData);
@@ -259,7 +259,7 @@ class InspectionFormController extends GetxController {
           return;
         }
       } catch (e) {
-        debugPrint('⚠️ Car details fetch failed: $e — falling back to draft/new');
+         // debugPrint('⚠️ Car details fetch failed: $e — falling back to draft/new');
       }
 
       // 2. No car record found — try local draft
@@ -298,7 +298,7 @@ class InspectionFormController extends GetxController {
       // 3. No car record and no draft — initialize empty form
       _initializeNewInspection();
     } catch (e) {
-      debugPrint('Fetch failed, initializing new: $e');
+       // debugPrint('Fetch failed, initializing new: $e');
       _initializeNewInspection();
     } finally {
       isLoading.value = false;
@@ -353,7 +353,7 @@ class InspectionFormController extends GetxController {
       if (formatted != null) {
         carData[key] = formatted;
         mapped++;
-        debugPrint('📅 Formatted date [$key]: $str → $formatted');
+         // debugPrint('📅 Formatted date [$key]: $str → $formatted');
       }
     }
 
@@ -521,7 +521,7 @@ class InspectionFormController extends GetxController {
       }
     }
 
-    debugPrint('🔄 Reverse-mapping complete: $mapped fields normalized from API → form keys');
+     // debugPrint('🔄 Reverse-mapping complete: $mapped fields normalized from API → form keys');
   }
 
   /// Extracts image/video URLs from API response and populates imageFiles
@@ -578,9 +578,9 @@ class InspectionFormController extends GetxController {
     });
 
     imageFiles.refresh();
-    debugPrint(
-      '📸 Media pre-fill complete. Fields populated: ${imageFiles.keys.length}',
-    );
+     // debugPrint(
+      // '📸 Media pre-fill complete. Fields populated: ${imageFiles.keys.length}',
+    // );
   }
 
   Future<void> fetchDropdownList() async {
@@ -673,22 +673,22 @@ class InspectionFormController extends GetxController {
             // High confidence threshold (0.75) for fuzzy matching
             if (bestMatchName != null && bestScore >= 0.75) {
               mappedOptions[fieldKey] = apiDropdowns[bestMatchName]!;
-              debugPrint(
-                '🔗 Mapped [$fieldKey] to API [$bestMatchName] (Score: ${bestScore.toStringAsFixed(2)})',
-              );
+               // debugPrint(
+                // '🔗 Mapped [$fieldKey] to API [$bestMatchName] (Score: ${bestScore.toStringAsFixed(2)})',
+              // );
             }
           }
         }
 
         if (mappedOptions.isNotEmpty) {
           dropdownOptions.addAll(mappedOptions);
-          debugPrint(
-            '✨ Dynamic mapping complete. ${mappedOptions.length} fields populated from API.',
-          );
+           // debugPrint(
+            // '✨ Dynamic mapping complete. ${mappedOptions.length} fields populated from API.',
+          // );
         }
       }
     } catch (e) {
-      debugPrint('❌ Error mapping dropdowns: $e');
+       // debugPrint('❌ Error mapping dropdowns: $e');
     }
   }
 
@@ -893,9 +893,9 @@ class InspectionFormController extends GetxController {
       final label = field?.label ?? key;
       final fileName = path.split('/').last;
 
-      debugPrint(
-        '🗑️ USER ACTION: Removing image "$fileName" from field "$label"',
-      );
+       // debugPrint(
+        // '🗑️ USER ACTION: Removing image "$fileName" from field "$label"',
+      // );
 
       // Trigger Delete from Cloudinary
       final data = mediaCloudinaryData[path];
@@ -907,9 +907,9 @@ class InspectionFormController extends GetxController {
           localInfo: '[$label] $fileName',
         );
       } else {
-        debugPrint(
-          'ℹ️ Note: No remote delete called. This image was likely not uploaded yet or failed upload.',
-        );
+         // debugPrint(
+          // 'ℹ️ Note: No remote delete called. This image was likely not uploaded yet or failed upload.',
+        // );
       }
 
       currentList.removeAt(index);
@@ -927,10 +927,10 @@ class InspectionFormController extends GetxController {
     required bool isVideo,
   }) async {
     try {
-      debugPrint(
-        '⬆️ [START] Uploading ${isVideo ? 'video' : 'image'} to Cloudinary...',
-      );
-      debugPrint('📍 Local Path: $localPath');
+       // debugPrint(
+        // '⬆️ [START] Uploading ${isVideo ? 'video' : 'image'} to Cloudinary...',
+      // );
+       // debugPrint('📍 Local Path: $localPath');
 
       String finalPath = localPath;
 
@@ -938,7 +938,7 @@ class InspectionFormController extends GetxController {
         TLoaders.customToast(message: 'Compressing video...');
         final compressedPath = await _compressVideo(localPath);
         if (compressedPath == null) {
-          debugPrint('❌ Video compression failed or was cancelled.');
+           // debugPrint('❌ Video compression failed or was cancelled.');
           return;
         }
 
@@ -968,7 +968,7 @@ class InspectionFormController extends GetxController {
       );
 
       // Print full API response for transparency
-      debugPrint('📦 API RESPONSE (Upload - $fieldKey): $response');
+       // debugPrint('📦 API RESPONSE (Upload - $fieldKey): $response');
 
       final resultData = response['data'] ?? response;
       String? returnedUrl;
@@ -994,25 +994,25 @@ class InspectionFormController extends GetxController {
       }
 
       if (returnedUrl != null) {
-        debugPrint('🌐 SUCCESS: File available at: $returnedUrl');
+         // debugPrint('🌐 SUCCESS: File available at: $returnedUrl');
         if (publicId != null) {
-          debugPrint('🔑 PublicID stored for deletion: $publicId');
+           // debugPrint('🔑 PublicID stored for deletion: $publicId');
           mediaCloudinaryData[localPath] = {
             'url': returnedUrl,
             'publicId': publicId,
           };
         } else {
-          debugPrint(
-            '⚠️ WARNING: No publicId found in response. Remote deletion will not work for this file.',
-          );
+           // debugPrint(
+            // '⚠️ WARNING: No publicId found in response. Remote deletion will not work for this file.',
+          // );
         }
       } else {
-        debugPrint(
-          '❌ ERROR: Upload response did not contain a URL or files list.',
-        );
+         // debugPrint(
+          // '❌ ERROR: Upload response did not contain a URL or files list.',
+        // );
       }
     } catch (e) {
-      debugPrint('❌ FATAL: Upload failed for $localPath: $e');
+       // debugPrint('❌ FATAL: Upload failed for $localPath: $e');
     }
   }
 
@@ -1026,7 +1026,7 @@ class InspectionFormController extends GetxController {
       );
       return mediaInfo?.path;
     } catch (e) {
-      debugPrint('❌ Video compress error: $e');
+       // debugPrint('❌ Video compress error: $e');
       return null;
     }
   }
@@ -1037,10 +1037,10 @@ class InspectionFormController extends GetxController {
     required String localInfo,
   }) async {
     try {
-      debugPrint(
-        '� API CALL: Deleting ${isVideo ? 'video' : 'image'} from Cloudinary',
-      );
-      debugPrint('📍 Target: $localInfo (PublicID: $publicId)');
+       // debugPrint(
+        // '� API CALL: Deleting ${isVideo ? 'video' : 'image'} from Cloudinary',
+      // );
+       // debugPrint('📍 Target: $localInfo (PublicID: $publicId)');
 
       final url =
           isVideo ? ApiConstants.deleteVideoUrl : ApiConstants.deleteImageUrl;
@@ -1048,11 +1048,11 @@ class InspectionFormController extends GetxController {
       final response = await ApiService.delete(url, {'publicId': publicId});
 
       // Print full API response
-      debugPrint('� API RESPONSE (Delete $localInfo): $response');
+       // debugPrint('� API RESPONSE (Delete $localInfo): $response');
 
-      debugPrint('✅ SUCCESS: Remote file deleted.');
+       // debugPrint('✅ SUCCESS: Remote file deleted.');
     } catch (e) {
-      debugPrint('❌ ERROR: Delete failed for $localInfo: $e');
+       // debugPrint('❌ ERROR: Delete failed for $localInfo: $e');
     }
   }
 
@@ -1151,7 +1151,7 @@ class InspectionFormController extends GetxController {
       });
       await _storage.write(imgKey, imgMap);
 
-      debugPrint('💾 Draft saved successfully to local storage');
+       // debugPrint('💾 Draft saved successfully to local storage');
 
       // Always clear existing snackbars
       Get.closeAllSnackbars();
@@ -1172,7 +1172,7 @@ class InspectionFormController extends GetxController {
         );
       });
     } catch (e) {
-      debugPrint('Save draft error: $e');
+       // debugPrint('Save draft error: $e');
       Get.snackbar(
         'Save Failed',
         'Could not save draft. Please try again.',
@@ -1469,13 +1469,13 @@ class InspectionFormController extends GetxController {
     try {
       // 1. Dump date field values for debugging
       final dateKeys = ['registrationDate', 'fitnessValidity', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity'];
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('📅 DATE FIELD VALUES BEFORE BUILD:');
+       // debugPrint('═══════════════════════════════════════════════');
+       // debugPrint('📅 DATE FIELD VALUES BEFORE BUILD:');
       for (final k in dateKeys) {
         final v = data.data[k];
-        debugPrint('  $k = ${v == null ? "NULL" : "\"$v\" (${v.runtimeType})"}');
+         // debugPrint('  $k = ${v == null ? "NULL" : "\"$v\" (${v.runtimeType})"}');
       }
-      debugPrint('═══════════════════════════════════════════════');
+       // debugPrint('═══════════════════════════════════════════════');
 
       // 2. Build the CarModel from form data
       final carModel = _buildCarModelFromForm(data);
@@ -1487,12 +1487,12 @@ class InspectionFormController extends GetxController {
       final payload = carModel.toJson();
 
       // 🔍 DEBUG: Trace bootDoorImages through the pipeline
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('🔍 BOOT DOOR IMAGES DEBUG:');
-      debugPrint('  imageFiles[bootDoorImages] = ${imageFiles['bootDoorImages']}');
-      debugPrint('  carModel.bootDoorImages = ${carModel.bootDoorImages}');
-      debugPrint('  payload[bootDoorImages] (from toJson) = ${payload['bootDoorImages']}');
-      debugPrint('═══════════════════════════════════════════════');
+       // debugPrint('═══════════════════════════════════════════════');
+       // debugPrint('🔍 BOOT DOOR IMAGES DEBUG:');
+       // debugPrint('  imageFiles[bootDoorImages] = ${imageFiles['bootDoorImages']}');
+       // debugPrint('  carModel.bootDoorImages = ${carModel.bootDoorImages}');
+       // debugPrint('  payload[bootDoorImages] (from toJson) = ${payload['bootDoorImages']}');
+       // debugPrint('═══════════════════════════════════════════════');
 
       // Add image URLs from Cloudinary uploads
       imageFiles.forEach((key, paths) {
@@ -1507,31 +1507,31 @@ class InspectionFormController extends GetxController {
       });
 
       // 🔍 DEBUG: bootDoorImages after imageFiles overlay
-      debugPrint('🔍 payload[bootDoorImages] (after overlay) = ${payload['bootDoorImages']}');
+       // debugPrint('🔍 payload[bootDoorImages] (after overlay) = ${payload['bootDoorImages']}');
 
       // Ensure timestamp is set
       payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
 
       // Debug: dump date values in payload
-      debugPrint('📅 DATE VALUES IN PAYLOAD:');
+       // debugPrint('📅 DATE VALUES IN PAYLOAD:');
       for (final k in ['registrationDate', 'fitnessTill', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity', 'fitnessValidity', 'yearAndMonthOfManufacture']) {
-        debugPrint('  payload[$k] = ${payload[k]}');
+         // debugPrint('  payload[$k] = ${payload[k]}');
       }
 
       // ── Check if a car record already exists for this appointmentId ──
       String? existingCarId;
       try {
-        debugPrint('🔍 Checking if car record already exists for appointmentId: $appointmentId');
+         // debugPrint('🔍 Checking if car record already exists for appointmentId: $appointmentId');
         final existingResponse = await ApiService.get(
           ApiConstants.carDetailsUrl(appointmentId),
         );
         final existingCar = existingResponse['carDetails'];
         if (existingCar != null && existingCar['_id'] != null) {
           existingCarId = existingCar['_id'].toString();
-          debugPrint('✅ Existing car record found: $existingCarId — will UPDATE instead of ADD');
+           // debugPrint('✅ Existing car record found: $existingCarId — will UPDATE instead of ADD');
         }
       } catch (e) {
-        debugPrint('ℹ️ No existing car record found (or check failed): $e — will ADD new record');
+         // debugPrint('ℹ️ No existing car record found (or check failed): $e — will ADD new record');
       }
 
       Map<String, dynamic> response;
@@ -1542,10 +1542,10 @@ class InspectionFormController extends GetxController {
         // Keep _id for the update API
         payload.remove('objectId');
 
-        debugPrint('📡 Updating existing car record via PUT...');
-        debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-        debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
-        debugPrint('🔑 carId: $existingCarId');
+         // debugPrint('📡 Updating existing car record via PUT...');
+         // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+         // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+         // debugPrint('🔑 carId: $existingCarId');
 
         response = await ApiService.put(
           ApiConstants.carUpdateUrl,
@@ -1556,13 +1556,13 @@ class InspectionFormController extends GetxController {
         payload.remove('_id');
         payload.remove('id');
         payload.remove('objectId');
-        debugPrint(
-          '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
-        );
+         // debugPrint(
+          // '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
+        // );
 
-        debugPrint('📡 Submitting new inspection to API...');
-        debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-        debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
+         // debugPrint('📡 Submitting new inspection to API...');
+         // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+         // debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
 
         response = await ApiService.post(
           ApiConstants.inspectionSubmitUrl,
@@ -1570,7 +1570,7 @@ class InspectionFormController extends GetxController {
         );
       }
 
-      debugPrint('✅ API Response: $response');
+       // debugPrint('✅ API Response: $response');
 
       // 5. Clear local draft on success
       await _storage.remove('draft_$appointmentId');
@@ -1579,9 +1579,9 @@ class InspectionFormController extends GetxController {
       // 6. Update telecalling status to 'Inspected'
       try {
         if (schedule != null) {
-          debugPrint('🔄 Updating telecalling status to Inspected...');
-          debugPrint('🔑 telecallingId: ${schedule!.id}');
-          debugPrint('📋 appointmentId: $appointmentId');
+           // debugPrint('🔄 Updating telecalling status to Inspected...');
+           // debugPrint('🔑 telecallingId: ${schedule!.id}');
+           // debugPrint('📋 appointmentId: $appointmentId');
 
           final storage = GetStorage();
           final userId = storage.read('USER_ID') ?? '';
@@ -1599,14 +1599,14 @@ class InspectionFormController extends GetxController {
             statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
           }
 
-          debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
-          debugPrint('📦 Body: $statusBody');
+           // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+           // debugPrint('📦 Body: $statusBody');
 
           final statusResponse = await ApiService.put(
             ApiConstants.updateTelecallingUrl,
             statusBody,
           );
-          debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+           // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
 
           // Refresh schedule list in background (non-blocking)
           try {
@@ -1615,10 +1615,10 @@ class InspectionFormController extends GetxController {
             }
           } catch (_) {}
         } else {
-          debugPrint('⚠️ schedule is null — cannot update telecalling status');
+           // debugPrint('⚠️ schedule is null — cannot update telecalling status');
         }
       } catch (e) {
-        debugPrint('⚠️ Failed to update telecalling status: $e');
+         // debugPrint('⚠️ Failed to update telecalling status: $e');
         // Don't block success if this fails — the car submission already succeeded
       }
 
@@ -1633,7 +1633,7 @@ class InspectionFormController extends GetxController {
                 : 'Inspection submitted successfully!'),
       );
     } catch (e) {
-      debugPrint('❌ Submit error: $e');
+       // debugPrint('❌ Submit error: $e');
       try {
         Get.closeAllSnackbars();
       } catch (_) {}
@@ -2287,15 +2287,15 @@ class InspectionFormController extends GetxController {
       // Remove objectId only
       payload.remove('objectId');
 
-      debugPrint('📡 Submitting Re-Inspection update via PUT...');
-      debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-      debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
-      debugPrint('🔑 carId: ${payload['carId']}');
+       // debugPrint('📡 Submitting Re-Inspection update via PUT...');
+       // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+       // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+       // debugPrint('🔑 carId: ${payload['carId']}');
 
       // 4. PUT to the update API
       final response = await ApiService.put(ApiConstants.carUpdateUrl, payload);
 
-      debugPrint('✅ API Response: $response');
+       // debugPrint('✅ API Response: $response');
 
       // 5. Clear local draft on success
       await _storage.remove('draft_$appointmentId');
@@ -2304,8 +2304,8 @@ class InspectionFormController extends GetxController {
       // 6. Update telecalling status to 'Inspected'
       try {
         if (schedule != null) {
-          debugPrint('🔄 Updating telecalling status to Inspected (Re-Inspection)...');
-          debugPrint('🔑 telecallingId: ${schedule!.id}');
+           // debugPrint('🔄 Updating telecalling status to Inspected (Re-Inspection)...');
+           // debugPrint('🔑 telecallingId: ${schedule!.id}');
 
           final storage = GetStorage();
           final userId = storage.read('USER_ID') ?? '';
@@ -2323,14 +2323,14 @@ class InspectionFormController extends GetxController {
             statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
           }
 
-          debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
-          debugPrint('📦 Body: $statusBody');
+           // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+           // debugPrint('📦 Body: $statusBody');
 
           final statusResponse = await ApiService.put(
             ApiConstants.updateTelecallingUrl,
             statusBody,
           );
-          debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+           // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
 
           // Refresh schedule list in background (non-blocking)
           try {
@@ -2339,10 +2339,10 @@ class InspectionFormController extends GetxController {
             }
           } catch (_) {}
         } else {
-          debugPrint('⚠️ schedule is null — cannot update telecalling status (Re-Inspection)');
+           // debugPrint('⚠️ schedule is null — cannot update telecalling status (Re-Inspection)');
         }
       } catch (e) {
-        debugPrint('⚠️ Failed to update telecalling status: $e');
+         // debugPrint('⚠️ Failed to update telecalling status: $e');
         // Don't block success if this fails — the car update already succeeded
       }
 
@@ -2354,7 +2354,7 @@ class InspectionFormController extends GetxController {
         response['message'] ?? 'Re-Inspection updated successfully!',
       );
     } catch (e) {
-      debugPrint('❌ Re-Inspection submit error: $e');
+       // debugPrint('❌ Re-Inspection submit error: $e');
       try {
         Get.closeAllSnackbars();
       } catch (_) {}
@@ -2821,7 +2821,7 @@ class InspectionFormController extends GetxController {
       );
 
       // Print auto-fetched data to console as requested
-      debugPrint('🚀 [AutoFetch] Response: $response');
+       // debugPrint('🚀 [AutoFetch] Response: $response');
 
       // Access data.result as specified
       final result = response['data']?['result'];
@@ -2835,7 +2835,7 @@ class InspectionFormController extends GetxController {
         throw 'No details found for this registration number.';
       }
     } catch (e) {
-      debugPrint('❌ AutoFetch Error: $e');
+       // debugPrint('❌ AutoFetch Error: $e');
       TLoaders.errorSnackBar(
         title: 'Fetch Failed',
         message:
@@ -2849,9 +2849,9 @@ class InspectionFormController extends GetxController {
   }
 
   void _applyFetchedData(Map<String, dynamic> result) {
-    debugPrint(
-      '🧩 [AutoFetch] Starting data mapping. Available keys: ${result.keys.toList()}',
-    );
+     // debugPrint(
+      // '🧩 [AutoFetch] Starting data mapping. Available keys: ${result.keys.toList()}',
+    // );
 
     // Helper to find a value by checking multiple potential keys case-insensitively
     dynamic find(List<String> keys) {
@@ -3038,24 +3038,24 @@ class InspectionFormController extends GetxController {
       final value = find(sourceKeys);
       if (value != null) {
         // Log mapping attempt
-        debugPrint(
-          '📍 Mapping [$targetKey] <--- Found value: "$value" in source keys: $sourceKeys',
-        );
+         // debugPrint(
+          // '📍 Mapping [$targetKey] <--- Found value: "$value" in source keys: $sourceKeys',
+        // );
 
         // Overwrite the field with the new value
         updateField(targetKey, value.toString());
         updatedAny = true;
-        debugPrint('✅ [$targetKey] Overwrite SUCCESS');
+         // debugPrint('✅ [$targetKey] Overwrite SUCCESS');
       }
     });
 
     if (updatedAny) {
-      debugPrint('✨ Data mapping completed. Refreshing UI...');
+       // debugPrint('✨ Data mapping completed. Refreshing UI...');
       inspectionData.refresh();
     } else {
-      debugPrint(
-        '📢 No fields were updated (all fields may already have data).',
-      );
+       // debugPrint(
+        // '📢 No fields were updated (all fields may already have data).',
+      // );
     }
   }
 }

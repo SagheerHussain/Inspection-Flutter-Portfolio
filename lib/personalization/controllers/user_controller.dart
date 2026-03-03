@@ -1,4 +1,6 @@
-import 'package:cwt_starter_template/utils/popups/exports.dart';
+import 'package:inspection_app/data/services/notifications/notification_sevice.dart';
+
+import '../../utils/popups/exports.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,7 +10,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../common/widgets/loaders/circular_loader.dart';
 import '../../data/repository/authentication_repository/authentication_repository.dart';
 import '../../data/repository/user_repository/user_repository.dart';
-import '../../data/services/notifications/notification_service.dart';
 import '../../features/authentication/screens/login/login_screen.dart';
 import '../../utils/constants/text_strings.dart';
 import '../models/user_model.dart';
@@ -88,14 +89,13 @@ class UserController extends GetxController {
       // If no record already stored.
       if (this.user.value.id.isEmpty) {
         if (userCredentials != null) {
-          final fcmToken = await TNotificationService.getToken();
           // Map data
           final newUser = UserModel(
             id: userCredentials.user!.uid,
             fullName: userCredentials.user!.displayName ?? '',
             email: userCredentials.user!.email ?? '',
             profilePicture: userCredentials.user!.photoURL ?? '',
-            deviceToken: fcmToken,
+            deviceToken: '',
             isEmailVerified: true,
             isProfileActive: true,
             updatedAt: DateTime.now(),
@@ -359,6 +359,7 @@ class UserController extends GetxController {
               backgroundColor: Colors.transparent,
               content: const TCircularLoader(),
             );
+            await NotificationService.instance.logout();
             await AuthenticationRepository.instance.logout();
           },
         ),

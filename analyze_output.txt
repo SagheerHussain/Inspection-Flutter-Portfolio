@@ -1,0 +1,50 @@
+Analyzing Otobix-Inspection-App...                              
+
+   info • Use the null-aware operator '?.' rather than an explicit 'null' comparison • lib/common/widgets/chips/rounded_choice_chips.dart:39:26 • prefer_null_aware_operators
+warning • The value of the local variable 'image' isn't used • lib/common/widgets/drawer/drawer.dart:26:11 • unused_local_variable
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/common/widgets/drawer/drawer.dart:107:23 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/data/repository/notifications/notification_repository.dart:98:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/repository/notifications/notification_repository.dart:100:7 • avoid_print
+warning • The value of the field '_timer' isn't used • lib/features/authentication/controllers/mail_verification_controller.dart:11:14 • unused_field
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/authentication/screens/login/widgets/login_form_widget.dart:139:23 • deprecated_member_use
+   info • Function literals shouldn't be passed to 'forEach' • lib/features/dashboard/course/controllers/dashboard_stats_controller.dart:102:22 • avoid_function_literals_in_foreach_calls
+   info • Statements in an if should be enclosed in a block • lib/features/dashboard/course/controllers/dashboard_stats_controller.dart:113:11 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/dashboard/course/controllers/dashboard_stats_controller.dart:115:11 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/dashboard/course/controllers/dashboard_stats_controller.dart:201:7 • curly_braces_in_flow_control_structures
+   info • The member 'refresh' overrides an inherited member but isn't annotated with '@override' • lib/features/dashboard/course/controllers/dashboard_stats_controller.dart:276:16 • annotate_overrides
+   info • The file name 'coursesDashboard.dart' isn't a lower_case_with_underscores identifier • lib/features/dashboard/course/screens/dashboard/coursesDashboard.dart:1:1 • file_names
+   info • Unnecessary instance of 'Container' • lib/features/dashboard/course/screens/dashboard/coursesDashboard.dart:52:20 • avoid_unnecessary_containers
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/course/screens/dashboard/widgets/appbar.dart:118:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/course/screens/dashboard/widgets/top_courses.dart:170:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/course/screens/dashboard/widgets/top_courses.dart:171:62 • deprecated_member_use
+   info • The local variable '_formatDate' starts with an underscore • lib/features/inspection_form/controllers/inspection_form_controller.dart:317:13 • no_leading_underscores_for_local_identifiers
+warning • The declaration 'normDate' isn't referenced • lib/features/inspection_form/controllers/inspection_form_controller.dart:343:10 • unused_element
+warning • The left operand can't be null, so the right operand is never executed • lib/features/inspection_form/controllers/inspection_form_controller.dart:1595:45 • dead_null_aware_expression
+   info • Statements in an if should be enclosed in a block • lib/features/inspection_form/controllers/inspection_form_controller.dart:2015:9 • curly_braces_in_flow_control_structures
+warning • The left operand can't be null, so the right operand is never executed • lib/features/inspection_form/controllers/inspection_form_controller.dart:2319:45 • dead_null_aware_expression
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/inspection_form/screens/inspection_form_screen.dart:1086:11 • deprecated_member_use
+warning • Unused import: '../../models/product_variation_model.dart' • lib/features/products/screens/product_cards/product_card_vertical.dart:18:8 • unused_import
+warning • Unused import: 'package:get/get.dart' • lib/features/products/screens/product_detail/product_detail.dart:7:8 • unused_import
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:156:17 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:201:17 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:213:17 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:215:17 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:257:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:259:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:271:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:274:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/controllers/schedule_controller.dart:276:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:175:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:177:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:179:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:200:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:204:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/schedules/screens/schedules_screen.dart:206:7 • curly_braces_in_flow_control_structures
+warning • The declaration '_infoRow' isn't referenced • lib/features/schedules/screens/schedules_screen.dart:1659:10 • unused_element
+   info • The imported package 'otobix_customer_app' isn't a dependency of the importing package • lib/temp/notification_sevice.dart:3:8 • depend_on_referenced_packages
+  error • Target of URI doesn't exist: 'package:otobix_customer_app/utils/app_constants.dart' • lib/temp/notification_sevice.dart:3:8 • uri_does_not_exist
+  error • Undefined name 'AppConstants' • lib/temp/notification_sevice.dart:15:26 • undefined_identifier
+  error • Undefined name 'AppConstants' • lib/temp/notification_sevice.dart:46:28 • undefined_identifier
+  error • Undefined name 'AppConstants' • lib/temp/notification_sevice.dart:52:7 • undefined_identifier
+
+46 issues found. (ran in 2.7s)

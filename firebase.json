@@ -3,18 +3,17 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "cwt-starter-template",
-          "appId": "1:682675089378:android:9d2ffd958d37e615f5d3bb",
+          "projectId": "otobix-auction-app-final",
+          "appId": "1:845981097587:android:3d0be95962d2d8b0b49406",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "cwt-starter-template",
+          "projectId": "otobix-auction-app-final",
           "configurations": {
-            "android": "1:682675089378:android:9d2ffd958d37e615f5d3bb",
-            "ios": "1:682675089378:ios:3e2c89a3d89c6759f5d3bb",
-            "web": "1:682675089378:web:7f9abd7597169227f5d3bb"
+            "android": "1:845981097587:android:3d0be95962d2d8b0b49406",
+            "ios": "1:845981097587:ios:c192b2c384eead19b49406"
           }
         }
       }

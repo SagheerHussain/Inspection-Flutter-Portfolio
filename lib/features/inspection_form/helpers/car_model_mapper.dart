@@ -28,28 +28,28 @@ int _i(InspectionFormModel d, String key) {
 DateTime? _dt(InspectionFormModel d, String key) {
   final v = d.data[key];
   if (v == null) {
-    debugPrint('📅 _dt($key) → null (key not found in data)');
+    // debugPrint('📅 _dt($key) → null (key not found in data)');
     return null;
   }
   if (v is DateTime) {
-    debugPrint('📅 _dt($key) → $v (already DateTime)');
+    // debugPrint('📅 _dt($key) → $v (already DateTime)');
     return v;
   }
   if (v is num) {
     // Could be a timestamp in milliseconds
     if (v > 1000000000000) {
       final result = DateTime.fromMillisecondsSinceEpoch(v.toInt());
-      debugPrint('📅 _dt($key) → $result (parsed from ms timestamp: $v)');
+      // debugPrint('📅 _dt($key) → $result (parsed from ms timestamp: $v)');
       return result;
     }
-    debugPrint('📅 _dt($key) → null (numeric but not a timestamp: $v)');
+    // debugPrint('📅 _dt($key) → null (numeric but not a timestamp: $v)');
     return null;
   }
   if (v is String && v.isNotEmpty) {
     // Try standard ISO parse first
     final iso = DateTime.tryParse(v);
     if (iso != null) {
-      debugPrint('📅 _dt($key) → $iso (parsed from ISO: "$v")');
+      // debugPrint('📅 _dt($key) → $iso (parsed from ISO: "$v")');
       return iso;
     }
 
@@ -70,7 +70,7 @@ DateTime? _dt(InspectionFormModel d, String key) {
         } else {
           result = DateTime(p2, p1, p0); // DD-MM-YYYY
         }
-        debugPrint('📅 _dt($key) → $result (parsed from "$v")');
+        // debugPrint('📅 _dt($key) → $result (parsed from "$v")');
         return result;
       }
     }
@@ -80,13 +80,13 @@ DateTime? _dt(InspectionFormModel d, String key) {
       final y = int.tryParse(parts[1]);
       if (m != null && y != null) {
         final result = DateTime(y, m);
-        debugPrint('📅 _dt($key) → $result (parsed from MM-YYYY: "$v")');
+        // debugPrint('📅 _dt($key) → $result (parsed from MM-YYYY: "$v")');
         return result;
       }
     }
-    debugPrint('📅 _dt($key) → null (could not parse: "$v", type: ${v.runtimeType})');
+    // debugPrint('📅 _dt($key) → null (could not parse: "$v", type: ${v.runtimeType})');
   } else {
-    debugPrint('📅 _dt($key) → null (value is ${v.runtimeType}: "$v")');
+    // debugPrint('📅 _dt($key) → null (value is ${v.runtimeType}: "$v")');
   }
   return null;
 }

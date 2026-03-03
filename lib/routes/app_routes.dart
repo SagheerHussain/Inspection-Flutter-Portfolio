@@ -1,10 +1,10 @@
-import 'package:cwt_starter_template/features/authentication/screens/login/login_screen.dart';
-import 'package:cwt_starter_template/features/authentication/screens/on_boarding/on_boarding_screen.dart';
-import 'package:cwt_starter_template/features/dashboard/ecommerce/screens/home/home.dart';
-import 'package:cwt_starter_template/features/schedules/screens/schedules_screen.dart';
-import 'package:cwt_starter_template/personalization/screens/profile/profile_screen.dart';
-import 'package:cwt_starter_template/personalization/screens/profile/re_authenticate_phone_otp_screen.dart';
-import 'package:cwt_starter_template/routes/routes.dart';
+import 'package:inspection_app/features/authentication/screens/login/login_screen.dart';
+import 'package:inspection_app/features/authentication/screens/on_boarding/on_boarding_screen.dart';
+import 'package:inspection_app/features/dashboard/ecommerce/screens/home/home.dart';
+import 'package:inspection_app/features/schedules/screens/schedules_screen.dart';
+import 'package:inspection_app/personalization/screens/profile/profile_screen.dart';
+import 'package:inspection_app/personalization/screens/profile/re_authenticate_phone_otp_screen.dart';
+import 'package:inspection_app/routes/routes.dart';
 import 'package:get/get.dart';
 import '../bindings/notification_binding.dart';
 import '../features/authentication/screens/phone_number/otp/phone_otp_screen.dart';

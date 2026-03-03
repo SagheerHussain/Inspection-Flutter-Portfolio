@@ -1,5 +1,5 @@
-import 'package:cwt_starter_template/features/products/models/product_attribute_model.dart';
-import 'package:cwt_starter_template/features/products/models/product_variation_model.dart';
+import 'package:inspection_app/features/products/models/product_attribute_model.dart';
+import 'package:inspection_app/features/products/models/product_variation_model.dart';
 import '../../dashboard/ecommerce/models/brand_model.dart';
 
 class ProductModel {

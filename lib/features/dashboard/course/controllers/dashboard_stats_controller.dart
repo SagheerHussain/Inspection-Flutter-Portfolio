@@ -91,7 +91,7 @@ class DashboardStatsController extends GetxController {
             results[status] =
                 dataList.map((json) => ScheduleModel.fromJson(json)).toList();
           } catch (e) {
-            debugPrint('❌ Error fetching $status: $e');
+            // debugPrint('❌ Error fetching $status: $e');
             results[status] = [];
           }
         }),
@@ -129,7 +129,7 @@ class DashboardStatsController extends GetxController {
 
       _startCountdown();
     } catch (e) {
-      debugPrint('❌ Dashboard stats fetch error: $e');
+      // debugPrint('❌ Dashboard stats fetch error: $e');
     } finally {
       isLoading.value = false;
     }

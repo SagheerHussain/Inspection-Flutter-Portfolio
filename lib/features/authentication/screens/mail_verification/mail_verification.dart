@@ -16,24 +16,50 @@ class MailVerification extends StatelessWidget {
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.only(top: TSizes.defaultSpace * 5, left: TSizes.defaultSpace, right: TSizes.defaultSpace, bottom: TSizes.defaultSpace * 2),
+          padding: const EdgeInsets.only(
+            top: TSizes.defaultSpace * 5,
+            left: TSizes.defaultSpace,
+            right: TSizes.defaultSpace,
+            bottom: TSizes.defaultSpace * 2,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(LineAwesomeIcons.envelope_open, size: 100),
               const SizedBox(height: TSizes.defaultSpace * 2),
-              Text(TTexts.tEmailVerificationTitle.tr, style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                TTexts.tEmailVerificationTitle.tr,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               const SizedBox(height: TSizes.defaultSpace),
-              Text(TTexts.tEmailVerificationSubTitle.tr, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+              Text(
+                TTexts.tEmailVerificationSubTitle.tr,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: TSizes.defaultSpace * 2),
-              SizedBox(width: 200, child: OutlinedButton(child: Text(TTexts.tContinue.tr), onPressed: () => controller.manuallyCheckEmailVerificationStatus())),
+              SizedBox(
+                width: 200,
+                child: OutlinedButton(
+                  child: Text(TTexts.tContinue.tr),
+                  onPressed:
+                      () => controller.manuallyCheckEmailVerificationStatus(),
+                ),
+              ),
               const SizedBox(height: TSizes.defaultSpace * 2),
-              TextButton(onPressed: () => controller.sendVerificationEmail(), child: Text(TTexts.tResendEmailLink.tr)),
+              TextButton(
+                onPressed: () => controller.sendVerificationEmail(),
+                child: Text(TTexts.tResendEmailLink.tr),
+              ),
               TextButton(
                 onPressed: () => AuthenticationRepository.instance.logout(),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [Icon(LineAwesomeIcons.long_arrow_alt_left_solid), const SizedBox(width: 5), Text(TTexts.tBackToLogin.tr.toLowerCase())],
+                  children: [
+                    Icon(LineAwesomeIcons.long_arrow_alt_left_solid),
+                    const SizedBox(width: 5),
+                    Text(TTexts.tBackToLogin.tr.toLowerCase()),
+                  ],
                 ),
               ),
             ],
