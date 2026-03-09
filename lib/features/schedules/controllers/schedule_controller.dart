@@ -104,7 +104,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-               // debugPrint('❌ Search fetch error for $status: $e');
+              // debugPrint('❌ Search fetch error for $status: $e');
             }
           }),
         );
@@ -145,7 +145,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-               // debugPrint('❌ Upcoming fetch error for $status: $e');
+              // debugPrint('❌ Upcoming fetch error for $status: $e');
             }
           }),
         );
@@ -166,7 +166,15 @@ class ScheduleController extends GetxController {
       } else {
         // STATUS MODE: Fetch single status (with fallback for Re- variants)
         final List<String> statusVariants = [statusFilter];
-        if (statusFilter == InspectionStatuses.reInspection) {
+        if (statusFilter == InspectionStatuses.running) {
+          // If viewing running inspections, also include scheduled and reinspection variants as requested
+          statusVariants.add(InspectionStatuses.scheduled);
+          statusVariants.add(InspectionStatuses.reInspection);
+          statusVariants.add('Reinspection');
+          statusVariants.add('Re-Inspected');
+          statusVariants.add('Reinspected');
+          statusVariants.add('Rescheduled');
+        } else if (statusFilter == InspectionStatuses.reInspection) {
           statusVariants.add('Reinspection');
           statusVariants.add('Re-Inspected');
           statusVariants.add('Reinspected');
@@ -189,7 +197,7 @@ class ScheduleController extends GetxController {
                 dataList.map((json) => ScheduleModel.fromJson(json)),
               );
             } catch (e) {
-               // debugPrint('❌ Status fetch error for $status: $e');
+              // debugPrint('❌ Status fetch error for $status: $e');
             }
           }),
         );
@@ -214,6 +222,11 @@ class ScheduleController extends GetxController {
               if (normalizedFilterStatus == 'reinspected')
                 normalizedFilterStatus = 'reinspection';
 
+              // If filter is Running, we allow several segments
+              if (statusFilter == InspectionStatuses.running) {
+                return true; // We already fetched only the variants we want
+              }
+
               return normalizedRecordStatus == normalizedFilterStatus;
             }).toList();
       }
@@ -227,7 +240,7 @@ class ScheduleController extends GetxController {
         hasMoreData.value = false;
       }
     } catch (e) {
-       // debugPrint('❌ Error fetching schedules: $e');
+      // debugPrint('❌ Error fetching schedules: $e');
       if (!loadMore) {
         Get.snackbar(
           'Error',
@@ -322,7 +335,7 @@ class ScheduleController extends GetxController {
         message: 'Inspection status updated to $status',
       );
     } catch (e) {
-       // debugPrint('❌ Status Update Error: $e');
+      // debugPrint('❌ Status Update Error: $e');
       TLoaders.errorSnackBar(title: 'Update Failed', message: e.toString());
       rethrow;
     }

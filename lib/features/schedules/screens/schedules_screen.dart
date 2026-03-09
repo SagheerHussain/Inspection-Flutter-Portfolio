@@ -194,18 +194,29 @@ class _ScheduleCard extends StatelessWidget {
   });
 
   Color _statusColor(String status) {
+    final normalized = status.toLowerCase().replaceAll('-', '');
     if (status == InspectionStatuses.inspected ||
         status == 'Completed' ||
         status == 'Approved')
       return const Color(0xFF4CAF50);
     if (status == InspectionStatuses.running) return const Color(0xFFFF9800);
-    if (status == InspectionStatuses.scheduled) return const Color(0xFF2196F3);
-    if (status == InspectionStatuses.reScheduled)
+    if (status == InspectionStatuses.scheduled || normalized == 'scheduled')
+      return const Color(0xFF2196F3);
+    if (status == InspectionStatuses.reScheduled || normalized == 'rescheduled')
       return const Color(0xFF673AB7);
-    if (status == InspectionStatuses.reInspection)
+    if (status == InspectionStatuses.reInspection ||
+        normalized == 'reinspection' ||
+        normalized == 'reinspected')
       return const Color(0xFF00BFA5);
     if (status == InspectionStatuses.cancel) return const Color(0xFFF44336);
     return const Color(0xFF9E9E9E);
+  }
+
+  String _normalizedStatusLabel(String status) {
+    final normalized = status.toLowerCase().replaceAll('-', '');
+    if (normalized == 'reinspected' || normalized == 'reinspection')
+      return 'Re-inspection';
+    return status;
   }
 
   Color _priorityColor(String priority) {
@@ -224,10 +235,13 @@ class _ScheduleCard extends StatelessWidget {
   /// Capitalize each word's first letter
   String _titleCase(String text) {
     if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return text
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   @override
@@ -235,6 +249,15 @@ class _ScheduleCard extends StatelessWidget {
     final txtTheme = Theme.of(context).textTheme;
     final statusColor = _statusColor(schedule.inspectionStatus);
     final priorityColor = _priorityColor(schedule.priority);
+    final normalizedStatus = schedule.inspectionStatus.toLowerCase().replaceAll(
+      '-',
+      '',
+    );
+    final isReInspection =
+        normalizedStatus == 'reinspection' ||
+        normalizedStatus == 'reinspected' ||
+        schedule.appointmentSource.toLowerCase().contains('re-inspected') ||
+        schedule.appointmentSource.toLowerCase().contains('re-inspection');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -268,15 +291,16 @@ class _ScheduleCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: dark
-                    ? [
-                        statusColor.withValues(alpha: 0.20),
-                        statusColor.withValues(alpha: 0.08),
-                      ]
-                    : [
-                        statusColor.withValues(alpha: 0.10),
-                        statusColor.withValues(alpha: 0.04),
-                      ],
+                colors:
+                    dark
+                        ? [
+                          statusColor.withValues(alpha: 0.20),
+                          statusColor.withValues(alpha: 0.08),
+                        ]
+                        : [
+                          statusColor.withValues(alpha: 0.10),
+                          statusColor.withValues(alpha: 0.04),
+                        ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -291,9 +315,10 @@ class _ScheduleCard extends StatelessWidget {
                 _headerChip(
                   icon: Icons.tag_rounded,
                   label: schedule.appointmentId,
-                  bgColor: dark
-                      ? Colors.white.withValues(alpha: 0.10)
-                      : Colors.white,
+                  bgColor:
+                      dark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.white,
                   iconColor: const Color(0xFF6366F1),
                   textStyle: txtTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -309,9 +334,10 @@ class _ScheduleCard extends StatelessWidget {
                     child: _headerChip(
                       icon: Icons.location_city_rounded,
                       label: schedule.city.toUpperCase(),
-                      bgColor: dark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : Colors.white,
+                      bgColor:
+                          dark
+                              ? Colors.white.withValues(alpha: 0.10)
+                              : Colors.white,
                       iconColor: const Color(0xFF0EA5E9),
                       textStyle: txtTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w700,
@@ -320,6 +346,33 @@ class _ScheduleCard extends StatelessWidget {
                         fontSize: 10,
                       ),
                       flexible: true,
+                    ),
+                  ),
+
+                // Origin Hint Badges
+                if (normalizedStatus == 'scheduled')
+                  _headerChip(
+                    icon: Icons.calendar_today_rounded,
+                    label: 'FROM SCHEDULED',
+                    bgColor: Colors.blue.withValues(alpha: 0.1),
+                    iconColor: Colors.blue,
+                    textStyle: txtTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.blue,
+                      fontSize: 10,
+                    ),
+                  ),
+
+                if (isReInspection)
+                  _headerChip(
+                    icon: Icons.replay_rounded,
+                    label: 'RE-INSPECTION',
+                    bgColor: const Color(0xFF00BFA5).withValues(alpha: 0.1),
+                    iconColor: const Color(0xFF00BFA5),
+                    textStyle: txtTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF00BFA5),
+                      fontSize: 10,
                     ),
                   ),
 
@@ -364,7 +417,7 @@ class _ScheduleCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        schedule.inspectionStatus,
+                        _normalizedStatusLabel(schedule.inspectionStatus),
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 11,
@@ -403,7 +456,9 @@ class _ScheduleCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF6366F1,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -433,7 +488,8 @@ class _ScheduleCard extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
                               letterSpacing: -0.2,
-                              color: dark ? Colors.white : const Color(0xFF0F172A),
+                              color:
+                                  dark ? Colors.white : const Color(0xFF0F172A),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -444,7 +500,9 @@ class _ScheduleCard extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Icon(
@@ -460,7 +518,10 @@ class _ScheduleCard extends StatelessWidget {
                                       ? schedule.customerContactNumber
                                       : 'No phone number',
                                   style: txtTheme.bodySmall?.copyWith(
-                                    color: dark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                                    color:
+                                        dark
+                                            ? Colors.grey.shade400
+                                            : const Color(0xFF64748B),
                                     fontWeight: FontWeight.w500,
                                     fontSize: 13,
                                     letterSpacing: 0.3,
@@ -534,14 +595,16 @@ class _ScheduleCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: dark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : const Color(0xFFF1F5F9),
+                          color:
+                              dark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: dark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : const Color(0xFFE2E8F0),
+                            color:
+                                dark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : const Color(0xFFE2E8F0),
                             width: 0.5,
                           ),
                         ),
@@ -551,7 +614,10 @@ class _ScheduleCard extends StatelessWidget {
                             Icon(
                               Icons.confirmation_number_outlined,
                               size: 11,
-                              color: dark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
+                              color:
+                                  dark
+                                      ? Colors.grey.shade500
+                                      : const Color(0xFF94A3B8),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -559,7 +625,10 @@ class _ScheduleCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: dark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                                color:
+                                    dark
+                                        ? Colors.grey.shade400
+                                        : const Color(0xFF64748B),
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -576,21 +645,24 @@ class _ScheduleCard extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: dark
-                          ? [
-                              const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                              const Color(0xFF6366F1).withValues(alpha: 0.06),
-                            ]
-                          : [
-                              const Color(0xFF3B82F6).withValues(alpha: 0.06),
-                              const Color(0xFF6366F1).withValues(alpha: 0.03),
-                            ],
+                      colors:
+                          dark
+                              ? [
+                                const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                                const Color(0xFF6366F1).withValues(alpha: 0.06),
+                              ]
+                              : [
+                                const Color(0xFF3B82F6).withValues(alpha: 0.06),
+                                const Color(0xFF6366F1).withValues(alpha: 0.03),
+                              ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF3B82F6).withValues(alpha: dark ? 0.15 : 0.1),
+                      color: const Color(
+                        0xFF3B82F6,
+                      ).withValues(alpha: dark ? 0.15 : 0.1),
                       width: 0.5,
                     ),
                   ),
@@ -607,7 +679,9 @@ class _ScheduleCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF3B82F6,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -627,7 +701,10 @@ class _ScheduleCard extends StatelessWidget {
                             Text(
                               'Inspection Date & Time',
                               style: txtTheme.labelSmall?.copyWith(
-                                color: dark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
+                                color:
+                                    dark
+                                        ? Colors.grey.shade500
+                                        : const Color(0xFF94A3B8),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -673,21 +750,32 @@ class _ScheduleCard extends StatelessWidget {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: dark
-                              ? [
-                                  const Color(0xFF10B981).withValues(alpha: 0.12),
-                                  const Color(0xFF059669).withValues(alpha: 0.06),
-                                ]
-                              : [
-                                  const Color(0xFF10B981).withValues(alpha: 0.06),
-                                  const Color(0xFF059669).withValues(alpha: 0.03),
-                                ],
+                          colors:
+                              dark
+                                  ? [
+                                    const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.12),
+                                    const Color(
+                                      0xFF059669,
+                                    ).withValues(alpha: 0.06),
+                                  ]
+                                  : [
+                                    const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.06),
+                                    const Color(
+                                      0xFF059669,
+                                    ).withValues(alpha: 0.03),
+                                  ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: dark ? 0.15 : 0.12),
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: dark ? 0.15 : 0.12),
                           width: 0.5,
                         ),
                       ),
@@ -704,7 +792,9 @@ class _ScheduleCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -736,7 +826,10 @@ class _ScheduleCard extends StatelessWidget {
                                   style: txtTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
-                                    color: dark ? Colors.white : const Color(0xFF1E293B),
+                                    color:
+                                        dark
+                                            ? Colors.white
+                                            : const Color(0xFF1E293B),
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -748,7 +841,9 @@ class _ScheduleCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -781,9 +876,10 @@ class _ScheduleCard extends StatelessWidget {
               ),
               border: Border(
                 top: BorderSide(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : const Color(0xFFE2E8F0),
+                  color:
+                      dark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : const Color(0xFFE2E8F0),
                   width: 0.5,
                 ),
               ),
@@ -867,10 +963,7 @@ class _ScheduleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: dark ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: color.withValues(alpha: 0.15),
-          width: 0.5,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

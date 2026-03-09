@@ -123,8 +123,8 @@ class InspectionFormController extends GetxController {
     try {
       // ── RE-INSPECTION FLOW ──
       if (isReInspection) {
-         // debugPrint(
-          // '🔄 Re-Inspection flow detected. Fetching from car/details with empty appointmentId...',
+        // debugPrint(
+        // '🔄 Re-Inspection flow detected. Fetching from car/details with empty appointmentId...',
         // );
 
         // Fetch data strictly from car/details/{carId}?appointmentId=""
@@ -139,7 +139,7 @@ class InspectionFormController extends GetxController {
 
           // Store the carId for later update call
           _reInspectionCarId = carData['_id']?.toString();
-           // debugPrint('🔑 Re-Inspection carId: $_reInspectionCarId');
+          // debugPrint('🔑 Re-Inspection carId: $_reInspectionCarId');
 
           // Store original data snapshot for preview dialog
           _originalData = Map<String, dynamic>.from(carData);
@@ -164,8 +164,8 @@ class InspectionFormController extends GetxController {
             duration: const Duration(seconds: 3),
           );
         } else {
-           // debugPrint(
-            // '⚠️ No car details found for Re-Inspection. Initializing empty form.',
+          // debugPrint(
+          // '⚠️ No car details found for Re-Inspection. Initializing empty form.',
           // );
           _initializeNewInspection();
         }
@@ -180,8 +180,8 @@ class InspectionFormController extends GetxController {
           schedule?.inspectionStatus.toLowerCase().replaceAll('-', '') ?? '';
 
       if (normalizedStatus == 'running') {
-         // debugPrint(
-          // '🏃 Running lead detected. Checking for Re-Inspection origin...',
+        // debugPrint(
+        // '🏃 Running lead detected. Checking for Re-Inspection origin...',
         // );
         try {
           final response = await ApiService.get(
@@ -189,12 +189,12 @@ class InspectionFormController extends GetxController {
           );
           final carData = response['carDetails'];
           if (carData != null && carData['_id'] != null) {
-             // debugPrint('🔄 Detected Re-Inspection origin for Running lead');
+            // debugPrint('🔄 Detected Re-Inspection origin for Running lead');
             _isReInspectionOrigin = true;
             _reInspectionCarId = carData['_id']?.toString();
             _originalData = Map<String, dynamic>.from(carData);
-             // debugPrint(
-              // '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
+            // debugPrint(
+            // '🔑 Re-Inspection carId (from Running): $_reInspectionCarId',
             // );
 
             // Reverse-map API keys → form keys
@@ -219,7 +219,7 @@ class InspectionFormController extends GetxController {
             return;
           }
         } catch (e) {
-           // debugPrint('⚠️ Re-Inspection check failed for Running lead: $e');
+          // debugPrint('⚠️ Re-Inspection check failed for Running lead: $e');
           // Fall through to standard flow
         }
       }
@@ -235,7 +235,7 @@ class InspectionFormController extends GetxController {
 
         final carData = response['carDetails'];
         if (carData != null && carData['_id'] != null) {
-           // debugPrint('✅ Car record found in DB for $appointmentId — using server data');
+          // debugPrint('✅ Car record found in DB for $appointmentId — using server data');
 
           // Reverse-map API keys → form keys so all fields populate correctly
           _normalizeCarDataToFormKeys(carData);
@@ -259,7 +259,7 @@ class InspectionFormController extends GetxController {
           return;
         }
       } catch (e) {
-         // debugPrint('⚠️ Car details fetch failed: $e — falling back to draft/new');
+        // debugPrint('⚠️ Car details fetch failed: $e — falling back to draft/new');
       }
 
       // 2. No car record found — try local draft
@@ -298,14 +298,14 @@ class InspectionFormController extends GetxController {
       // 3. No car record and no draft — initialize empty form
       _initializeNewInspection();
     } catch (e) {
-       // debugPrint('Fetch failed, initializing new: $e');
+      // debugPrint('Fetch failed, initializing new: $e');
       _initializeNewInspection();
     } finally {
       isLoading.value = false;
     }
   }
 
-   /// Reverse-maps API/CarModel JSON keys → Form field keys.
+  /// Reverse-maps API/CarModel JSON keys → Form field keys.
   /// The CarModel.toJson() outputs keys that differ from the form field keys.
   /// This method copies values from API keys to the form keys so
   /// InspectionFormModel.fromJson() + getFieldValue() can find them.
@@ -342,7 +342,8 @@ class InspectionFormController extends GetxController {
     // Helper: normalize a date field in carData to DD-MM-YYYY format
     void normDate(String key, {bool monthYearOnly = false}) {
       final val = carData[key];
-      if (val == null || val.toString().isEmpty || val.toString() == 'N/A') return;
+      if (val == null || val.toString().isEmpty || val.toString() == 'N/A')
+        return;
 
       // Skip if already in DD-MM-YYYY format
       final str = val.toString();
@@ -353,7 +354,7 @@ class InspectionFormController extends GetxController {
       if (formatted != null) {
         carData[key] = formatted;
         mapped++;
-         // debugPrint('📅 Formatted date [$key]: $str → $formatted');
+        // debugPrint('📅 Formatted date [$key]: $str → $formatted');
       }
     }
 
@@ -363,15 +364,27 @@ class InspectionFormController extends GetxController {
       final formVal = carData[formKey];
 
       // Skip if form key already has a value
-      if (formVal != null && formVal.toString().isNotEmpty && formVal.toString() != '0' && formVal.toString() != 'N/A') {
+      if (formVal != null &&
+          formVal.toString().isNotEmpty &&
+          formVal.toString() != '0' &&
+          formVal.toString() != 'N/A') {
         return;
       }
 
-      if (apiVal == null || apiVal.toString().isEmpty || apiVal.toString() == 'N/A') return;
+      if (apiVal == null ||
+          apiVal.toString().isEmpty ||
+          apiVal.toString() == 'N/A')
+        return;
 
       if (isList && apiVal is List && apiVal.isNotEmpty) {
-        // DropdownList arrays → take first element for single-value form fields
-        carData[formKey] = apiVal.first.toString();
+        // If the field is a multi-select field, keep it as a list.
+        // Otherwise, take the first element for single-value dropdowns.
+        final field = _findFieldByKey(formKey);
+        if (field?.type == FType.multiSelect) {
+          carData[formKey] = apiVal.map((e) => e.toString()).toList();
+        } else {
+          carData[formKey] = apiVal.first.toString();
+        }
         mapped++;
       } else if (!isList) {
         carData[formKey] = apiVal;
@@ -466,17 +479,29 @@ class InspectionFormController extends GetxController {
     map('engineDropdownList', 'engine', isList: true);
     map('batteryDropdownList', 'battery', isList: true);
     map('coolantDropdownList', 'coolant', isList: true);
-    map('engineOilLevelDipstickDropdownList', 'engineOilLevelDipstick', isList: true);
+    map(
+      'engineOilLevelDipstickDropdownList',
+      'engineOilLevelDipstick',
+      isList: true,
+    );
     map('engineOilDropdownList', 'engineOil', isList: true);
     map('engineMountDropdownList', 'engineMount', isList: true);
-    map('enginePermisableBlowByDropdownList', 'enginePermisableBlowBy', isList: true);
+    map(
+      'enginePermisableBlowByDropdownList',
+      'enginePermisableBlowBy',
+      isList: true,
+    );
     map('exhaustSmokeDropdownList', 'exhaustSmoke', isList: true);
     map('clutchDropdownList', 'clutch', isList: true);
     map('gearShiftDropdownList', 'gearShift', isList: true);
     map('commentsOnEngineDropdownList', 'commentsOnEngine', isList: true);
     map('commentsOnEngineOilDropdownList', 'commentsOnEngineOil', isList: true);
     map('commentsOnTowingDropdownList', 'commentsOnTowing', isList: true);
-    map('commentsOnTransmissionDropdownList', 'commentsOnTransmission', isList: true);
+    map(
+      'commentsOnTransmissionDropdownList',
+      'commentsOnTransmission',
+      isList: true,
+    );
     map('commentsOnRadiatorDropdownList', 'commentsOnRadiator', isList: true);
     map('commentsOnOthersDropdownList', 'commentsOnOthers', isList: true);
     map('steeringDropdownList', 'steering', isList: true);
@@ -485,10 +510,26 @@ class InspectionFormController extends GetxController {
     map('rearWiperWasherDropdownList', 'rearWiperWasher', isList: true);
     map('rearDefoggerDropdownList', 'rearDefogger', isList: true);
     map('infotainmentSystemDropdownList', 'infotainmentSystem', isList: true);
-    map('rhsFrontDoorFeaturesDropdownList', 'powerWindowConditionRhsFront', isList: true);
-    map('lhsFrontDoorFeaturesDropdownList', 'powerWindowConditionLhsFront', isList: true);
-    map('rhsRearDoorFeaturesDropdownList', 'powerWindowConditionRhsRear', isList: true);
-    map('lhsRearDoorFeaturesDropdownList', 'powerWindowConditionLhsRear', isList: true);
+    map(
+      'rhsFrontDoorFeaturesDropdownList',
+      'powerWindowConditionRhsFront',
+      isList: true,
+    );
+    map(
+      'lhsFrontDoorFeaturesDropdownList',
+      'powerWindowConditionLhsFront',
+      isList: true,
+    );
+    map(
+      'rhsRearDoorFeaturesDropdownList',
+      'powerWindowConditionRhsRear',
+      isList: true,
+    );
+    map(
+      'lhsRearDoorFeaturesDropdownList',
+      'powerWindowConditionLhsRear',
+      isList: true,
+    );
     map('commentOnInteriorDropdownList', 'commentOnInterior', isList: true);
     map('sunroofDropdownList', 'sunroof', isList: true);
     map('reverseCameraDropdownList', 'reverseCamera', isList: true);
@@ -502,7 +543,11 @@ class InspectionFormController extends GetxController {
     map('rhsSideMemberDropdownList', 'rhsSideMember', isList: true);
     map('transmissionTypeDropdownList', 'transmissionType', isList: true);
     map('driveTrainDropdownList', 'driveTrain', isList: true);
-    map('commentsOnClusterMeterDropdownList', 'commentsOnClusterMeter', isList: true);
+    map(
+      'commentsOnClusterMeterDropdownList',
+      'commentsOnClusterMeter',
+      isList: true,
+    );
     map('dashboardDropdownList', 'dashboard', isList: true);
     map('driverSeatDropdownList', 'driverSeat', isList: true);
     map('coDriverSeatDropdownList', 'coDriverSeat', isList: true);
@@ -511,7 +556,9 @@ class InspectionFormController extends GetxController {
     map('thirdRowSeatsDropdownList', 'thirdRowSeats', isList: true);
 
     // Seats Upholstery reverse logic (leatherSeats/fabricSeats → seatsUpholstery)
-    if ((carData['seatsUpholstery'] == null || carData['seatsUpholstery'].toString().isEmpty || carData['seatsUpholstery'] == 'N/A')) {
+    if ((carData['seatsUpholstery'] == null ||
+        carData['seatsUpholstery'].toString().isEmpty ||
+        carData['seatsUpholstery'] == 'N/A')) {
       if (carData['leatherSeats'] == 'Yes') {
         carData['seatsUpholstery'] = 'Leather';
         mapped++;
@@ -521,7 +568,7 @@ class InspectionFormController extends GetxController {
       }
     }
 
-     // debugPrint('🔄 Reverse-mapping complete: $mapped fields normalized from API → form keys');
+    // debugPrint('🔄 Reverse-mapping complete: $mapped fields normalized from API → form keys');
   }
 
   /// Extracts image/video URLs from API response and populates imageFiles
@@ -578,8 +625,8 @@ class InspectionFormController extends GetxController {
     });
 
     imageFiles.refresh();
-     // debugPrint(
-      // '📸 Media pre-fill complete. Fields populated: ${imageFiles.keys.length}',
+    // debugPrint(
+    // '📸 Media pre-fill complete. Fields populated: ${imageFiles.keys.length}',
     // );
   }
 
@@ -603,6 +650,11 @@ class InspectionFormController extends GetxController {
         }
 
         if (apiDropdowns.isEmpty) return;
+
+        debugPrint('📋 [Dropdowns] Available API dropdown names:');
+        for (final name in apiDropdowns.keys) {
+          debugPrint('   → "$name"');
+        }
 
         // 2. Map API dropdowns to form fields using Priority Rules
         final Map<String, List<String>> mappedOptions = {};
@@ -637,14 +689,62 @@ class InspectionFormController extends GetxController {
                   [s1.length, s2.length].reduce((a, b) => a > b ? a : b));
         }
 
+        // ─── Priority 0: Explicit manual overrides ────────────────────────
+        // Use these when fuzzy matching fails because the API name doesn't
+        // resemble either the field key or the label closely enough.
+        // Keys: form field key → exact API dropdownName (case must match).
+        const Map<String, String> manualOverrides = {
+          'lhsFrontAlloy': 'LHS Front Wheel',
+          'lhsRearAlloy': 'LHS Rear Wheel',
+          'rhsFrontAlloy': 'RHS Front Wheel',
+          'rhsRearAlloy': 'RHS Rear Wheel',
+          'lhsFrontTyre': 'LHS Front Tyre',
+          'lhsRearTyre': 'LHS Rear Tyre',
+          'rhsFrontTyre': 'RHS Front Tyre',
+          'rhsRearTyre': 'RHS Rear Tyre',
+          'commentsOnEngineOil': 'Comment On Engine Oil',
+          'rearWiperWasher': 'Rear Wiper & Washer',
+          'powerWindowConditionRhsFront': 'Driver Door Features',
+          'powerWindowConditionLhsFront': 'Co-Driver Door Features',
+          'powerWindowConditionRhsRear': 'RHS Rear Door Features',
+          'powerWindowConditionLhsRear': 'LHS Rear Door Features',
+          'rtoForm28': 'RTO Form 28',
+          'commentsOnRadiator': 'Comment On Radiator',
+          'commentOnInterior': 'Comment On Interior',
+          'commentsOnTransmission': 'Comments On Transmission',
+          'commentsOnTowing': 'Comments On Towing',
+          'commentsOnOthers': 'Comments On Others',
+          'commentsOnAC': 'Comments On AC',
+          'commentsOnClusterMeter': 'Comments On Cluster Meter',
+          'chassisDetails': 'Chassis Details',
+          'vinPlateDetails': 'Vin Plate Details',
+          'additionalDetails': 'Additional Details',
+          'fuelLevel': 'Fuel Level',
+        };
+
         for (final section in InspectionFieldDefs.sections) {
           for (final field in section.fields) {
-            if (field.type != FType.dropdown) continue;
+            if (field.type != FType.dropdown && field.type != FType.multiSelect)
+              continue;
 
             final fieldKey = field.key;
             final fieldLabel = field.label;
             final normKey = normalize(fieldKey);
             final normLabel = normalize(fieldLabel);
+
+            // ── Priority 0: Manual Override ──────────────────────────────
+            if (manualOverrides.containsKey(fieldKey)) {
+              final apiName = manualOverrides[fieldKey]!;
+              // Try exact, then case-insensitive lookup in apiDropdowns
+              final foundKey = apiDropdowns.keys.firstWhere(
+                (k) => normalize(k) == normalize(apiName),
+                orElse: () => '',
+              );
+              if (foundKey.isNotEmpty) {
+                mappedOptions[fieldKey] = apiDropdowns[foundKey]!;
+                continue; // skip fuzzy matching for this field
+              }
+            }
 
             String? bestMatchName;
             double bestScore = 0.0;
@@ -673,22 +773,19 @@ class InspectionFormController extends GetxController {
             // High confidence threshold (0.75) for fuzzy matching
             if (bestMatchName != null && bestScore >= 0.75) {
               mappedOptions[fieldKey] = apiDropdowns[bestMatchName]!;
-               // debugPrint(
-                // '🔗 Mapped [$fieldKey] to API [$bestMatchName] (Score: ${bestScore.toStringAsFixed(2)})',
-              // );
             }
           }
         }
 
         if (mappedOptions.isNotEmpty) {
           dropdownOptions.addAll(mappedOptions);
-           // debugPrint(
-            // '✨ Dynamic mapping complete. ${mappedOptions.length} fields populated from API.',
+          // debugPrint(
+          // '✨ Dynamic mapping complete. ${mappedOptions.length} fields populated from API.',
           // );
         }
       }
     } catch (e) {
-       // debugPrint('❌ Error mapping dropdowns: $e');
+      // debugPrint('❌ Error mapping dropdowns: $e');
     }
   }
 
@@ -696,9 +793,9 @@ class InspectionFormController extends GetxController {
     inspectionData.value = InspectionFormModel(
       id: '',
       appointmentId: appointmentId,
-      make: schedule?.make ?? '',
-      model: schedule?.model ?? '',
-      variant: schedule?.variant ?? '',
+      make: '',
+      model: '',
+      variant: '',
       status: 'Pending',
       data: {
         'appointmentId': appointmentId,
@@ -708,9 +805,9 @@ class InspectionFormController extends GetxController {
         'customerName': schedule?.ownerName ?? '',
         'customerPhone': schedule?.customerContactNumber ?? '',
         'city': schedule?.city ?? '',
-        'make': schedule?.make ?? '',
-        'model': schedule?.model ?? '',
-        'variant': schedule?.variant ?? '',
+        'make': '',
+        'model': '',
+        'variant': '',
         'ownerSerialNumber': schedule?.ownershipSerialNumber ?? 1,
       },
     );
@@ -720,13 +817,38 @@ class InspectionFormController extends GetxController {
   void updateField(String key, dynamic value) {
     final data = inspectionData.value;
     if (data != null) {
+      if (data.data[key] == value) return;
       data.data[key] = value;
+
+      // Handle dependent fields reset
+      if (key == 'make') {
+        data.data['model'] = '';
+        data.data['variant'] = '';
+      } else if (key == 'model') {
+        data.data['variant'] = '';
+      }
+
       inspectionData.refresh();
     }
   }
 
   String getFieldValue(String key) {
-    return inspectionData.value?.data[key]?.toString() ?? '';
+    final val = inspectionData.value?.data[key];
+    if (val is List) {
+      return val.join(', ');
+    }
+    return val?.toString() ?? '';
+  }
+
+  List<String> getFieldList(String key) {
+    final val = inspectionData.value?.data[key];
+    if (val is List) {
+      return val.map((e) => e.toString()).toList();
+    }
+    if (val != null && val.toString().isNotEmpty) {
+      return [val.toString()];
+    }
+    return [];
   }
 
   // ─── Image Operations ───
@@ -893,8 +1015,8 @@ class InspectionFormController extends GetxController {
       final label = field?.label ?? key;
       final fileName = path.split('/').last;
 
-       // debugPrint(
-        // '🗑️ USER ACTION: Removing image "$fileName" from field "$label"',
+      // debugPrint(
+      // '🗑️ USER ACTION: Removing image "$fileName" from field "$label"',
       // );
 
       // Trigger Delete from Cloudinary
@@ -907,8 +1029,8 @@ class InspectionFormController extends GetxController {
           localInfo: '[$label] $fileName',
         );
       } else {
-         // debugPrint(
-          // 'ℹ️ Note: No remote delete called. This image was likely not uploaded yet or failed upload.',
+        // debugPrint(
+        // 'ℹ️ Note: No remote delete called. This image was likely not uploaded yet or failed upload.',
         // );
       }
 
@@ -927,10 +1049,10 @@ class InspectionFormController extends GetxController {
     required bool isVideo,
   }) async {
     try {
-       // debugPrint(
-        // '⬆️ [START] Uploading ${isVideo ? 'video' : 'image'} to Cloudinary...',
+      // debugPrint(
+      // '⬆️ [START] Uploading ${isVideo ? 'video' : 'image'} to Cloudinary...',
       // );
-       // debugPrint('📍 Local Path: $localPath');
+      // debugPrint('📍 Local Path: $localPath');
 
       String finalPath = localPath;
 
@@ -938,7 +1060,7 @@ class InspectionFormController extends GetxController {
         TLoaders.customToast(message: 'Compressing video...');
         final compressedPath = await _compressVideo(localPath);
         if (compressedPath == null) {
-           // debugPrint('❌ Video compression failed or was cancelled.');
+          // debugPrint('❌ Video compression failed or was cancelled.');
           return;
         }
 
@@ -968,7 +1090,7 @@ class InspectionFormController extends GetxController {
       );
 
       // Print full API response for transparency
-       // debugPrint('📦 API RESPONSE (Upload - $fieldKey): $response');
+      // debugPrint('📦 API RESPONSE (Upload - $fieldKey): $response');
 
       final resultData = response['data'] ?? response;
       String? returnedUrl;
@@ -994,25 +1116,25 @@ class InspectionFormController extends GetxController {
       }
 
       if (returnedUrl != null) {
-         // debugPrint('🌐 SUCCESS: File available at: $returnedUrl');
+        // debugPrint('🌐 SUCCESS: File available at: $returnedUrl');
         if (publicId != null) {
-           // debugPrint('🔑 PublicID stored for deletion: $publicId');
+          // debugPrint('🔑 PublicID stored for deletion: $publicId');
           mediaCloudinaryData[localPath] = {
             'url': returnedUrl,
             'publicId': publicId,
           };
         } else {
-           // debugPrint(
-            // '⚠️ WARNING: No publicId found in response. Remote deletion will not work for this file.',
+          // debugPrint(
+          // '⚠️ WARNING: No publicId found in response. Remote deletion will not work for this file.',
           // );
         }
       } else {
-         // debugPrint(
-          // '❌ ERROR: Upload response did not contain a URL or files list.',
+        // debugPrint(
+        // '❌ ERROR: Upload response did not contain a URL or files list.',
         // );
       }
     } catch (e) {
-       // debugPrint('❌ FATAL: Upload failed for $localPath: $e');
+      // debugPrint('❌ FATAL: Upload failed for $localPath: $e');
     }
   }
 
@@ -1026,7 +1148,7 @@ class InspectionFormController extends GetxController {
       );
       return mediaInfo?.path;
     } catch (e) {
-       // debugPrint('❌ Video compress error: $e');
+      // debugPrint('❌ Video compress error: $e');
       return null;
     }
   }
@@ -1037,10 +1159,10 @@ class InspectionFormController extends GetxController {
     required String localInfo,
   }) async {
     try {
-       // debugPrint(
-        // '� API CALL: Deleting ${isVideo ? 'video' : 'image'} from Cloudinary',
+      // debugPrint(
+      // '� API CALL: Deleting ${isVideo ? 'video' : 'image'} from Cloudinary',
       // );
-       // debugPrint('📍 Target: $localInfo (PublicID: $publicId)');
+      // debugPrint('📍 Target: $localInfo (PublicID: $publicId)');
 
       final url =
           isVideo ? ApiConstants.deleteVideoUrl : ApiConstants.deleteImageUrl;
@@ -1048,11 +1170,11 @@ class InspectionFormController extends GetxController {
       final response = await ApiService.delete(url, {'publicId': publicId});
 
       // Print full API response
-       // debugPrint('� API RESPONSE (Delete $localInfo): $response');
+      // debugPrint('� API RESPONSE (Delete $localInfo): $response');
 
-       // debugPrint('✅ SUCCESS: Remote file deleted.');
+      // debugPrint('✅ SUCCESS: Remote file deleted.');
     } catch (e) {
-       // debugPrint('❌ ERROR: Delete failed for $localInfo: $e');
+      // debugPrint('❌ ERROR: Delete failed for $localInfo: $e');
     }
   }
 
@@ -1151,7 +1273,7 @@ class InspectionFormController extends GetxController {
       });
       await _storage.write(imgKey, imgMap);
 
-       // debugPrint('💾 Draft saved successfully to local storage');
+      // debugPrint('💾 Draft saved successfully to local storage');
 
       // Always clear existing snackbars
       Get.closeAllSnackbars();
@@ -1172,7 +1294,7 @@ class InspectionFormController extends GetxController {
         );
       });
     } catch (e) {
-       // debugPrint('Save draft error: $e');
+      // debugPrint('Save draft error: $e');
       Get.snackbar(
         'Save Failed',
         'Could not save draft. Please try again.',
@@ -1255,15 +1377,19 @@ class InspectionFormController extends GetxController {
           if (imgs.length < minReq) {
             String label = field.label;
             if (minReq > 1) label += ' (At least $minReq photos)';
-            missingBySection.putIfAbsent(section.title, () => []).add({'key': field.key, 'label': label});
+            missingBySection.putIfAbsent(section.title, () => []).add({
+              'key': field.key,
+              'label': label,
+            });
           }
         } else {
           final val = getFieldValue(field.key);
           if (val.isEmpty || val == '0') {
             if (field.type == FType.number && val == '0') continue;
-            missingBySection
-                .putIfAbsent(section.title, () => [])
-                .add({'key': field.key, 'label': field.label});
+            missingBySection.putIfAbsent(section.title, () => []).add({
+              'key': field.key,
+              'label': field.label,
+            });
           }
         }
       }
@@ -1388,7 +1514,9 @@ class InspectionFormController extends GetxController {
                                               Icon(
                                                 Icons.arrow_forward_ios_rounded,
                                                 size: 10,
-                                                color: const Color(0xFF0D6EFD).withValues(alpha: 0.5),
+                                                color: const Color(
+                                                  0xFF0D6EFD,
+                                                ).withValues(alpha: 0.5),
                                               ),
                                             ],
                                           ),
@@ -1468,14 +1596,21 @@ class InspectionFormController extends GetxController {
     isSubmitting.value = true;
     try {
       // 1. Dump date field values for debugging
-      final dateKeys = ['registrationDate', 'fitnessValidity', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity'];
-       // debugPrint('═══════════════════════════════════════════════');
-       // debugPrint('📅 DATE FIELD VALUES BEFORE BUILD:');
+      final dateKeys = [
+        'registrationDate',
+        'fitnessValidity',
+        'yearMonthOfManufacture',
+        'taxValidTill',
+        'insuranceValidity',
+        'pucValidity',
+      ];
+      // debugPrint('═══════════════════════════════════════════════');
+      // debugPrint('📅 DATE FIELD VALUES BEFORE BUILD:');
       for (final k in dateKeys) {
         final v = data.data[k];
-         // debugPrint('  $k = ${v == null ? "NULL" : "\"$v\" (${v.runtimeType})"}');
+        // debugPrint('  $k = ${v == null ? "NULL" : "\"$v\" (${v.runtimeType})"}');
       }
-       // debugPrint('═══════════════════════════════════════════════');
+      // debugPrint('═══════════════════════════════════════════════');
 
       // 2. Build the CarModel from form data
       final carModel = _buildCarModelFromForm(data);
@@ -1487,12 +1622,12 @@ class InspectionFormController extends GetxController {
       final payload = carModel.toJson();
 
       // 🔍 DEBUG: Trace bootDoorImages through the pipeline
-       // debugPrint('═══════════════════════════════════════════════');
-       // debugPrint('🔍 BOOT DOOR IMAGES DEBUG:');
-       // debugPrint('  imageFiles[bootDoorImages] = ${imageFiles['bootDoorImages']}');
-       // debugPrint('  carModel.bootDoorImages = ${carModel.bootDoorImages}');
-       // debugPrint('  payload[bootDoorImages] (from toJson) = ${payload['bootDoorImages']}');
-       // debugPrint('═══════════════════════════════════════════════');
+      // debugPrint('═══════════════════════════════════════════════');
+      // debugPrint('🔍 BOOT DOOR IMAGES DEBUG:');
+      // debugPrint('  imageFiles[bootDoorImages] = ${imageFiles['bootDoorImages']}');
+      // debugPrint('  carModel.bootDoorImages = ${carModel.bootDoorImages}');
+      // debugPrint('  payload[bootDoorImages] (from toJson) = ${payload['bootDoorImages']}');
+      // debugPrint('═══════════════════════════════════════════════');
 
       // Add image URLs from Cloudinary uploads
       imageFiles.forEach((key, paths) {
@@ -1507,31 +1642,40 @@ class InspectionFormController extends GetxController {
       });
 
       // 🔍 DEBUG: bootDoorImages after imageFiles overlay
-       // debugPrint('🔍 payload[bootDoorImages] (after overlay) = ${payload['bootDoorImages']}');
+      // debugPrint('🔍 payload[bootDoorImages] (after overlay) = ${payload['bootDoorImages']}');
 
       // Ensure timestamp is set
       payload['timestamp'] = DateTime.now().toUtc().toIso8601String();
 
       // Debug: dump date values in payload
-       // debugPrint('📅 DATE VALUES IN PAYLOAD:');
-      for (final k in ['registrationDate', 'fitnessTill', 'yearMonthOfManufacture', 'taxValidTill', 'insuranceValidity', 'pucValidity', 'fitnessValidity', 'yearAndMonthOfManufacture']) {
-         // debugPrint('  payload[$k] = ${payload[k]}');
+      // debugPrint('📅 DATE VALUES IN PAYLOAD:');
+      for (final k in [
+        'registrationDate',
+        'fitnessTill',
+        'yearMonthOfManufacture',
+        'taxValidTill',
+        'insuranceValidity',
+        'pucValidity',
+        'fitnessValidity',
+        'yearAndMonthOfManufacture',
+      ]) {
+        // debugPrint('  payload[$k] = ${payload[k]}');
       }
 
       // ── Check if a car record already exists for this appointmentId ──
       String? existingCarId;
       try {
-         // debugPrint('🔍 Checking if car record already exists for appointmentId: $appointmentId');
+        // debugPrint('🔍 Checking if car record already exists for appointmentId: $appointmentId');
         final existingResponse = await ApiService.get(
           ApiConstants.carDetailsUrl(appointmentId),
         );
         final existingCar = existingResponse['carDetails'];
         if (existingCar != null && existingCar['_id'] != null) {
           existingCarId = existingCar['_id'].toString();
-           // debugPrint('✅ Existing car record found: $existingCarId — will UPDATE instead of ADD');
+          // debugPrint('✅ Existing car record found: $existingCarId — will UPDATE instead of ADD');
         }
       } catch (e) {
-         // debugPrint('ℹ️ No existing car record found (or check failed): $e — will ADD new record');
+        // debugPrint('ℹ️ No existing car record found (or check failed): $e — will ADD new record');
       }
 
       Map<String, dynamic> response;
@@ -1542,27 +1686,24 @@ class InspectionFormController extends GetxController {
         // Keep _id for the update API
         payload.remove('objectId');
 
-         // debugPrint('📡 Updating existing car record via PUT...');
-         // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-         // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
-         // debugPrint('🔑 carId: $existingCarId');
+        // debugPrint('📡 Updating existing car record via PUT...');
+        // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+        // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+        // debugPrint('🔑 carId: $existingCarId');
 
-        response = await ApiService.put(
-          ApiConstants.carUpdateUrl,
-          payload,
-        );
+        response = await ApiService.put(ApiConstants.carUpdateUrl, payload);
       } else {
         // ── ADD new record ──
         payload.remove('_id');
         payload.remove('id');
         payload.remove('objectId');
-         // debugPrint(
-          // '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
+        // debugPrint(
+        // '🔑 Payload after ID removal — _id: ${payload.containsKey('_id')}, id: ${payload.containsKey('id')}, objectId: ${payload.containsKey('objectId')}',
         // );
 
-         // debugPrint('📡 Submitting new inspection to API...');
-         // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-         // debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
+        // debugPrint('📡 Submitting new inspection to API...');
+        // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+        // debugPrint('🌐 URL: ${ApiConstants.inspectionSubmitUrl}');
 
         response = await ApiService.post(
           ApiConstants.inspectionSubmitUrl,
@@ -1570,7 +1711,7 @@ class InspectionFormController extends GetxController {
         );
       }
 
-       // debugPrint('✅ API Response: $response');
+      // debugPrint('✅ API Response: $response');
 
       // 5. Clear local draft on success
       await _storage.remove('draft_$appointmentId');
@@ -1579,9 +1720,9 @@ class InspectionFormController extends GetxController {
       // 6. Update telecalling status to 'Inspected'
       try {
         if (schedule != null) {
-           // debugPrint('🔄 Updating telecalling status to Inspected...');
-           // debugPrint('🔑 telecallingId: ${schedule!.id}');
-           // debugPrint('📋 appointmentId: $appointmentId');
+          // debugPrint('🔄 Updating telecalling status to Inspected...');
+          // debugPrint('🔑 telecallingId: ${schedule!.id}');
+          // debugPrint('📋 appointmentId: $appointmentId');
 
           final storage = GetStorage();
           final userId = storage.read('USER_ID') ?? '';
@@ -1596,17 +1737,18 @@ class InspectionFormController extends GetxController {
           };
 
           if (schedule!.inspectionDateTime != null) {
-            statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
+            statusBody['inspectionDateTime'] =
+                schedule!.inspectionDateTime!.toIso8601String();
           }
 
-           // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
-           // debugPrint('📦 Body: $statusBody');
+          // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+          // debugPrint('📦 Body: $statusBody');
 
           final statusResponse = await ApiService.put(
             ApiConstants.updateTelecallingUrl,
             statusBody,
           );
-           // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+          // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
 
           // Refresh schedule list in background (non-blocking)
           try {
@@ -1615,10 +1757,10 @@ class InspectionFormController extends GetxController {
             }
           } catch (_) {}
         } else {
-           // debugPrint('⚠️ schedule is null — cannot update telecalling status');
+          // debugPrint('⚠️ schedule is null — cannot update telecalling status');
         }
       } catch (e) {
-         // debugPrint('⚠️ Failed to update telecalling status: $e');
+        // debugPrint('⚠️ Failed to update telecalling status: $e');
         // Don't block success if this fails — the car submission already succeeded
       }
 
@@ -1633,7 +1775,7 @@ class InspectionFormController extends GetxController {
                 : 'Inspection submitted successfully!'),
       );
     } catch (e) {
-       // debugPrint('❌ Submit error: $e');
+      // debugPrint('❌ Submit error: $e');
       try {
         Get.closeAllSnackbars();
       } catch (_) {}
@@ -2287,15 +2429,15 @@ class InspectionFormController extends GetxController {
       // Remove objectId only
       payload.remove('objectId');
 
-       // debugPrint('📡 Submitting Re-Inspection update via PUT...');
-       // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
-       // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
-       // debugPrint('🔑 carId: ${payload['carId']}');
+      // debugPrint('📡 Submitting Re-Inspection update via PUT...');
+      // debugPrint('📦 Payload keys: ${payload.keys.toList()}');
+      // debugPrint('🌐 URL: ${ApiConstants.carUpdateUrl}');
+      // debugPrint('🔑 carId: ${payload['carId']}');
 
       // 4. PUT to the update API
       final response = await ApiService.put(ApiConstants.carUpdateUrl, payload);
 
-       // debugPrint('✅ API Response: $response');
+      // debugPrint('✅ API Response: $response');
 
       // 5. Clear local draft on success
       await _storage.remove('draft_$appointmentId');
@@ -2304,8 +2446,8 @@ class InspectionFormController extends GetxController {
       // 6. Update telecalling status to 'Inspected'
       try {
         if (schedule != null) {
-           // debugPrint('🔄 Updating telecalling status to Inspected (Re-Inspection)...');
-           // debugPrint('🔑 telecallingId: ${schedule!.id}');
+          // debugPrint('🔄 Updating telecalling status to Inspected (Re-Inspection)...');
+          // debugPrint('🔑 telecallingId: ${schedule!.id}');
 
           final storage = GetStorage();
           final userId = storage.read('USER_ID') ?? '';
@@ -2320,17 +2462,18 @@ class InspectionFormController extends GetxController {
           };
 
           if (schedule!.inspectionDateTime != null) {
-            statusBody['inspectionDateTime'] = schedule!.inspectionDateTime!.toIso8601String();
+            statusBody['inspectionDateTime'] =
+                schedule!.inspectionDateTime!.toIso8601String();
           }
 
-           // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
-           // debugPrint('📦 Body: $statusBody');
+          // debugPrint('📡 PUT ${ApiConstants.updateTelecallingUrl}');
+          // debugPrint('📦 Body: $statusBody');
 
           final statusResponse = await ApiService.put(
             ApiConstants.updateTelecallingUrl,
             statusBody,
           );
-           // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
+          // debugPrint('✅ Telecalling status updated to Inspected: $statusResponse');
 
           // Refresh schedule list in background (non-blocking)
           try {
@@ -2339,10 +2482,10 @@ class InspectionFormController extends GetxController {
             }
           } catch (_) {}
         } else {
-           // debugPrint('⚠️ schedule is null — cannot update telecalling status (Re-Inspection)');
+          // debugPrint('⚠️ schedule is null — cannot update telecalling status (Re-Inspection)');
         }
       } catch (e) {
-         // debugPrint('⚠️ Failed to update telecalling status: $e');
+        // debugPrint('⚠️ Failed to update telecalling status: $e');
         // Don't block success if this fails — the car update already succeeded
       }
 
@@ -2354,7 +2497,7 @@ class InspectionFormController extends GetxController {
         response['message'] ?? 'Re-Inspection updated successfully!',
       );
     } catch (e) {
-       // debugPrint('❌ Re-Inspection submit error: $e');
+      // debugPrint('❌ Re-Inspection submit error: $e');
       try {
         Get.closeAllSnackbars();
       } catch (_) {}
@@ -2821,7 +2964,7 @@ class InspectionFormController extends GetxController {
       );
 
       // Print auto-fetched data to console as requested
-       // debugPrint('🚀 [AutoFetch] Response: $response');
+      // debugPrint('🚀 [AutoFetch] Response: $response');
 
       // Access data.result as specified
       final result = response['data']?['result'];
@@ -2835,7 +2978,7 @@ class InspectionFormController extends GetxController {
         throw 'No details found for this registration number.';
       }
     } catch (e) {
-       // debugPrint('❌ AutoFetch Error: $e');
+      // debugPrint('❌ AutoFetch Error: $e');
       TLoaders.errorSnackBar(
         title: 'Fetch Failed',
         message:
@@ -2849,8 +2992,8 @@ class InspectionFormController extends GetxController {
   }
 
   void _applyFetchedData(Map<String, dynamic> result) {
-     // debugPrint(
-      // '🧩 [AutoFetch] Starting data mapping. Available keys: ${result.keys.toList()}',
+    // debugPrint(
+    // '🧩 [AutoFetch] Starting data mapping. Available keys: ${result.keys.toList()}',
     // );
 
     // Helper to find a value by checking multiple potential keys case-insensitively
@@ -2877,160 +3020,52 @@ class InspectionFormController extends GetxController {
     }
 
     final mapping = {
-      'registrationDate': [
-        'registration_date',
-        'reg_date',
-        'regDate',
-        'date_of_registration',
-        'reg_dt',
-      ],
-      'fitnessValidity': [
-        'fitness_upto',
-        'fitness_valid_upto',
-        'fitnessValidity',
-        'fitness_limit',
-        'fit_dt',
-      ],
-      'engineNumber': [
-        'engine_number',
-        'engine_no',
-        'engineNo',
-        'eng_no',
-        'engineNumber',
-      ],
-      'chassisNumber': [
-        'chassis_number',
-        'chassis_no',
-        'chassisNo',
-        'chassisNumber',
-      ],
-      'chassisDetails': [
-        'chassis_number',
-        'chassis_no',
-        'chassisNo',
-        'chassisNumber',
-      ], // Also fill chassis details
-      'make': ['maker', 'make', 'manufacturer', 'brand', 'maker_name'],
-      'model': ['model', 'maker_model', 'model_name'],
-      'variant': ['variant', 'series', 'model_variant'],
+      'registrationDate': ['registered', 'registration_date', 'reg_date'],
+      'fitnessValidity': ['fitnessUpto', 'fitness_upto', 'fitness_valid_upto'],
+      'engineNumber': ['engineNumber', 'engine_number', 'engineNo'],
+      'chassisNumber': ['chassisNumber', 'chassis_number', 'chassisNo'],
       'yearMonthOfManufacture': [
+        'manufactured',
         'manufacturing_date',
-        'mfg_date',
         'mfgDate',
-        'year_of_manufacture',
-        'manufacturing_month_year',
-        'manu_month_yr',
       ],
-      'fuelType': ['fuel_type', 'fuelType', 'fuel', 'fuel_descr'],
-      'seatingCapacity': [
-        'seating_capacity',
-        'seat_cap',
-        'seatingCapacity',
-        'seat_capacity',
-      ],
-      'color': ['color', 'colour'],
-      'cubicCapacity': [
-        'cubic_capacity',
-        'cc',
-        'engine_capacity',
-        'displacement',
-      ],
-      'norms': [
-        'norms',
-        'pollution_norms',
-        'norms_type',
-        'emission_norms',
-        'norms_descr',
-      ],
-      'registrationState': [
-        'state',
-        'st_name',
-        'registration_state',
-        'state_name',
-      ],
-      'registeredRto': [
-        'rto',
-        'rto_name',
-        'registered_rto',
-        'rto_code',
-        'rto_descr',
-      ],
+      'fuelType': ['fuelType', 'fuel_type', 'fuel'],
+      'seatingCapacity': ['seatingCapacity', 'seating_capacity', 'seat_cap'],
+      'color': ['colorType', 'color', 'colour'],
+      'cubicCapacity': ['cubicCapacity', 'cubic_capacity', 'cc'],
+      'norms': ['normsType', 'norms', 'pollution_norms'],
+      'registeredRto': ['rto', 'registered_rto', 'rto_name'],
       'ownerSerialNumber': [
+        'ownerNumber',
         'owner_serial_number',
         'owner_count',
-        'owner_number',
-        'ownership_count',
-        'owner_sr',
       ],
-      'registeredOwner': [
-        'owner_name',
-        'registered_owner',
-        'ownerName',
-        'owner',
-      ],
+      'registeredOwner': ['owner', 'owner_name', 'registered_owner'],
       'registeredAddressAsPerRc': [
+        'currentAddress',
         'permanent_address',
         'address',
-        'owner_address',
-        'present_address',
       ],
-      'taxValidTill': [
-        'tax_upto',
-        'tax_paid_upto',
-        'tax_validity',
-        'mv_tax_upto',
-        'tax_dt',
-      ],
-      'hypothecatedTo': [
-        'hypothecated_to',
-        'financer',
-        'hypothecation_details',
-        'financed_by',
-        'fncr',
-      ],
-      'insuranceValidity': [
-        'insurance_upto',
-        'insurance_valid_upto',
-        'insurance_validity',
-        'ins_upto',
-        'ins_dt',
-      ],
-      'insurer': [
-        'insurance_company',
-        'insurer_name',
-        'insurance_name',
-        'ins_name',
-        'insurance_descr',
-      ],
+      'insuranceValidity': ['insuranceUpto', 'insurance_valid_upto'],
+      'insurer': ['insuranceProvider', 'insurance_company', 'insurer_name'],
       'insurancePolicyNumber': [
-        'insurance_policy_number',
+        'insurancePolicyNumber',
         'policy_no',
         'policyNumber',
-        'policy_number',
-        'ins_policy_no',
       ],
-      'pucValidity': [
-        'puc_upto',
-        'puc_valid_upto',
-        'puc_validity',
-        'pollution_upto',
-        'puc_dt',
-      ],
-      'pucNumber': ['puc_number', 'pucNo', 'pollution_no', 'puc_no'],
-      'rcStatus': [
-        'rc_status',
-        'status_as_on',
-        'status',
-        'rc_status_description',
-        'status_descr',
-      ],
-      'city': ['city', 'city_name', 'registered_city', 'rto_city'],
+      'pucValidity': ['pollutionCertificateUpto', 'puc_upto', 'puc_validity'],
+      'pucNumber': ['pollutionCertificateNumber', 'puc_number', 'pucNo'],
+      'rcStatus': ['status', 'rc_status', 'status_as_on'],
       'blacklistStatus': [
-        'blacklist_status',
+        'blacklistStatus',
         'is_blacklisted',
-        'blacklisted_details',
+        'blacklist_details',
       ],
-      'rtoNoc': ['noc_details', 'rto_noc', 'noc_status'],
+      'city': ['city', 'city_name'],
+      'registrationState': ['state', 'registration_state'],
+      'make': ['make', 'maker', 'maker_name'],
+      'model': ['model', 'maker_model'],
+      'variant': ['variant', 'series'],
     };
 
     bool updatedAny = false;
@@ -3038,24 +3073,79 @@ class InspectionFormController extends GetxController {
       final value = find(sourceKeys);
       if (value != null) {
         // Log mapping attempt
-         // debugPrint(
-          // '📍 Mapping [$targetKey] <--- Found value: "$value" in source keys: $sourceKeys',
+        // debugPrint(
+        // '📍 Mapping [$targetKey] <--- Found value: "$value" in source keys: $sourceKeys',
         // );
 
         // Overwrite the field with the new value
         updateField(targetKey, value.toString());
         updatedAny = true;
-         // debugPrint('✅ [$targetKey] Overwrite SUCCESS');
+        // debugPrint('✅ [$targetKey] Overwrite SUCCESS');
       }
     });
 
     if (updatedAny) {
-       // debugPrint('✨ Data mapping completed. Refreshing UI...');
+      // debugPrint('✨ Data mapping completed. Refreshing UI...');
       inspectionData.refresh();
     } else {
-       // debugPrint(
-        // '📢 No fields were updated (all fields may already have data).',
+      // debugPrint(
+      // '📢 No fields were updated (all fields may already have data).',
       // );
+    }
+  }
+
+  // ─── Searchable Dropdowns (Make, Model, Variant) ───
+  Future<List<String>> searchMakes(String query) async {
+    try {
+      final response = await ApiService.post(ApiConstants.searchCarMakesUrl, {
+        "q": query,
+        "limit": "30",
+      });
+      if (response['data'] is List) {
+        return (response['data'] as List).map((e) => e.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('❌ Search Makes Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<String>> searchModels(String query) async {
+    final make = getFieldValue('make');
+    if (make.isEmpty) return [];
+    try {
+      final response = await ApiService.post(ApiConstants.searchCarModelsUrl, {
+        "make": make,
+        "q": query,
+        "limit": "30",
+      });
+      if (response['data'] is List) {
+        return (response['data'] as List).map((e) => e.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('❌ Search Models Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<String>> searchVariants(String query) async {
+    final make = getFieldValue('make');
+    final model = getFieldValue('model');
+    if (make.isEmpty || model.isEmpty) return [];
+    try {
+      final response = await ApiService.post(
+        ApiConstants.searchCarVariantsUrl,
+        {"make": make, "model": model, "q": query, "limit": "30"},
+      );
+      if (response['data'] is List) {
+        return (response['data'] as List).map((e) => e.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('❌ Search Variants Error: $e');
+      return [];
     }
   }
 }

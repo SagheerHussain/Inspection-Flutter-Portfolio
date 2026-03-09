@@ -1,5 +1,6 @@
 import 'package:inspection_app/utils/validators/validation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
@@ -72,6 +73,10 @@ class LoginFormWidget extends StatelessWidget {
                       TValidator.validateEmptyText('Phone Number', value),
               controller: controller.phoneNumber,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.phone_outlined),
                 labelText: 'Phone Number',

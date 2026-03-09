@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 /// Field type enum
-enum FType { text, dropdown, image, number, video, date }
+enum FType {
+  text,
+  dropdown,
+  image,
+  number,
+  video,
+  date,
+  multiSelect,
+  searchable,
+}
 
 /// Single form field definition
 class F {
@@ -30,6 +39,23 @@ class F {
 
   const F.drop(this.key, this.label, this.options, {this.optional = false})
     : type = FType.dropdown,
+      readonly = false,
+      maxLines = 1,
+      minImages = 0,
+      maxImages = 0,
+      maxDuration = null;
+
+  const F.multi(this.key, this.label, this.options, {this.optional = false})
+    : type = FType.multiSelect,
+      readonly = false,
+      maxLines = 1,
+      minImages = 0,
+      maxImages = 0,
+      maxDuration = null;
+
+  const F.searchable(this.key, this.label, {this.optional = false})
+    : type = FType.searchable,
+      options = const [],
       readonly = false,
       maxLines = 1,
       minImages = 0,
@@ -107,9 +133,9 @@ class InspectionFieldDefs {
         F.text('city', 'City', readonly: true),
         F.text('registrationNumber', 'Registration Number'),
         F.drop('toBeScrapped', 'To Be Scrapped', ['Yes', 'No']),
-        F.text('chassisDetails', 'Chassis Details'),
+        F.multi('chassisDetails', 'Chassis Details', []),
         F.img('chassisEmbossmentImages', 'Chassis Embossment Image'),
-        F.text('vinPlateDetails', 'Vin Plate Details'),
+        F.multi('vinPlateDetails', 'Vin Plate Details', []),
         F.img('vinPlateImages', 'Vin Plate Image'),
         F.drop('rcBookAvailability', 'RC Book Availability', [
           'Original',
@@ -123,14 +149,14 @@ class InspectionFieldDefs {
           'Damaged',
         ]),
         F.img('rcTokenImages', 'RC Token Image', minImages: 2),
-        F.drop('mismatchInRc', 'Mismatch in RC', ['No', 'Yes']),
+        F.multi('mismatchInRc', 'Mismatch in RC', ['No', 'Yes']),
         F.date('registrationDate', 'Registration Date'),
         F.date('fitnessValidity', 'Fitness Validity'),
         F.text('engineNumber', 'Engine Number'),
         F.text('chassisNumber', 'Chassis Number'),
-        F.text('make', 'Make'),
-        F.text('model', 'Model'),
-        F.text('variant', 'Variant'),
+        F.searchable('make', 'Make'),
+        F.searchable('model', 'Model'),
+        F.searchable('variant', 'Variant'),
         F.date('yearMonthOfManufacture', 'Vehicle Manufacture'),
         F.drop('fuelType', 'Fuel Type', [
           'Petrol',
@@ -160,7 +186,7 @@ class InspectionFieldDefs {
         ]),
         F.date('taxValidTill', 'Tax Valid Till'),
         F.img('roadTaxImages', 'Road Tax Image', minImages: 1),
-        F.text('hypothecationDetails', 'Hypothecation Details'),
+        F.drop('hypothecationDetails', 'Hypothecation Details', ['No', 'Yes']),
         F.text('hypothecatedTo', 'Hypothecated To'),
         F.drop('insurance', 'Insurance Type', [
           'Comprehensive',
@@ -188,6 +214,7 @@ class InspectionFieldDefs {
           'Required',
           'Not Required',
           'Available',
+          'Missing',
         ]),
         F.drop('partyPeshi', 'Party Peshi', ['Yes', 'No']),
         F.drop('duplicateKey', 'Duplicate Key', [
@@ -196,12 +223,14 @@ class InspectionFieldDefs {
           'Duplicate Key Available',
         ]),
         F.img('duplicateKeyImages', 'Duplicate Key Images'),
-        F.text(
-          'additionalDetails',
-          'Additional Details',
-          optional: true,
-          maxLines: 3,
-        ),
+        F.multi('additionalDetails', 'Additional Details', [
+          'Minor Dents',
+          'Major Dents',
+          'Minor Scratches',
+          'Major Scratches',
+          'Repainted',
+          'Rusted',
+        ], optional: true),
       ],
     ),
 
@@ -213,7 +242,7 @@ class InspectionFieldDefs {
       icon: Icons.directions_car,
       fields: [
         F.img('frontMainImages', 'Front Main'),
-        F.drop('bonnet', 'Bonnet', [
+        F.multi('bonnet', 'Bonnet', [
           'OK',
           'Repaint',
           'Dent',
@@ -223,21 +252,21 @@ class InspectionFieldDefs {
         ]),
         F.img('bonnetOpenImages', 'Bonnet Open'),
         F.img('bonnetClosedImages', 'Bonnet Closed'),
-        F.drop('frontWindshield', 'Front Windshield', [
+        F.multi('frontWindshield', 'Front Windshield', [
           'OK',
           'Crack',
           'Chip',
           'Replaced',
         ]),
         F.img('frontWindshieldImages', 'Front Windshield Image'),
-        F.drop('frontWiperAndWasher', 'Front Wiper & Washer', [
+        F.multi('frontWiperAndWasher', 'Front Wiper & Washer', [
           'Working',
           'Not Working',
         ]),
         F.img('frontWiperAndWasherImages', 'Front Wiper & Washer Image'),
-        F.drop('roof', 'Roof', ['OK', 'Repaint', 'Dent', 'Scratch', 'Rust']),
+        F.multi('roof', 'Roof', ['OK', 'Repaint', 'Dent', 'Scratch', 'Rust']),
         F.img('roofImages', 'Roof Image'),
-        F.drop('frontBumper', 'Front Bumper', [
+        F.multi('frontBumper', 'Front Bumper', [
           'OK',
           'Scratch',
           'Crack',
@@ -247,28 +276,28 @@ class InspectionFieldDefs {
         F.img('frontBumperLhs45DegreeImages', 'Front Bumper LHS 45'),
         F.img('frontBumperRhs45DegreeImages', 'Front Bumper RHS 45'),
         F.img('frontBumperImages', 'Front Bumper Image', optional: true),
-        F.drop('lhsHeadlamp', 'LHS Headlamp', [
+        F.multi('lhsHeadlamp', 'LHS Headlamp', [
           'OK',
           'Broken',
           'Fogged',
           'Replaced',
         ]),
         F.img('lhsHeadlampImages', 'LHS Headlamp Image'),
-        F.drop('lhsFoglamp', 'LHS Foglamp', [
+        F.multi('lhsFoglamp', 'LHS Foglamp', [
           'OK',
           'Broken',
           'Not Present',
           'Not Applicable',
         ]),
         F.img('lhsFoglampImages', 'LHS Foglamp Image'),
-        F.drop('rhsHeadlamp', 'RHS Headlamp', [
+        F.multi('rhsHeadlamp', 'RHS Headlamp', [
           'OK',
           'Broken',
           'Fogged',
           'Replaced',
         ]),
         F.img('rhsHeadlampImages', 'RHS Headlamp Image'),
-        F.drop('rhsFoglamp', 'RHS Foglamp', [
+        F.multi('rhsFoglamp', 'RHS Foglamp', [
           'OK',
           'Broken',
           'Not Present',
@@ -286,7 +315,7 @@ class InspectionFieldDefs {
       icon: Icons.arrow_back,
       fields: [
         F.img('lhsFullViewImages', 'LHS Full View'),
-        F.drop('lhsFender', 'LHS Fender', [
+        F.multi('lhsFender', 'LHS Fender', [
           'OK',
           'Scratch',
           'Dent',
@@ -295,30 +324,35 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('lhsFenderImages', 'LHS Fender Image'),
-        F.drop('lhsFrontAlloy', 'LHS Front Wheel', [
+        F.multi('lhsFrontAlloy', 'LHS Front Wheel', [
           'OK',
           'Bent',
           'Cracked',
           'Replaced',
         ]),
         F.img('lhsFrontWheelImages', 'LHS Front Wheel Image'),
-        F.drop('lhsFrontTyre', 'LHS Front Tyre', [
+        F.multi('lhsFrontTyre', 'LHS Front Tyre', [
           'OK',
           'Worn',
           'Bald',
           'Mismatched',
         ]),
         F.img('lhsFrontTyreImages', 'LHS Front Tyre Image'),
-        F.drop('lhsOrvm', 'LHS ORVM', ['OK', 'Broken', 'Missing', 'Scratched']),
+        F.multi('lhsOrvm', 'LHS ORVM', [
+          'OK',
+          'Broken',
+          'Missing',
+          'Scratched',
+        ]),
         F.img('lhsOrvmImages', 'LHS ORVM Image'),
-        F.drop('lhsAPillar', 'LHS A Pillar', [
+        F.multi('lhsAPillar', 'LHS A Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('lhsAPillarImages', 'LHS A Pillar Image'),
-        F.drop('lhsFrontDoor', 'LHS Front Door', [
+        F.multi('lhsFrontDoor', 'LHS Front Door', [
           'OK',
           'Scratch',
           'Dent',
@@ -326,14 +360,14 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('lhsFrontDoorImages', 'LHS Front Door Image'),
-        F.drop('lhsBPillar', 'LHS B Pillar', [
+        F.multi('lhsBPillar', 'LHS B Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('lhsBPillarImages', 'LHS B Pillar Image'),
-        F.drop('lhsRearDoor', 'LHS Rear Door', [
+        F.multi('lhsRearDoor', 'LHS Rear Door', [
           'OK',
           'Scratch',
           'Dent',
@@ -341,35 +375,35 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('lhsRearDoorImages', 'LHS Rear Door Image'),
-        F.drop('lhsCPillar', 'LHS C Pillar', [
+        F.multi('lhsCPillar', 'LHS C Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('lhsCPillarImages', 'LHS C Pillar Image'),
-        F.drop('lhsRunningBorder', 'LHS Running Border', [
+        F.multi('lhsRunningBorder', 'LHS Running Border', [
           'OK',
           'Dent',
           'Rust',
           'Damaged',
         ]),
         F.img('lhsRunningBorderImages', 'LHS Running Border Image'),
-        F.drop('lhsRearAlloy', 'LHS Rear Wheel', [
+        F.multi('lhsRearAlloy', 'LHS Rear Wheel', [
           'OK',
           'Bent',
           'Cracked',
           'Replaced',
         ]),
         F.img('lhsRearWheelImages', 'LHS Rear Wheel Image'),
-        F.drop('lhsRearTyre', 'LHS Rear Tyre', [
+        F.multi('lhsRearTyre', 'LHS Rear Tyre', [
           'OK',
           'Worn',
           'Bald',
           'Mismatched',
         ]),
         F.img('lhsRearTyreImages', 'LHS Rear Tyre Image'),
-        F.drop('lhsQuarterPanel', 'LHS Quarter Panel', [
+        F.multi('lhsQuarterPanel', 'LHS Quarter Panel', [
           'OK',
           'Scratch',
           'Dent',
@@ -392,7 +426,7 @@ class InspectionFieldDefs {
       icon: Icons.arrow_downward,
       fields: [
         F.img('rearMainImages', 'Rear Main'),
-        F.drop('rearBumper', 'Rear Bumper', [
+        F.multi('rearBumper', 'Rear Bumper', [
           'OK',
           'Scratch',
           'Crack',
@@ -402,32 +436,32 @@ class InspectionFieldDefs {
         F.img('rearBumperLhs45DegreeImages', 'Rear Bumper LHS 45'),
         F.img('rearBumperRhs45DegreeImages', 'Rear Bumper RHS 45'),
         F.img('rearBumperImages', 'Rear Bumper Image'),
-        F.drop('lhsTailLamp', 'LHS Tail Lamp', ['OK', 'Broken', 'Fogged']),
+        F.multi('lhsTailLamp', 'LHS Tail Lamp', ['OK', 'Broken', 'Fogged']),
         F.img('lhsTailLampImages', 'LHS Tail Lamp Image'),
-        F.drop('lhsRearFogLamp', 'LHS Rear Fog Lamp', [
+        F.multi('lhsRearFogLamp', 'LHS Rear Fog Lamp', [
           'Present',
           'Not Present',
           'Broken',
           'Not Applicable',
         ]),
         F.img('lhsRearFogLampImages', 'LHS Rear Fog Lamp Image'),
-        F.drop('rhsTailLamp', 'RHS Tail Lamp', ['OK', 'Broken', 'Fogged']),
+        F.multi('rhsTailLamp', 'RHS Tail Lamp', ['OK', 'Broken', 'Fogged']),
         F.img('rhsTailLampImages', 'RHS Tail Lamp Image'),
-        F.drop('rhsRearFogLamp', 'RHS Rear Fog Lamp', [
+        F.multi('rhsRearFogLamp', 'RHS Rear Fog Lamp', [
           'Present',
           'Not Present',
           'Broken',
           'Not Applicable',
         ]),
         F.img('rhsRearFogLampImages', 'RHS Rear Fog Lamp Image'),
-        F.drop('rearWindshield', 'Rear Windshield', [
+        F.multi('rearWindshield', 'Rear Windshield', [
           'OK',
           'Crack',
           'Chip',
           'Replaced',
         ]),
         F.img('rearWindshieldImages', 'Rear Windshield Image'),
-        F.drop('bootDoor', 'Boot Door', [
+        F.multi('bootDoor', 'Boot Door', [
           'OK',
           'Dent',
           'Scratch',
@@ -436,15 +470,15 @@ class InspectionFieldDefs {
         ]),
         // F.img('bootDoorImages', 'Boot Door Image', optional: true),
         F.img('rearWithBootDoorOpenImages', 'Boot Door Open Image'),
-        F.drop('spareWheel', 'Spare Wheel', ['Available', 'Not Available']),
+        F.multi('spareWheel', 'Spare Wheel', ['Available', 'Not Available']),
         F.img('spareWheelImages', 'Spare Wheel Image'),
-        F.drop('spareTyre', 'Spare Tyre', [
+        F.multi('spareTyre', 'Spare Tyre', [
           'Available',
           'Not Available',
           'Worn',
         ]),
         F.img('spareTyreImages', 'Spare Tyre Image'),
-        F.drop('bootFloor', 'Boot Floor', ['OK', 'Rust', 'Damaged']),
+        F.multi('bootFloor', 'Boot Floor', ['OK', 'Rust', 'Damaged']),
         F.img('bootFloorImages', 'Boot Floor Image'),
       ],
     ),
@@ -457,7 +491,7 @@ class InspectionFieldDefs {
       icon: Icons.arrow_forward,
       fields: [
         F.img('rhsFullViewImages', 'RHS Full View'),
-        F.drop('rhsQuarterPanel', 'RHS Quarter Panel', [
+        F.multi('rhsQuarterPanel', 'RHS Quarter Panel', [
           'OK',
           'Scratch',
           'Dent',
@@ -469,35 +503,35 @@ class InspectionFieldDefs {
           'RHS Quarter Panel With Boot Door Open',
         ),
         F.img('rhsQuarterPanelImages', 'RHS Quarter Panel Image'),
-        F.drop('rhsRearAlloy', 'RHS Rear Wheel', [
+        F.multi('rhsRearAlloy', 'RHS Rear Wheel', [
           'OK',
           'Bent',
           'Cracked',
           'Replaced',
         ]),
         F.img('rhsRearWheelImages', 'RHS Rear Wheel Image'),
-        F.drop('rhsRearTyre', 'RHS Rear Tyre', [
+        F.multi('rhsRearTyre', 'RHS Rear Tyre', [
           'OK',
           'Worn',
           'Bald',
           'Mismatched',
         ]),
         F.img('rhsRearTyreImages', 'RHS Rear Tyre Image'),
-        F.drop('rhsRunningBorder', 'RHS Running Border', [
+        F.multi('rhsRunningBorder', 'RHS Running Border', [
           'OK',
           'Dent',
           'Rust',
           'Damaged',
         ]),
         F.img('rhsRunningBorderImages', 'RHS Running Border Image'),
-        F.drop('rhsCPillar', 'RHS C Pillar', [
+        F.multi('rhsCPillar', 'RHS C Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('rhsCPillarImages', 'RHS C Pillar Image'),
-        F.drop('rhsRearDoor', 'RHS Rear Door', [
+        F.multi('rhsRearDoor', 'RHS Rear Door', [
           'OK',
           'Scratch',
           'Dent',
@@ -505,14 +539,14 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('rhsRearDoorImages', 'RHS Rear Door Image'),
-        F.drop('rhsBPillar', 'RHS B Pillar', [
+        F.multi('rhsBPillar', 'RHS B Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('rhsBPillarImages', 'RHS B Pillar Image'),
-        F.drop('rhsFrontDoor', 'RHS Front Door', [
+        F.multi('rhsFrontDoor', 'RHS Front Door', [
           'OK',
           'Scratch',
           'Dent',
@@ -520,30 +554,35 @@ class InspectionFieldDefs {
           'Replaced',
         ]),
         F.img('rhsFrontDoorImages', 'RHS Front Door Image'),
-        F.drop('rhsAPillar', 'RHS A Pillar', [
+        F.multi('rhsAPillar', 'RHS A Pillar', [
           'OK',
           'Repaired',
           'Dented',
           'Repainted',
         ]),
         F.img('rhsAPillarImages', 'RHS A Pillar Image'),
-        F.drop('rhsOrvm', 'RHS ORVM', ['OK', 'Broken', 'Missing', 'Scratched']),
+        F.multi('rhsOrvm', 'RHS ORVM', [
+          'OK',
+          'Broken',
+          'Missing',
+          'Scratched',
+        ]),
         F.img('rhsOrvmImages', 'RHS ORVM Image'),
-        F.drop('rhsFrontAlloy', 'RHS Front Wheel', [
+        F.multi('rhsFrontAlloy', 'RHS Front Wheel', [
           'OK',
           'Bent',
           'Cracked',
           'Replaced',
         ]),
         F.img('rhsFrontWheelImages', 'RHS Front Wheel Image'),
-        F.drop('rhsFrontTyre', 'RHS Front Tyre', [
+        F.multi('rhsFrontTyre', 'RHS Front Tyre', [
           'OK',
           'Worn',
           'Bald',
           'Mismatched',
         ]),
         F.img('rhsFrontTyreImages', 'RHS Front Tyre Image'),
-        F.drop('rhsFender', 'RHS Fender', [
+        F.multi('rhsFender', 'RHS Fender', [
           'OK',
           'Scratch',
           'Dent',
@@ -564,117 +603,118 @@ class InspectionFieldDefs {
       fields: [
         F.img('engineBayImages', 'Engine Bay'),
         F.video('engineVideo', 'Engine Sound Video', maxDuration: 15),
-        F.drop('engine', 'Engine', [
+        F.multi('engine', 'Engine', [
           'OK',
           'Noise',
           'Leak',
           'Misfire',
           'Seized',
         ]),
-        F.text(
-          'commentsOnEngine',
-          'Comment on Engine',
-          optional: true,
-          maxLines: 2,
-        ),
-        F.drop('engineOilLevelDipstick', 'Engine Oil Level Dipstick', [
+        F.multi('commentsOnEngine', 'Comment on Engine', [
+          'OK',
+          'Exhaust Smoke',
+          'Oil Leakage',
+          'Coolant Leakage',
+          'Abnormal Noise',
+        ], optional: true),
+        F.multi('engineOilLevelDipstick', 'Engine Oil Level Dipstick', [
           'OK',
           'Low',
           'High',
           'Empty',
         ]),
-        F.drop('engineOil', 'Engine Oil', [
+        F.multi('engineOil', 'Engine Oil', [
           'OK',
           'Low',
           'Dirty',
           'Sludge',
           'Leakage',
         ]),
-        F.text(
-          'commentsOnEngineOil',
-          'Comment on Engine Oil',
-          optional: true,
-          maxLines: 2,
-        ),
+        F.multi('commentsOnEngineOil', 'Comment on Engine Oil', [
+          'OK',
+          'Dirty',
+          'Leaking',
+          'Sludge',
+          'Level Low',
+        ], optional: true),
         F.drop('enginePermisableBlowBy', 'Engine Permisable Blowby', [
           'No',
           'Yes',
         ]),
-        F.drop('coolant', 'Coolant', [
+        F.multi('coolant', 'Coolant', [
           'OK',
           'Low',
           'Dirty',
           'Leakage',
           'Empty',
         ]),
-        F.drop('cowlTop', 'Cowl Top', ['OK', 'Repaired', 'Damaged']),
+        F.multi('cowlTop', 'Cowl Top', ['OK', 'Repaired', 'Damaged']),
         F.img('cowlTopImages', 'Cowl Top Image'),
-        F.drop('firewall', 'Firewall', ['OK', 'Repaired', 'Damaged']),
+        F.multi('firewall', 'Firewall', ['OK', 'Repaired', 'Damaged']),
         F.img('firewallImages', 'Firewall Image'),
         F.drop('abs', 'ABS', ['Working', 'Not Working', 'Not Available']),
-        F.drop('lhsApron', 'LHS Apron', ['OK', 'Repaired', 'Damaged']),
+        F.multi('lhsApron', 'LHS Apron', ['OK', 'Repaired', 'Damaged']),
         F.img('lhsApronImages', 'LHS Apron Image'),
-        F.drop('rhsApron', 'RHS Apron', ['OK', 'Repaired', 'Damaged']),
+        F.multi('rhsApron', 'RHS Apron', ['OK', 'Repaired', 'Damaged']),
         F.img('rhsApronImages', 'RHS Apron Image'),
-        F.drop('battery', 'Battery', ['OK', 'Weak', 'Replace', 'Dead']),
+        F.multi('battery', 'Battery', ['OK', 'Weak', 'Replace', 'Dead']),
         F.img('batteryImages', 'Battery Image'),
-        F.drop('upperCrossMember', 'Upper Cross Member', [
+        F.multi('upperCrossMember', 'Upper Cross Member', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
-        F.drop('lhsSideMember', 'LHS Side Member', [
+        F.multi('lhsSideMember', 'LHS Side Member', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
-        F.drop('rhsSideMember', 'RHS Side Member', [
+        F.multi('rhsSideMember', 'RHS Side Member', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
-        F.drop('engineMount', 'Engine Mount', ['OK', 'Worn', 'Damaged']),
-        F.drop('headlightSupport', 'Headlamp Support', [
+        F.multi('engineMount', 'Engine Mount', ['OK', 'Worn', 'Damaged']),
+        F.multi('headlightSupport', 'Headlamp Support', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
-        F.drop('radiatorSupport', 'Radiator Support', [
+        F.multi('radiatorSupport', 'Radiator Support', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
-        F.text(
-          'commentsOnRadiator',
-          'Comment on Radiator',
-          optional: true,
-          maxLines: 2,
-        ),
-        F.drop('lowerCrossMember', 'Lower Cross Member', [
+        F.multi('commentsOnRadiator', 'Comment on Radiator', [
+          'OK',
+          'Leaking',
+          'Damaged',
+          'Fins Bent',
+        ], optional: true),
+        F.multi('lowerCrossMember', 'Lower Cross Member', [
           'OK',
           'Repaired',
           'Damaged',
         ]),
         F.img('additionalImages', 'Optional Images', optional: true),
-        F.drop('exhaustSmoke', 'Exhaust Smoke', [
+        F.multi('exhaustSmoke', 'Exhaust Smoke', [
           'Normal',
           'White',
           'Black',
           'Blue',
         ]),
         F.video('exhaustSmokeVideo', 'Exhaust Smoke Video', maxDuration: 10),
-        F.text(
-          'commentsOnTowing',
-          'Comment on Towing',
-          optional: true,
-          maxLines: 2,
-        ),
-        F.text(
-          'commentsOnOthers',
-          'Comment on Others',
-          optional: true,
-          maxLines: 2,
-        ),
+        F.multi('commentsOnTowing', 'Comment on Towing', [
+          'N/A',
+          'Towing Mandatory',
+          'Front Towing',
+          'Rear Towing',
+        ], optional: true),
+        F.multi('commentsOnOthers', 'Comment on Others', [
+          'N/A',
+          'Other Issues',
+          'See Notes',
+        ], optional: true),
       ],
     ),
 
@@ -690,16 +730,21 @@ class InspectionFieldDefs {
           'Cluster Meter (With Engine Running)',
         ),
         F.num('odometerReadingInKms', 'Odometer Reading'),
-        F.text('fuelLevel', 'Fuel Level'),
-        F.text(
-          'commentsOnClusterMeter',
-          'Comment on Cluster Meter',
-          optional: true,
-          maxLines: 2,
-        ),
-        F.drop('irvm', 'IRVM', ['OK', 'Broken', 'Missing']),
-        F.drop('dashboard', 'Dashboard', ['OK', 'Scratch', 'Crack', 'Damaged']),
-        F.drop('infotainmentSystem', 'Infotainment System', [
+        F.drop('fuelLevel', 'Fuel Level', []),
+        F.multi('commentsOnClusterMeter', 'Comment on Cluster Meter', [
+          'OK',
+          'Light On',
+          'Display Issue',
+          'Broken Glass',
+        ], optional: true),
+        F.multi('irvm', 'IRVM', ['OK', 'Broken', 'Missing']),
+        F.multi('dashboard', 'Dashboard', [
+          'OK',
+          'Scratch',
+          'Crack',
+          'Damaged',
+        ]),
+        F.multi('infotainmentSystem', 'Infotainment System', [
           'Working',
           'Not Working',
           'Not Available',
@@ -709,17 +754,17 @@ class InspectionFieldDefs {
           'Not Working',
           'Not Available',
         ]),
-        F.drop('externalSpeaker', 'External Speaker', [
+        F.multi('externalSpeaker', 'External Speaker', [
           'OK',
           'Not Working',
           'N/A',
         ]),
-        F.drop(
+        F.multi(
           'steeringMountedAudioControl',
           'Steering Mounted Audio Controls',
           ['Working', 'Not Working', 'Not Available'],
         ),
-        F.drop(
+        F.multi(
           'steeringMountedSystemControls',
           'Steering Mounted System Controls',
           ['Working', 'Not Working', 'Not Available'],
@@ -731,28 +776,38 @@ class InspectionFieldDefs {
           'Poor',
           'Not Working',
         ]),
-        F.text('commentsOnAC', 'Comment on AC', optional: true, maxLines: 2),
+        F.multi('commentsOnAC', 'Comment on AC', [
+          'OK',
+          'Low Cooling',
+          'Noise',
+          'Heating Issue',
+        ], optional: true),
         F.img('acImages', 'AC Image'),
         F.drop('rearDefogger', 'Rear Defogger', [
           'Working',
           'Not Working',
           'Not Available',
         ]),
-        F.drop('rearWiperWasher', 'Rear Wiper & Washer', [
+        F.multi('rearWiperWasher', 'Rear Wiper & Washer', [
           'Working',
           'Not Working',
           'Not Available',
           'Not Applicable',
         ]),
         F.img('rearWiperAndWasherImages', 'Rear Wiper & Washer Image'),
-        F.drop('reverseCamera', 'Reverse Camera', [
+        F.multi('reverseCamera', 'Reverse Camera', [
           'Working',
           'Not Working',
           'Not Available',
           'Not Applicable',
         ]),
         F.img('reverseCameraImages', 'Reverse Camera Image'),
-        F.drop('sunroof', 'Sunroof', ['Yes', 'No', 'Jammed', 'Not Applicable']),
+        F.multi('sunroof', 'Sunroof', [
+          'Yes',
+          'No',
+          'Jammed',
+          'Not Applicable',
+        ]),
         F.img('sunroofImages', 'Sunroof Image'),
         F.drop('noOfPowerWindows', 'Number of Power Windows', [
           'Not Applicable',
@@ -766,22 +821,22 @@ class InspectionFieldDefs {
           '10',
           '12',
         ]),
-        F.drop('powerWindowConditionRhsFront', 'Driver Door Features', [
+        F.multi('powerWindowConditionRhsFront', 'Driver Door Features', [
           'Power Window',
           'Central Lock',
           'Manual',
         ]),
-        F.drop('powerWindowConditionLhsFront', 'Co-Driver Door Features', [
+        F.multi('powerWindowConditionLhsFront', 'Co-Driver Door Features', [
           'Power Window',
           'Central Lock',
           'Manual',
         ]),
-        F.drop('powerWindowConditionRhsRear', 'RHS Rear Door Features', [
+        F.multi('powerWindowConditionRhsRear', 'RHS Rear Door Features', [
           'Power Window',
           'Central Lock',
           'Manual',
         ]),
-        F.drop('powerWindowConditionLhsRear', 'LHS Rear Door Features', [
+        F.multi('powerWindowConditionLhsRear', 'LHS Rear Door Features', [
           'Power Window',
           'Central Lock',
           'Manual',
@@ -908,8 +963,8 @@ class InspectionFieldDefs {
           'Synthetic',
           'Mixed',
         ]),
-        F.drop('driverSeat', 'Driver Seat', ['OK', 'Torn', 'Stained', 'Worn']),
-        F.drop('coDriverSeat', 'Co-Driver Seat', [
+        F.multi('driverSeat', 'Driver Seat', ['OK', 'Torn', 'Stained', 'Worn']),
+        F.multi('coDriverSeat', 'Co-Driver Seat', [
           'OK',
           'Torn',
           'Stained',
@@ -920,8 +975,8 @@ class InspectionFieldDefs {
           'Not Present',
           'Damaged',
         ]),
-        F.drop('rearSeats', 'Rear Seats', ['OK', 'Stained', 'Torn', 'Worn']),
-        F.drop('thirdRowSeats', 'Third Row Seats', [
+        F.multi('rearSeats', 'Rear Seats', ['OK', 'Stained', 'Torn', 'Worn']),
+        F.multi('thirdRowSeats', 'Third Row Seats', [
           'Present',
           'Not Applicable',
           'Damaged',
@@ -935,12 +990,13 @@ class InspectionFieldDefs {
           'Rear Seat from Right Side (Door Open)',
         ),
         F.img('dashboardImages', 'Dashboard from Rear Seat'),
-        F.text(
-          'commentOnInterior',
-          'Comment on Interior',
-          optional: true,
-          maxLines: 3,
-        ),
+        F.multi('commentOnInterior', 'Comment on Interior', [
+          'OK',
+          'Dirty',
+          'Leaking',
+          'Damaged',
+          'Smelly',
+        ], optional: true),
       ],
     ),
 
@@ -951,15 +1007,21 @@ class InspectionFieldDefs {
       title: 'Steering, Suspension & Brakes',
       icon: Icons.settings,
       fields: [
-        F.drop('steering', 'Steering', [
+        F.multi('steering', 'Steering', [
           'OK',
           'Hard',
           'Noise',
           'Vibration',
           'Play',
         ]),
-        F.drop('clutch', 'Clutch', ['OK', 'Hard', 'Slipping', 'Deep', 'Noise']),
-        F.drop('gearShift', 'Gear Shift', ['OK', 'Hard', 'Noise', 'Jumping']),
+        F.multi('clutch', 'Clutch', [
+          'OK',
+          'Hard',
+          'Slipping',
+          'Deep',
+          'Noise',
+        ]),
+        F.multi('gearShift', 'Gear Shift', ['OK', 'Hard', 'Noise', 'Jumping']),
         F.drop('transmissionType', 'Transmission Type', [
           'Manual',
           'Automatic',
@@ -968,20 +1030,20 @@ class InspectionFieldDefs {
           'DCT',
         ]),
         F.drop('driveTrain', 'Drive Train', ['FWD', 'RWD', 'AWD', '4WD']),
-        F.text(
-          'commentsOnTransmission',
-          'Comment on Transmission',
-          optional: true,
-          maxLines: 2,
-        ),
-        F.drop('brakes', 'Brakes', [
+        F.multi('commentsOnTransmission', 'Comment on Transmission', [
+          'OK',
+          'Hard Shift',
+          'Noise',
+          'Slipping',
+        ], optional: true),
+        F.multi('brakes', 'Brakes', [
           'OK',
           'Spongy',
           'Noise',
           'Weak',
           'Pulling',
         ]),
-        F.drop('suspension', 'Suspension', ['OK', 'Noise', 'Weak', 'Leaking']),
+        F.multi('suspension', 'Suspension', ['OK', 'Noise', 'Weak', 'Leaking']),
         F.num(
           'odometerReadingAfterTestDriveInKms',
           'Odometer Reading after Test Drive',
